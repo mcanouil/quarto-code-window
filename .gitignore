@@ -1,0 +1,10 @@
+_site/
+docs/_site/
+docs/_variables.yml
+docs/_changelog-content.md
+docs/_sidebar-api.yml
+docs/api/*.qmd
+*.html
+.quarto/
+
+/.luarc.json

@@ -1,0 +1,89 @@
+/* Code Window Extension for Quarto
+ * macOS-style code block window decorations
+ * MIT License - Mickaël Canouil 2026
+ */
+
+.code-with-filename {
+  margin: 1.5em 0;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+  overflow: hidden;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+/* Title bar with traffic lights and filename */
+.code-with-filename .code-with-filename-file {
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+  background-color: color-mix(in srgb, currentColor 5%, transparent);
+  border: none;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+  border-radius: 0;
+  padding: 0.6em 1em;
+  margin: 0;
+  page-break-after: avoid;
+  break-after: avoid;
+}
+
+/* Traffic light buttons via pseudo-element */
+.code-with-filename .code-with-filename-file::before {
+  content: '';
+  display: inline-flex;
+  flex-shrink: 0;
+  width: calc(12px * 3 + 6px * 2);
+  height: 12px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='12'%3E%3Ccircle cx='6' cy='6' r='5' fill='%23ff5f56'/%3E%3Ccircle cx='24' cy='6' r='5' fill='%23ffbd2e'/%3E%3Ccircle cx='42' cy='6' r='5' fill='%2327c93f'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+/* Filename styling */
+.code-with-filename .code-with-filename-file pre {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  background-color: transparent;
+  border: none;
+  text-align: right;
+  font-size: 0.85em;
+  font-weight: 500;
+  color: color-mix(in srgb, currentColor 50%, transparent);
+}
+
+/* Code block content area */
+.code-with-filename .sourceCode,
+.code-with-filename div.sourceCode,
+.code-with-filename .code-copy-outer-scaffold {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+}
+
+.code-with-filename .sourceCode pre,
+.code-with-filename div.sourceCode pre,
+.code-with-filename .code-copy-outer-scaffold pre {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+}
+
+/* Plain code blocks (unknown language without sourceCode wrapper) */
+.code-with-filename > pre {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+}
+
+/* Auto-generated filenames display in simulated small caps */
+.code-with-filename.code-window-auto .code-with-filename-file pre strong {
+  text-transform: uppercase;
+  font-size: 0.8em;
+}
+
+/* Code block bottom border-radius */
+.code-with-filename .code-copy-outer-scaffold {
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+}

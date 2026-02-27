@@ -1,0 +1,86 @@
+---
+title: "Code Window"
+subtitle: "Quarto Extension"
+author:
+  - name: "Mickaël CANOUIL, _Ph.D._"
+    orcid: "0000-0002-3396-4549"
+    url: "https://mickael.canouil.fr"
+filters:
+  - at: pre-quarto
+    path: code-window
+syntax-highlighting: github-dark
+format:
+  html:
+    output-file: index
+    embed-resources: true
+  typst:
+    output-file: example-typst
+    papersize: a4
+    keep-typ: true
+    margin:
+      x: 2.5cm
+      y: 2.5cm
+  revealjs:
+    output-file: example-revealjs
+    embed-resources: true
+format-links:
+  - html
+  - typst
+  - revealjs
+---
+
+## Explicit Filename
+
+Code blocks with a `filename` attribute display a macOS-style window header with traffic light buttons and the filename right-aligned.
+
+```{.python filename="fibonacci.py"}
+def fibonacci(n: int) -> int:
+    """Calculate the nth Fibonacci number."""
+    if n <= 1:
+        return n
+    return fibonacci(n - 1) + fibonacci(n - 2)
+```
+
+```{.r filename="analysis.R"}
+# Load data and create summary
+data <- read.csv("data.csv")
+summary(data)
+```
+
+## Auto-Generated Filename
+
+With `auto-filename: true` (the default), code blocks without explicit filenames automatically show the language name in small-caps styling.
+
+```python
+def greet(name: str) -> str:
+    """Return a greeting message."""
+    return f"Hello, {name}!"
+```
+
+```r
+# Create sample data
+data <- data.frame(
+  x = 1:10,
+  y = rnorm(10)
+)
+summary(data)
+```
+
+```bash
+#!/bin/bash
+echo "Hello, World!"
+```
+
+## Plain Code Block
+
+Code blocks without a language are not affected by the extension.
+
+```
+This is a plain code block without any language specified.
+No window decoration is applied here.
+```
+
+## Disabled Auto-Filename
+
+To disable auto-generated filenames, set `auto-filename: false` in the extension configuration.
+Only code blocks with an explicit `filename` attribute will display window decorations.

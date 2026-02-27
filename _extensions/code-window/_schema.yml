@@ -1,0 +1,15 @@
+$schema: https://m.canouil.dev/quarto-wizard/assets/schema/v1/extension-schema.json
+
+options:
+  enabled:
+    type: boolean
+    default: true
+    description: "Enable or disable the code-window filter."
+  auto-filename:
+    type: boolean
+    default: true
+    description: "Automatically generate filename labels from the code block language."
+  wrapper:
+    type: string
+    default: "code-window"
+    description: "Typst wrapper function name for code-window rendering."
