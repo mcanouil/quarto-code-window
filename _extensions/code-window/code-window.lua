@@ -278,10 +278,11 @@ local TYPST_FUNCTION_DEF = [==[
 -- ============================================================================
 
 --- Process CodeBlock for Typst format.
---- Renders through Pandoc's Typst writer to preserve skylighting,
---- then wraps the output with the code-window function.
+--- Returns a block sandwich: opening RawBlock, the original CodeBlock,
+--- and a closing RawBlock. Pandoc's own Typst writer handles Skylighting
+--- with the document's theme automatically.
 --- @param block pandoc.CodeBlock Code block element
---- @return pandoc.RawBlock|pandoc.CodeBlock Transformed or original block
+--- @return pandoc.List|pandoc.CodeBlock Block list or original block
 local function process_typst(block)
   local block_style = read_block_style(block)
   local explicit_filename = block.attributes['filename']
@@ -301,28 +302,17 @@ local function process_typst(block)
 
   local effective_style = block_style or CONFIG.style
 
-  -- Render through Pandoc's Typst writer to preserve syntax highlighting.
-  -- Pass highlight_method from the document's writer options so the
-  -- user's chosen theme (e.g. github-dark) is respected.
-  local write_opts = nil
-  if PANDOC_WRITER_OPTIONS and PANDOC_WRITER_OPTIONS.highlight_method then
-    write_opts = pandoc.WriterOptions({
-      highlight_method = PANDOC_WRITER_OPTIONS.highlight_method,
-    })
-  end
-  local rendered = pandoc.write(pandoc.Pandoc({ block }), 'typst', write_opts)
-  rendered = rendered:gsub('%s+$', '')
-
-  local typst_code = string.format(
-    '#%s(filename: "%s", is-auto: %s, style: "%s")[\n%s\n]',
-    CONFIG.typst_wrapper,
-    filename:gsub('"', '\\"'),
-    is_auto and 'true' or 'false',
-    effective_style,
-    rendered
-  )
-
-  return pandoc.RawBlock('typst', typst_code)
+  return {
+    pandoc.RawBlock('typst', string.format(
+      '#%s(filename: "%s", is-auto: %s, style: "%s")[',
+      CONFIG.typst_wrapper,
+      filename:gsub('"', '\\"'),
+      is_auto and 'true' or 'false',
+      effective_style
+    )),
+    block,
+    pandoc.RawBlock('typst', ']'),
+  }
 end
 
 -- ============================================================================
@@ -425,7 +415,7 @@ function Meta(meta)
 end
 
 --- Process CodeBlock elements.
---- Typst: converts blocks to RawBlocks.
+--- Typst: wraps blocks with RawBlock sandwich.
 --- HTML/Reveal.js: wraps blocks with auto-filename Divs.
 function CodeBlock(block)
   if not CURRENT_FORMAT or not CONFIG or not CONFIG.enabled then
