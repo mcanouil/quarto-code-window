@@ -1,6 +1,7 @@
 # Code Window Extension for Quarto
 
-A Quarto extension that styles code blocks as macOS-style windows with traffic light buttons and a filename bar.
+A Quarto extension that adds window-style decorations to code blocks.
+Three styles are available: macOS traffic lights, Windows title bar buttons, or a plain filename bar.
 Supports HTML, Reveal.js, and Typst formats.
 
 ## Installation
@@ -24,7 +25,8 @@ filters:
 
 ### Explicit Filename
 
-Code blocks with a `filename` attribute display a window header with traffic light buttons and the filename right-aligned.
+Code blocks with a `filename` attribute display a window header with the filename.
+The decoration style depends on the `style` option.
 
 ````markdown
 ```{.python filename="fibonacci.py"}
@@ -54,6 +56,7 @@ extensions:
   code-window:
     enabled: true
     auto-filename: true
+    style: "macos"
     wrapper: "code-window"
 ```
 
@@ -63,7 +66,24 @@ extensions:
 | --------------- | ------- | --------------- | -------------------------------------------------------------------- |
 | `enabled`       | boolean | `true`          | Enable or disable the code-window filter.                            |
 | `auto-filename` | boolean | `true`          | Automatically generate filename labels from the code block language. |
+| `style`         | string  | `"macos"`       | Window decoration style: `"macos"`, `"windows"`, or `"default"`.     |
 | `wrapper`       | string  | `"code-window"` | Typst wrapper function name for code-window rendering.               |
+
+### Styles
+
+- **`"macos"`** (default): Traffic light buttons (red, yellow, green) on the left, filename on the right.
+- **`"windows"`**: Minimise, maximise, and close buttons on the right, filename on the left.
+- **`"default"`**: Plain filename on the left, no window decorations.
+
+### Block-Level Style Override
+
+Override the style for a single code block using the `code-window-style` attribute:
+
+````markdown
+```{.python filename="example.py" code-window-style="windows"}
+print("Windows style for this block only")
+```
+````
 
 ### Typst Skylighting Hot-fix (Integrated)
 

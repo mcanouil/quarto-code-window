@@ -9,6 +9,11 @@ options:
     type: boolean
     default: true
     description: "Automatically generate filename labels from the code block language."
+  style:
+    type: string
+    enum: ["default", "macos", "windows"]
+    default: "macos"
+    description: "Window decoration style: 'macos' (traffic lights), 'windows' (title bar buttons), or 'default' (plain filename). Can be overridden per block with the 'code-window-style' attribute."
   wrapper:
     type: string
     default: "code-window"

@@ -3,10 +3,10 @@
 --- @copyright 2026 Mickaël Canouil
 --- @author Mickaël Canouil
 --- @version 0.1.0
---- @brief macOS-style code block window decorations
---- @description Adds macOS-style window chrome (traffic lights and filename bar)
---- to code blocks in HTML, Reveal.js, and Typst formats.
---- Registered at pre-quarto to process all formats in a single pass.
+--- @brief Code block window decorations with multiple styles
+--- @description Adds window chrome (macOS traffic lights, Windows title bar
+--- buttons, or plain filename) to code blocks in HTML, Reveal.js, and Typst
+--- formats. Registered at pre-quarto to process all formats in a single pass.
 
 -- ============================================================================
 -- EXTENSION NAME
@@ -21,11 +21,15 @@ local EXTENSION_NAME = 'code-window'
 --- @class CodeWindowConfig
 --- @field enabled boolean Whether code-window styling is enabled
 --- @field auto_filename boolean Whether to auto-generate filename from language
+--- @field style string Window decoration style ('macos', 'windows', 'default')
 --- @field typst_wrapper string Typst wrapper function name
+
+local VALID_STYLES = { ['default'] = true, ['macos'] = true, ['windows'] = true }
 
 local DEFAULT_CONFIG = {
   enabled = true,
   auto_filename = true,
+  style = 'macos',
   typst_wrapper = 'code-window',
 }
 
@@ -65,6 +69,7 @@ local function get_config(meta)
   local config = {
     enabled = DEFAULT_CONFIG.enabled,
     auto_filename = DEFAULT_CONFIG.auto_filename,
+    style = DEFAULT_CONFIG.style,
     typst_wrapper = DEFAULT_CONFIG.typst_wrapper,
   }
 
@@ -78,6 +83,17 @@ local function get_config(meta)
   end
   if ext_config['auto-filename'] ~= nil then
     config.auto_filename = pandoc.utils.stringify(ext_config['auto-filename']) == 'true'
+  end
+  if ext_config.style ~= nil then
+    local style_val = pandoc.utils.stringify(ext_config.style)
+    if VALID_STYLES[style_val] then
+      config.style = style_val
+    else
+      io.stderr:write(string.format(
+        '[code-window] warning: unknown style "%s", falling back to "macos".\n',
+        style_val
+      ))
+    end
   end
   if ext_config.wrapper ~= nil then
     config.typst_wrapper = pandoc.utils.stringify(ext_config.wrapper)
@@ -115,16 +131,104 @@ local function is_known_language(lang)
 end
 
 -- ============================================================================
+-- BLOCK-LEVEL STYLE OVERRIDE
+-- ============================================================================
+
+--- Read the block-level style override from code-window-style attribute.
+--- Returns the validated style value or nil.
+--- Strips the attribute from the block.
+--- @param block pandoc.CodeBlock Code block element
+--- @return string|nil Style override value
+local function read_block_style(block)
+  local block_style = block.attributes['code-window-style']
+  if not block_style or block_style == '' then
+    return nil
+  end
+  block.attributes['code-window-style'] = nil
+  if VALID_STYLES[block_style] then
+    return block_style
+  end
+  io.stderr:write(string.format(
+    '[code-window] warning: unknown block style "%s", using configured default.\n',
+    block_style
+  ))
+  return nil
+end
+
+-- ============================================================================
 -- TYPST FUNCTION DEFINITION
 -- ============================================================================
 
 --- Typst function definition for code-window rendering.
 --- Injected once at the start of the document body.
 local TYPST_FUNCTION_DEF = [==[
-#let code-window(content, filename: none, is-auto: false) = {
+#let code-window(content, filename: none, is-auto: false, style: "macos") = {
   let border-colour = luma(200)
   let surface-fill = luma(237)
   let muted-colour = luma(120)
+
+  let filename-label = if filename != none {
+    text(
+      size: if is-auto { 0.7em } else { 0.85em },
+      weight: 500,
+      fill: muted-colour,
+      if is-auto { upper(filename) } else { filename },
+    )
+  }
+
+  let traffic-lights = box(
+    inset: (right: 0.5em),
+    stack(
+      dir: ltr,
+      spacing: 0.425em,
+      circle(radius: 0.425em, fill: rgb("#ff5f56"), stroke: none),
+      circle(radius: 0.425em, fill: rgb("#ffbd2e"), stroke: none),
+      circle(radius: 0.425em, fill: rgb("#27c93f"), stroke: none),
+    ),
+  )
+
+  let window-buttons = box(
+    inset: (left: 0.5em),
+    {
+      set line(stroke: 1pt + muted-colour)
+      stack(
+        dir: ltr,
+        spacing: 0.8em,
+        // Minimise (horizontal line)
+        box(width: 0.6em, height: 0.6em, align(horizon, line(length: 100%))),
+        // Maximise (square)
+        box(width: 0.6em, height: 0.6em, stroke: 1pt + muted-colour),
+        // Close (x)
+        box(width: 0.6em, height: 0.6em, {
+          place(line(start: (0%, 0%), end: (100%, 100%)))
+          place(line(start: (100%, 0%), end: (0%, 100%)))
+        }),
+      )
+    },
+  )
+
+  let title-bar = if style == "macos" {
+    grid(
+      columns: (auto, 1fr),
+      align: (left + horizon, right + horizon),
+      gutter: 0.5em,
+      stroke: 0pt,
+      traffic-lights,
+      filename-label,
+    )
+  } else if style == "windows" {
+    grid(
+      columns: (1fr, auto),
+      align: (left + horizon, right + horizon),
+      gutter: 0.5em,
+      stroke: 0pt,
+      filename-label,
+      window-buttons,
+    )
+  } else {
+    // default: plain filename, left-aligned
+    filename-label
+  }
 
   block(
     width: 100%,
@@ -140,32 +244,7 @@ local TYPST_FUNCTION_DEF = [==[
         radius: 0pt,
         stroke: (bottom: 1pt + border-colour),
         sticky: true,
-        {
-          grid(
-            columns: (auto, 1fr),
-            align: (left + horizon, right + horizon),
-            gutter: 0.5em,
-            stroke: 0pt,
-            box(
-              inset: (right: 0.5em),
-              stack(
-                dir: ltr,
-                spacing: 0.425em,
-                circle(radius: 0.425em, fill: rgb("#ff5f56"), stroke: none),
-                circle(radius: 0.425em, fill: rgb("#ffbd2e"), stroke: none),
-                circle(radius: 0.425em, fill: rgb("#27c93f"), stroke: none),
-              ),
-            ),
-            if filename != none {
-              text(
-                size: if is-auto { 0.7em } else { 0.85em },
-                weight: 500,
-                fill: muted-colour,
-                if is-auto { upper(filename) } else { filename },
-              )
-            },
-          )
-        },
+        title-bar,
       )
       // Strip code block chrome so content fills flush against the window body.
       // set block() provides defaults for Skylighting blocks (explicit fill preserved).
@@ -204,6 +283,7 @@ local TYPST_FUNCTION_DEF = [==[
 --- @param block pandoc.CodeBlock Code block element
 --- @return pandoc.RawBlock|pandoc.CodeBlock Transformed or original block
 local function process_typst(block)
+  local block_style = read_block_style(block)
   local explicit_filename = block.attributes['filename']
   local filename = explicit_filename
   local is_auto = false
@@ -219,6 +299,8 @@ local function process_typst(block)
     return block
   end
 
+  local effective_style = block_style or CONFIG.style
+
   -- Render through Pandoc's Typst writer to preserve syntax highlighting.
   -- Pass highlight_method from the document's writer options so the
   -- user's chosen theme (e.g. github-dark) is respected.
@@ -232,10 +314,11 @@ local function process_typst(block)
   rendered = rendered:gsub('%s+$', '')
 
   local typst_code = string.format(
-    '#%s(filename: "%s", is-auto: %s)[\n%s\n]',
+    '#%s(filename: "%s", is-auto: %s, style: "%s")[\n%s\n]',
     CONFIG.typst_wrapper,
     filename:gsub('"', '\\"'),
     is_auto and 'true' or 'false',
+    effective_style,
     rendered
   )
 
@@ -246,15 +329,23 @@ end
 -- HTML PROCESSING
 -- ============================================================================
 
---- Process CodeBlock for HTML/Reveal.js formats (auto-filename only).
---- Blocks with explicit filenames are handled by Quarto; our CSS styles them.
+--- Process CodeBlock for HTML/Reveal.js formats.
+--- Explicit-filename blocks are returned for Quarto to wrap; a marker class
+--- is added when a block-level style override is present.
+--- Auto-filename blocks are wrapped directly with the style class.
 --- @param block pandoc.CodeBlock Code block element
 --- @return pandoc.Div|pandoc.CodeBlock Wrapped block or original
 local function process_html(block)
-  -- Blocks with explicit filename are returned unchanged so Quarto
-  -- creates the .code-with-filename Div between passes; our CSS styles it.
+  local block_style = read_block_style(block)
   local explicit_filename = block.attributes['filename']
+
   if explicit_filename and explicit_filename ~= '' then
+    -- Let Quarto create the .code-with-filename wrapper.
+    -- Add a marker class for block-level style override; the injected JS
+    -- reads it and promotes it to the wrapper div.
+    if block_style then
+      table.insert(block.classes, 'cw-style-' .. block_style)
+    end
     return block
   end
 
@@ -267,6 +358,7 @@ local function process_html(block)
   end
 
   local filename = block.classes[1]
+  local effective_style = block_style or CONFIG.style
 
   -- Normalise unknown languages to 'default' so Pandoc renders them
   -- with sourceCode wrapper, copy button, and consistent styling.
@@ -284,7 +376,7 @@ local function process_html(block)
 
   return pandoc.Div(
     { filename_header, block },
-    pandoc.Attr('', { 'code-with-filename', 'code-window-auto' })
+    pandoc.Attr('', { 'code-with-filename', 'code-window-' .. effective_style, 'code-window-auto' })
   )
 end
 
@@ -292,18 +384,40 @@ end
 -- FILTER FUNCTIONS
 -- ============================================================================
 
---- Load configuration and inject CSS dependency.
+--- Generate a JS snippet that adds the configured default style class
+--- to Quarto-created .code-with-filename wrappers (explicit filenames)
+--- and promotes block-level cw-style-* marker classes.
+--- @param default_style string The configured default style
+--- @return string JavaScript code
+local function make_style_js(default_style)
+  return string.format([=[
+document.addEventListener("DOMContentLoaded",function(){
+  document.querySelectorAll(".code-with-filename").forEach(function(el){
+    if(/\bcode-window-(macos|windows|default)\b/.test(el.className))return;
+    var c=el.querySelector('[class*="cw-style-"]');
+    if(c){var m=c.className.match(/cw-style-(\w+)/);if(m){el.classList.add("code-window-"+m[1]);return;}}
+    el.classList.add("code-window-%s");
+  });
+});]=], default_style)
+end
+
+--- Load configuration and inject CSS/JS dependencies.
 function Meta(meta)
   CURRENT_FORMAT = get_format()
   CONFIG = get_config(meta)
 
-  -- Inject CSS for HTML/Reveal.js (idempotent by name across passes)
+  -- Inject CSS and JS for HTML/Reveal.js (idempotent by name across passes)
   if (CURRENT_FORMAT == 'html' or CURRENT_FORMAT == 'revealjs')
       and CONFIG and CONFIG.enabled then
     quarto.doc.add_html_dependency({
       name = EXTENSION_NAME,
       version = '0.1.0',
       stylesheets = { 'style.css' },
+    })
+    quarto.doc.add_html_dependency({
+      name = EXTENSION_NAME .. '-style-init',
+      version = '0.1.0',
+      head = '<script>' .. make_style_js(CONFIG.style) .. '</script>',
     })
   end
 

@@ -31,7 +31,8 @@ format-links:
 
 ## Explicit Filename
 
-Code blocks with a `filename` attribute display a macOS-style window header with traffic light buttons and the filename right-aligned.
+Code blocks with a `filename` attribute display a window header with the filename.
+The decoration style depends on the `style` option (default: `"macos"`).
 
 ```{.python filename="fibonacci.py"}
 def fibonacci(n: int) -> int:
@@ -84,3 +85,51 @@ No window decoration is applied here.
 
 To disable auto-generated filenames, set `auto-filename: false` in the extension configuration.
 Only code blocks with an explicit `filename` attribute will display window decorations.
+
+## Window Styles
+
+Three decoration styles are available via the `style` option.
+The global style can be set in the document configuration.
+Individual blocks can override the style with the `code-window-style` attribute.
+
+### macOS Style (default)
+
+Traffic light buttons on the left, filename on the right.
+
+```{.python filename="macos-example.py" code-window-style="macos"}
+print("macOS style window")
+```
+
+### Windows Style
+
+Minimise, maximise, and close buttons on the right, filename on the left.
+
+```{.python filename="windows-example.py" code-window-style="windows"}
+print("Windows style window")
+```
+
+### Default Style
+
+Plain filename on the left, no window decorations.
+
+```{.python filename="default-example.py" code-window-style="default"}
+print("Default style window")
+```
+
+### Configuration
+
+Set the global style in the document front matter:
+
+```yaml
+extensions:
+  code-window:
+    style: "macos"
+```
+
+Override per block with the `code-window-style` attribute:
+
+````markdown
+```{.python filename="example.py" code-window-style="windows"}
+print("Windows style for this block only")
+```
+````
