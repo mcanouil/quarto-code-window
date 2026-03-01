@@ -82,6 +82,6 @@ Here is the source code for a minimal example: [example.qmd](example.qmd).
 
 Rendered output:
 
-- [HTML](https://mickael.canouil.fr/quarto-code-window/).
-- [Typst](https://mickael.canouil.fr/quarto-code-window/example-typst.pdf).
-- [Reveal.js](https://mickael.canouil.fr/quarto-code-window/example-revealjs.html).
+- [HTML](https://m.canouil.dev/quarto-code-window/).
+- [Typst](https://m.canouil.dev/quarto-code-window/example-typst.pdf).
+- [Reveal.js](https://m.canouil.dev/quarto-code-window/example-revealjs.html).
