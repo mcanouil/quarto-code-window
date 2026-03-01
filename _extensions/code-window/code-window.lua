@@ -147,13 +147,13 @@ local TYPST_FUNCTION_DEF = [==[
             gutter: 0.5em,
             stroke: 0pt,
             box(
-              inset: (right: 8pt),
+              inset: (right: 0.5em),
               stack(
                 dir: ltr,
-                spacing: 5pt,
-                circle(radius: 5pt, fill: rgb("#ff5f56"), stroke: none),
-                circle(radius: 5pt, fill: rgb("#ffbd2e"), stroke: none),
-                circle(radius: 5pt, fill: rgb("#27c93f"), stroke: none),
+                spacing: 0.425em,
+                circle(radius: 0.425em, fill: rgb("#ff5f56"), stroke: none),
+                circle(radius: 0.425em, fill: rgb("#ffbd2e"), stroke: none),
+                circle(radius: 0.425em, fill: rgb("#27c93f"), stroke: none),
               ),
             ),
             if filename != none {
