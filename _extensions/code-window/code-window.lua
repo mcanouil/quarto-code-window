@@ -13,9 +13,10 @@
 -- ============================================================================
 
 local EXTENSION_NAME = 'code-window'
+local utils = require(quarto.utils.resolve_path('_modules/utils.lua'):gsub('%.lua$', ''))
 
 -- ============================================================================
--- DEFAULT CONFIGURATION
+-- DEFAULTS AND STATE
 -- ============================================================================
 
 --- @class CodeWindowConfig
@@ -26,81 +27,15 @@ local EXTENSION_NAME = 'code-window'
 
 local VALID_STYLES = { ['default'] = true, ['macos'] = true, ['windows'] = true }
 
-local DEFAULT_CONFIG = {
-  enabled = true,
-  auto_filename = true,
-  style = 'macos',
-  typst_wrapper = 'code-window',
+local DEFAULTS = {
+  ['enabled'] = 'true',
+  ['auto-filename'] = 'true',
+  ['style'] = 'macos',
+  ['wrapper'] = 'code-window',
 }
-
--- ============================================================================
--- GLOBAL STATE
--- ============================================================================
 
 local CURRENT_FORMAT = nil
 local CONFIG = nil
-
--- ============================================================================
--- FORMAT DETECTION
--- ============================================================================
-
---- Detect the current output format.
---- @return string|nil Format name ('html', 'revealjs', 'typst') or nil
-local function get_format()
-  if quarto.doc.is_format('typst') then
-    return 'typst'
-  elseif quarto.doc.is_format('revealjs') then
-    return 'revealjs'
-  elseif quarto.doc.is_format('html') then
-    return 'html'
-  end
-  return nil
-end
-
--- ============================================================================
--- CONFIGURATION LOADING
--- ============================================================================
-
---- Load configuration from document metadata.
---- Reads from extensions.code-window namespace.
---- @param meta pandoc.Meta Document metadata
---- @return CodeWindowConfig Configuration table
-local function get_config(meta)
-  local config = {
-    enabled = DEFAULT_CONFIG.enabled,
-    auto_filename = DEFAULT_CONFIG.auto_filename,
-    style = DEFAULT_CONFIG.style,
-    typst_wrapper = DEFAULT_CONFIG.typst_wrapper,
-  }
-
-  local ext_config = meta.extensions and meta.extensions[EXTENSION_NAME]
-  if not ext_config then
-    return config
-  end
-
-  if ext_config.enabled ~= nil then
-    config.enabled = pandoc.utils.stringify(ext_config.enabled) == 'true'
-  end
-  if ext_config['auto-filename'] ~= nil then
-    config.auto_filename = pandoc.utils.stringify(ext_config['auto-filename']) == 'true'
-  end
-  if ext_config.style ~= nil then
-    local style_val = pandoc.utils.stringify(ext_config.style)
-    if VALID_STYLES[style_val] then
-      config.style = style_val
-    else
-      io.stderr:write(string.format(
-        '[code-window] warning: unknown style "%s", falling back to "macos".\n',
-        style_val
-      ))
-    end
-  end
-  if ext_config.wrapper ~= nil then
-    config.typst_wrapper = pandoc.utils.stringify(ext_config.wrapper)
-  end
-
-  return config
-end
 
 -- ============================================================================
 -- LANGUAGE DETECTION
@@ -148,10 +83,8 @@ local function read_block_style(block)
   if VALID_STYLES[block_style] then
     return block_style
   end
-  io.stderr:write(string.format(
-    '[code-window] warning: unknown block style "%s", using configured default.\n',
-    block_style
-  ))
+  utils.log_warning(EXTENSION_NAME,
+    string.format('Unknown block style "%s", using configured default.', block_style))
   return nil
 end
 
@@ -371,7 +304,7 @@ local function process_html(block)
 end
 
 -- ============================================================================
--- FILTER FUNCTIONS
+-- FILTER HANDLERS
 -- ============================================================================
 
 --- Generate a JS snippet that adds the configured default style class
@@ -393,18 +326,33 @@ end
 
 --- Load configuration and inject CSS/JS dependencies.
 function Meta(meta)
-  CURRENT_FORMAT = get_format()
-  CONFIG = get_config(meta)
+  CURRENT_FORMAT = utils.get_quarto_format()
+  local opts = utils.get_options({
+    extension = EXTENSION_NAME,
+    keys = { 'enabled', 'auto-filename', 'style', 'wrapper' },
+    meta = meta,
+    defaults = DEFAULTS,
+  })
 
-  -- Inject CSS and JS for HTML/Reveal.js (idempotent by name across passes)
-  if (CURRENT_FORMAT == 'html' or CURRENT_FORMAT == 'revealjs')
-      and CONFIG and CONFIG.enabled then
-    quarto.doc.add_html_dependency({
+  if not VALID_STYLES[opts['style']] then
+    utils.log_warning(EXTENSION_NAME,
+      string.format('Unknown style "%s", falling back to "macos".', opts['style']))
+  end
+
+  CONFIG = {
+    enabled = opts['enabled'] == 'true',
+    auto_filename = opts['auto-filename'] == 'true',
+    style = VALID_STYLES[opts['style']] and opts['style'] or 'macos',
+    typst_wrapper = opts['wrapper'],
+  }
+
+  if CURRENT_FORMAT == 'html' and CONFIG.enabled then
+    utils.ensure_html_dependency({
       name = EXTENSION_NAME,
       version = '0.1.0',
       stylesheets = { 'style.css' },
     })
-    quarto.doc.add_html_dependency({
+    utils.ensure_html_dependency({
       name = EXTENSION_NAME .. '-style-init',
       version = '0.1.0',
       head = '<script>' .. make_style_js(CONFIG.style) .. '</script>',
@@ -426,7 +374,7 @@ function CodeBlock(block)
     return process_typst(block)
   end
 
-  if CURRENT_FORMAT == 'html' or CURRENT_FORMAT == 'revealjs' then
+  if CURRENT_FORMAT == 'html' then
     return process_html(block)
   end
 
@@ -461,21 +409,18 @@ end
 --- Kept as a single integration seam for easy future removal.
 --- @return table List of subfilter tables to append
 local function load_skylighting_hotfix_filters()
-  local script_dir = PANDOC_SCRIPT_FILE and PANDOC_SCRIPT_FILE:match('^(.*[/\\])') or ''
-  local module_path = script_dir .. 'skylighting-typst-fix.lua'
-  local ok, result = pcall(dofile, module_path)
-
+  local ok, result = pcall(require,
+    quarto.utils.resolve_path('skylighting-typst-fix.lua'):gsub('%.lua$', ''))
   if not ok then
-    io.stderr:write('[code-window] warning: failed to load optional skylighting hot-fix: '
-      .. tostring(result) .. '\n')
+    utils.log_warning(EXTENSION_NAME,
+      'Failed to load optional skylighting hot-fix: ' .. tostring(result))
     return {}
   end
-
   if type(result) ~= 'table' then
-    io.stderr:write('[code-window] warning: skylighting hot-fix did not return a filter list.\n')
+    utils.log_warning(EXTENSION_NAME,
+      'Skylighting hot-fix did not return a filter list.')
     return {}
   end
-
   return result
 end
 
