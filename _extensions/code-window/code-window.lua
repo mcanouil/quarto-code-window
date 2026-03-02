@@ -24,6 +24,7 @@ local utils = require(quarto.utils.resolve_path('_modules/utils.lua'):gsub('%.lu
 --- @field auto_filename boolean Whether to auto-generate filename from language
 --- @field style string Window decoration style ('macos', 'windows', 'default')
 --- @field typst_wrapper string Typst wrapper function name
+--- @field skylighting_fix boolean Whether to apply the Skylighting hot-fix for Typst
 
 local VALID_STYLES = { ['default'] = true, ['macos'] = true, ['windows'] = true }
 
@@ -32,6 +33,7 @@ local DEFAULTS = {
   ['auto-filename'] = 'true',
   ['style'] = 'macos',
   ['wrapper'] = 'code-window',
+  ['skylighting-fix'] = 'true',
 }
 
 local CURRENT_FORMAT = nil
@@ -329,7 +331,7 @@ function Meta(meta)
   CURRENT_FORMAT = utils.get_quarto_format()
   local opts = utils.get_options({
     extension = EXTENSION_NAME,
-    keys = { 'enabled', 'auto-filename', 'style', 'wrapper' },
+    keys = { 'enabled', 'auto-filename', 'style', 'wrapper', 'skylighting-fix' },
     meta = meta,
     defaults = DEFAULTS,
   })
@@ -344,6 +346,7 @@ function Meta(meta)
     auto_filename = opts['auto-filename'] == 'true',
     style = VALID_STYLES[opts['style']] and opts['style'] or 'macos',
     typst_wrapper = opts['wrapper'],
+    skylighting_fix = opts['skylighting-fix'] == 'true',
   }
 
   if CURRENT_FORMAT == 'html' and CONFIG.enabled then
@@ -435,7 +438,16 @@ local filters = {
 }
 
 for _, subfilter in ipairs(load_skylighting_hotfix_filters()) do
-  table.insert(filters, subfilter)
+  local wrapped = {}
+  for element_type, handler in pairs(subfilter) do
+    wrapped[element_type] = function(...)
+      if not CONFIG or not CONFIG.skylighting_fix then
+        return nil
+      end
+      return handler(...)
+    end
+  end
+  table.insert(filters, wrapped)
 end
 
 return filters
