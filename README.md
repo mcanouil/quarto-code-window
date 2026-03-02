@@ -58,16 +58,18 @@ extensions:
     auto-filename: true
     style: "macos"
     wrapper: "code-window"
+    skylighting-fix: true
 ```
 
 ### Options
 
-| Option          | Type    | Default         | Description                                                          |
-| --------------- | ------- | --------------- | -------------------------------------------------------------------- |
-| `enabled`       | boolean | `true`          | Enable or disable the code-window filter.                            |
-| `auto-filename` | boolean | `true`          | Automatically generate filename labels from the code block language. |
-| `style`         | string  | `"macos"`       | Window decoration style: `"macos"`, `"windows"`, or `"default"`.     |
-| `wrapper`       | string  | `"code-window"` | Typst wrapper function name for code-window rendering.               |
+| Option            | Type    | Default         | Description                                                                         |
+| ----------------- | ------- | --------------- | ----------------------------------------------------------------------------------- |
+| `enabled`         | boolean | `true`          | Enable or disable the code-window filter.                                           |
+| `auto-filename`   | boolean | `true`          | Automatically generate filename labels from the code block language.                |
+| `style`           | string  | `"macos"`       | Window decoration style: `"macos"`, `"windows"`, or `"default"`.                    |
+| `wrapper`         | string  | `"code-window"` | Typst wrapper function name for code-window rendering.                              |
+| `skylighting-fix` | boolean | `true`          | Enable or disable the Skylighting hot-fix for Typst output (block and inline code). |
 
 ### Styles
 
@@ -88,8 +90,9 @@ print("Windows style for this block only")
 ### Typst Skylighting Hot-fix (Integrated)
 
 `code-window` loads its Typst skylighting hot-fix internally from `_extensions/code-window/skylighting-typst-fix.lua`, so no second filter entry is required.
+Set `skylighting-fix: false` to disable the hot-fix without removing the file.
 
-This keeps the hot-fix separated from `code-window.lua` for easy future removal while preserving combined behavior.
+This keeps the hot-fix separated from `code-window.lua` for easy future removal while preserving combined behaviour.
 
 Future removal playbook:
 
