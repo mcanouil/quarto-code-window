@@ -16,6 +16,12 @@
 - refactor: update Typst processing to return block sandwich.
 - refactor: use utility functions for code-window extension.
 
+## 0.1.1 (2026-03-01)
+
+### Style
+
+- style: tweak traffic lights size.
+
 ## 0.1.0 (2026-02-27)
 
 ### New Features
