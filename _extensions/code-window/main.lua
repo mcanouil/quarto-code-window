@@ -6,7 +6,7 @@
 --- Loads all submodules, wires dependencies, and assembles the filter list.
 
 local EXTENSION_NAME = 'code-window'
-local utils = require(quarto.utils.resolve_path('_modules/utils.lua'):gsub('%.lua$', ''))
+local log = require(quarto.utils.resolve_path('_modules/logging.lua'):gsub('%.lua$', ''))
 
 -- ============================================================================
 -- LOAD SUBMODULES
@@ -30,12 +30,12 @@ local function load_skylighting_hotfix_module()
   local ok, result = pcall(require,
     quarto.utils.resolve_path('_modules/hotfix/skylighting-typst-fix.lua'):gsub('%.lua$', ''))
   if not ok then
-    utils.log_warning(EXTENSION_NAME,
+    log.log_warning(EXTENSION_NAME,
       'Failed to load optional skylighting hot-fix: ' .. tostring(result))
     return {}
   end
   if type(result) ~= 'table' then
-    utils.log_warning(EXTENSION_NAME,
+    log.log_warning(EXTENSION_NAME,
       'Skylighting hot-fix did not return a module table.')
     return {}
   end

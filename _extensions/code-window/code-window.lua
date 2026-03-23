@@ -12,7 +12,11 @@
 -- ============================================================================
 
 local EXTENSION_NAME = 'code-window'
-local utils = require(quarto.utils.resolve_path('_modules/utils.lua'):gsub('%.lua$', ''))
+local str = require(quarto.utils.resolve_path('_modules/string.lua'):gsub('%.lua$', ''))
+local log = require(quarto.utils.resolve_path('_modules/logging.lua'):gsub('%.lua$', ''))
+local meta_mod = require(quarto.utils.resolve_path('_modules/metadata.lua'):gsub('%.lua$', ''))
+local pdoc = require(quarto.utils.resolve_path('_modules/pandoc-helpers.lua'):gsub('%.lua$', ''))
+local html_mod = require(quarto.utils.resolve_path('_modules/html.lua'):gsub('%.lua$', ''))
 local code_annotations = nil
 
 -- ============================================================================
@@ -92,7 +96,7 @@ local function read_block_style(block)
   if VALID_STYLES[block_style] then
     return block_style
   end
-  utils.log_warning(EXTENSION_NAME,
+  log.log_warning(EXTENSION_NAME,
     string.format('Unknown block style "%s", using configured default.', block_style))
   return nil
 end
@@ -417,7 +421,7 @@ local function process_html(block)
     'html',
     string.format(
       '<div class="code-with-filename-file"><pre><strong>%s</strong></pre></div>',
-      utils.escape_html(filename)
+      str.escape_html(filename)
     )
   )
 
@@ -450,8 +454,8 @@ end
 
 --- Load configuration and inject CSS/JS dependencies.
 function Meta(meta)
-  CURRENT_FORMAT = utils.get_quarto_format()
-  local opts = utils.get_options({
+  CURRENT_FORMAT = pdoc.get_quarto_format()
+  local opts = meta_mod.get_options({
     extension = EXTENSION_NAME,
     keys = { 'enabled', 'auto-filename', 'style', 'wrapper' },
     meta = meta,
@@ -459,7 +463,7 @@ function Meta(meta)
   })
 
   if not VALID_STYLES[opts['style']] then
-    utils.log_warning(EXTENSION_NAME,
+    log.log_warning(EXTENSION_NAME,
       string.format('Unknown style "%s", falling back to "macos".', opts['style']))
   end
 
@@ -469,12 +473,12 @@ function Meta(meta)
   local annotations_enabled = annot_value ~= 'none' and annot_value ~= 'false'
 
   -- Read hotfix sub-table from extensions.code-window.hotfix.
-  local ext_config = utils.get_extension_config(meta, EXTENSION_NAME)
+  local ext_config = meta_mod.get_extension_config(meta, EXTENSION_NAME)
   local hotfix_meta = ext_config and ext_config['hotfix'] or nil
 
   -- Deprecation check for old flat skylighting-fix key.
   if ext_config and ext_config['skylighting-fix'] ~= nil then
-    utils.log_warning(EXTENSION_NAME,
+    log.log_warning(EXTENSION_NAME,
       '"skylighting-fix" is deprecated. Use "hotfix: { skylighting: true/false }" instead.')
   end
 
@@ -526,12 +530,12 @@ function Meta(meta)
   end
 
   if CURRENT_FORMAT == 'html' and CONFIG.enabled then
-    utils.ensure_html_dependency({
+    html_mod.ensure_html_dependency({
       name = EXTENSION_NAME,
       version = '0.1.0',
       stylesheets = { 'style.css' },
     })
-    utils.ensure_html_dependency({
+    html_mod.ensure_html_dependency({
       name = EXTENSION_NAME .. '-style-init',
       version = '0.1.0',
       head = '<script>' .. make_style_js(CONFIG.style) .. '</script>',
