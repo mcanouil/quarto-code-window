@@ -2,10 +2,6 @@
 
 ## Unreleased
 
-### Refactoring
-
-- refactor: Replace monolithic `utils.lua` with focused modules (`string.lua`, `logging.lua`, `metadata.lua`, `pandoc-helpers.lua`, `html.lua`, `paths.lua`, `colour.lua`).
-
 ### New Features
 
 - feat: add multiple window decoration styles for code blocks (`macos`, `windows`, `default`).
@@ -29,6 +25,7 @@
 - refactor: split Typst function definitions so annotation helpers are only injected when at least one hot-fix is active.
 - refactor: update Typst processing to return block sandwich.
 - refactor: use utility functions for code-window extension.
+- refactor: Replace monolithic `utils.lua` with focused modules (`string.lua`, `logging.lua`, `metadata.lua`, `pandoc-helpers.lua`, `html.lua`, `paths.lua`, `colour.lua`).
 
 ## 0.1.1 (2026-03-01)
 
