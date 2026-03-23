@@ -58,18 +58,30 @@ extensions:
     auto-filename: true
     style: "macos"
     wrapper: "code-window"
-    skylighting-fix: true
+    hotfix:
+      quarto-version: ~
+      code-annotations: true
+      skylighting: true
 ```
 
 ### Options
 
-| Option            | Type    | Default         | Description                                                                         |
-| ----------------- | ------- | --------------- | ----------------------------------------------------------------------------------- |
-| `enabled`         | boolean | `true`          | Enable or disable the code-window filter.                                           |
-| `auto-filename`   | boolean | `true`          | Automatically generate filename labels from the code block language.                |
-| `style`           | string  | `"macos"`       | Window decoration style: `"macos"`, `"windows"`, or `"default"`.                    |
-| `wrapper`         | string  | `"code-window"` | Typst wrapper function name for code-window rendering.                              |
-| `skylighting-fix` | boolean | `true`          | Enable or disable the Skylighting hot-fix for Typst output (block and inline code). |
+| Option          | Type    | Default         | Description                                                          |
+| --------------- | ------- | --------------- | -------------------------------------------------------------------- |
+| `enabled`       | boolean | `true`          | Enable or disable the code-window filter.                            |
+| `auto-filename` | boolean | `true`          | Automatically generate filename labels from the code block language. |
+| `style`         | string  | `"macos"`       | Window decoration style: `"macos"`, `"windows"`, or `"default"`.     |
+| `wrapper`       | string  | `"code-window"` | Typst wrapper function name for code-window rendering.               |
+
+### Hotfix Options
+
+These options are **temporary** and will be removed in a future version (see [Temporary hot-fixes](#temporary-hot-fixes-typst)).
+
+| Option                    | Type    | Default | Description                                                                                |
+| ------------------------- | ------- | ------- | ------------------------------------------------------------------------------------------ |
+| `hotfix.quarto-version`   | string  | _unset_ | Quarto version at or above which all hot-fixes are automatically disabled.                 |
+| `hotfix.code-annotations` | boolean | `true`  | Enable the code-annotations hot-fix for Typst output.                                      |
+| `hotfix.skylighting`      | boolean | `true`  | Enable the Skylighting hot-fix for Typst output (overrides block styling and inline code). |
 
 ### Styles
 
@@ -87,17 +99,32 @@ print("Windows style for this block only")
 ```
 ````
 
-### Typst Skylighting Hot-fix (Integrated)
+### Temporary Hot-fixes (Typst)
 
-`code-window` loads its Typst skylighting hot-fix internally from `_extensions/code-window/skylighting-typst-fix.lua`, so no second filter entry is required.
-Set `skylighting-fix: false` to disable the hot-fix without removing the file.
+The extension includes two temporary hot-fixes for Typst output that compensate for missing Quarto/Pandoc features.
+Both will be removed once [quarto-dev/quarto-cli#14170](https://github.com/quarto-dev/quarto-cli/pull/14170) is released.
+After that, the extension will focus solely on **auto-filename** and **code-window-style** features.
 
-This keeps the hot-fix separated from `code-window.lua` for easy future removal while preserving combined behaviour.
+- **`hotfix.code-annotations`**: processes code annotation markers for Typst, since Quarto does not yet support `code-annotations` in Typst output.
+  The `filename` attribute for code blocks will also become natively supported.
+- **`hotfix.skylighting`**: overrides Pandoc's Skylighting output for Typst to fix block and inline code styling.
+
+Set `hotfix.quarto-version` to automatically disable both hot-fixes once you update Quarto to the version that includes native support:
+
+```yaml
+extensions:
+  code-window:
+    hotfix:
+      quarto-version: "1.10.0"
+```
 
 Future removal playbook:
 
-1. Remove the skylighting loader call in `_extensions/code-window/code-window.lua`.
-2. Delete `_extensions/code-window/skylighting-typst-fix.lua`.
+1. Delete `hotfix` parsing from `code-window.lua` (`HOTFIX_DEFAULTS`, hotfix section in `Meta`).
+2. Remove the `hotfix` section from `_schema.yml`.
+3. Remove the skylighting guard and loader in `main.lua`.
+4. Remove annotation processing from `code-window.lua`.
+5. Delete `_modules/hotfix/` directory entirely.
 
 ## Example
 
