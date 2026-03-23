@@ -9,5 +9,5 @@ authors:
 repository-code: "https://github.com/mcanouil/quarto-code-window"
 url: "https://m.canouil.dev/quarto-code-window/"
 license: "MIT License"
-date-released: "2026-03-03"
-version: 0.2.0
+date-released: "2026-03-23"
+version: 0.3.0

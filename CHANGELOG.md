@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.3.0 (2026-03-23)
+
 ### New Features
 
 - feat: add multiple window decoration styles for code blocks (`macos`, `windows`, `default`).
