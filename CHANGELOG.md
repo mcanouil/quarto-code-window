@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Refactoring
+
+- refactor: Replace monolithic `utils.lua` with focused modules (`string.lua`, `logging.lua`, `metadata.lua`, `pandoc-helpers.lua`, `html.lua`, `paths.lua`, `colour.lua`).
+
 ### New Features
 
 - feat: add multiple window decoration styles for code blocks (`macos`, `windows`, `default`).
