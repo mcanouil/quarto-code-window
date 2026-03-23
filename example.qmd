@@ -9,6 +9,8 @@ filters:
   - at: pre-quarto
     path: code-window
 syntax-highlighting: github-dark
+code-annotations: below
+toc: true
 format:
   html:
     output-file: index
@@ -29,6 +31,8 @@ format-links:
   - revealjs
 ---
 
+{{< pagebreak >}}
+
 ## Explicit Filename
 
 Code blocks with a `filename` attribute display a window header with the filename.
@@ -47,6 +51,8 @@ def fibonacci(n: int) -> int:
 data <- read.csv("data.csv")
 summary(data)
 ```
+
+{{< pagebreak >}}
 
 ## Auto-Generated Filename
 
@@ -72,6 +78,8 @@ summary(data)
 echo "Hello, World!"
 ```
 
+{{< pagebreak >}}
+
 ## Plain Code Block
 
 Code blocks without a language are not affected by the extension.
@@ -81,10 +89,20 @@ This is a plain code block without any language specified.
 No window decoration is applied here.
 ```
 
+{{< pagebreak >}}
+
 ## Disabled Auto-Filename
 
 To disable auto-generated filenames, set `auto-filename: false` in the extension configuration.
 Only code blocks with an explicit `filename` attribute will display window decorations.
+
+```yaml
+extensions:
+  code-window:
+    auto-filename: false
+```
+
+{{< pagebreak >}}
 
 ## Window Styles
 
@@ -116,6 +134,77 @@ Plain filename on the left, no window decorations.
 print("Default style window")
 ```
 
+{{< pagebreak >}}
+
+## Code Annotations
+
+::: {.callout-note}
+Typst code-annotations support and `filename` attribute handling are temporary hot-fixes.
+They will be removed once Quarto natively supports these features (see [quarto-dev/quarto-cli#14170](https://github.com/quarto-dev/quarto-cli/pull/14170)).
+The extension will then focus on **auto-filename** and **code-window-style** features.
+:::
+
+Code annotations work standalone and together with code-window styling.
+
+### Annotations with Explicit Filename
+
+```{.python filename="annotated.py"}
+import pandas as pd # <1>
+
+df = pd.read_csv("data.csv") # <2>
+summary = df.describe() # <3>
+```
+
+1. Import the pandas library.
+2. Load data from a CSV file.
+3. Generate summary statistics.
+
+### Annotations with Auto-Filename
+
+```python
+def greet(name: str) -> str: # <1>
+    return f"Hello, {name}!" # <2>
+
+result = greet("World") # <3>
+```
+
+1. Define a function with type hints.
+2. Use an f-string for interpolation.
+3. Call the function and store the result.
+
+### Annotations Spanning Multiple Lines
+
+A single annotation number can appear on several consecutive lines.
+Only the first occurrence receives a back-label to avoid duplicates.
+
+```{.python filename="pipeline.py"}
+def process(data): # <1>
+    cleaned = clean(data) # <1>
+    validated = validate(cleaned) # <1>
+    result = transform(validated) # <2>
+    return result # <3>
+```
+
+1. Multi-step input preparation (cleaning and validation).
+2. Apply the main transformation.
+3. Return the final result.
+
+### Annotations without Window Chrome
+
+Set `code-window-enabled="false"` on a block to disable window chrome while keeping annotations.
+
+```{.r code-window-enabled="false"}
+library(ggplot2) # <1>
+ggplot(mtcars) + # <2>
+  aes(x = mpg, y = hp) + # <3>
+  geom_point() # <4>
+```
+
+1. Load the ggplot2 package.
+2. Initialise a plot with the mtcars dataset.
+3. Map aesthetics.
+4. Add a point geometry layer.
+
 ### Configuration
 
 Set the global style in the document front matter:
@@ -124,6 +213,10 @@ Set the global style in the document front matter:
 extensions:
   code-window:
     style: "macos"
+    hotfix:
+      quarto-version: ~
+      code-annotations: true
+      skylighting: true
 ```
 
 Override per block with the `code-window-style` attribute:

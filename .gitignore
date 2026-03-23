@@ -6,5 +6,6 @@ docs/_sidebar-api.yml
 docs/api/*.qmd
 *.html
 .quarto/
-
 /.luarc.json
+/example.typ
+/example-typst.pdf

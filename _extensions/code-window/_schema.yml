@@ -18,7 +18,29 @@ options:
     type: string
     default: "code-window"
     description: "Typst wrapper function name for code-window rendering."
-  skylighting-fix:
-    type: boolean
-    default: true
-    description: "Enable or disable the Skylighting hot-fix for Typst output (overrides block styling and adds inline code background)."
+  hotfix:
+    type: object
+    description: "Temporary hot-fixes for Typst output. These will be removed when Quarto natively supports the corresponding features (see quarto-dev/quarto-cli#14170)."
+    properties:
+      quarto-version:
+        type: string
+        description: "Quarto version at or above which all hot-fixes are automatically disabled. Leave unset to use individual toggles."
+      code-annotations:
+        type: boolean
+        default: true
+        description: "Enable the code-annotations hot-fix for Typst output."
+      skylighting:
+        type: boolean
+        default: true
+        description: "Enable the Skylighting hot-fix for Typst output (overrides block styling and adds inline code background)."
+
+attributes:
+  CodeBlock:
+    code-window-enabled:
+      type: boolean
+      default: true
+      description: "Whether to apply window chrome to this specific code block. Set to false to disable. Annotations still render when disabled."
+    code-window-style:
+      type: string
+      enum: ["default", "macos", "windows"]
+      description: "Override the global window decoration style for this specific code block."

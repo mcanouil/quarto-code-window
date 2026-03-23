@@ -2,7 +2,6 @@
 --- @license MIT
 --- @copyright 2026 Mickaël Canouil
 --- @author Mickaël Canouil
---- @version 0.1.0
 --- @brief Code block window decorations with multiple styles
 --- @description Adds window chrome (macOS traffic lights, Windows title bar
 --- buttons, or plain filename) to code blocks in HTML, Reveal.js, and Typst
@@ -14,6 +13,7 @@
 
 local EXTENSION_NAME = 'code-window'
 local utils = require(quarto.utils.resolve_path('_modules/utils.lua'):gsub('%.lua$', ''))
+local code_annotations = nil
 
 -- ============================================================================
 -- DEFAULTS AND STATE
@@ -24,7 +24,8 @@ local utils = require(quarto.utils.resolve_path('_modules/utils.lua'):gsub('%.lu
 --- @field auto_filename boolean Whether to auto-generate filename from language
 --- @field style string Window decoration style ('macos', 'windows', 'default')
 --- @field typst_wrapper string Typst wrapper function name
---- @field skylighting_fix boolean Whether to apply the Skylighting hot-fix for Typst
+--- @field hotfix_code_annotations boolean Whether to apply the code-annotations hot-fix for Typst
+--- @field hotfix_skylighting boolean Whether to apply the Skylighting hot-fix for Typst
 
 local VALID_STYLES = { ['default'] = true, ['macos'] = true, ['windows'] = true }
 
@@ -33,11 +34,17 @@ local DEFAULTS = {
   ['auto-filename'] = 'true',
   ['style'] = 'macos',
   ['wrapper'] = 'code-window',
-  ['skylighting-fix'] = 'true',
+}
+
+local HOTFIX_DEFAULTS = {
+  ['code-annotations'] = true,
+  ['skylighting'] = true,
 }
 
 local CURRENT_FORMAT = nil
 local CONFIG = nil
+local TYPST_BG_COLOUR = nil
+local ANNOTATION_BLOCK_COUNTER = 0
 
 -- ============================================================================
 -- LANGUAGE DETECTION
@@ -94,10 +101,92 @@ end
 -- TYPST FUNCTION DEFINITION
 -- ============================================================================
 
---- Typst function definition for code-window rendering.
---- Injected once at the start of the document body.
-local TYPST_FUNCTION_DEF = [==[
-#let code-window(content, filename: none, is-auto: false, style: "macos") = {
+--- Typst annotation helper functions (state, colour, circled numbers, annotation items).
+--- Only injected when at least one hot-fix is active.
+local TYPST_ANNOTATION_DEF = [==[
+// code-window: annotation state passed to Skylighting via Typst state
+#let _cw-annotations = state("cw-annotations", none)
+
+// Derive a contrasting annotation colour from a background fill.
+// Light backgrounds get dark circles; dark backgrounds get light circles.
+// Uses ITU-R BT.709 luminance coefficients, matching quarto-cli PR #14170.
+#let code-window-annote-colour(bg) = {
+  if type(bg) == color {
+    let comps = bg.components(alpha: false)
+    let lum = if comps.len() == 1 {
+      comps.at(0) / 100%
+    } else {
+      0.2126 * comps.at(0) / 100% + 0.7152 * comps.at(1) / 100% + 0.0722 * comps.at(2) / 100%
+    }
+    if lum < 0.5 { luma(200) } else { luma(60) }
+  } else {
+    luma(60)
+  }
+}
+
+#let code-window-circled-number(n, bg-colour: none) = {
+  let c = if bg-colour != none { code-window-annote-colour(bg-colour) } else { luma(120) }
+  box(baseline: 20%, circle(
+    radius: 4.5pt,
+    stroke: 0.5pt + c,
+  )[#set text(size: 5.5pt, fill: c); #align(center + horizon, str(n))])
+}
+
+#let code-window-annotation-item(block-id, n, content) = {
+  let lbl-prefix = "cw-" + str(block-id) + "-"
+  [#block(above: 0.4em, below: 0.4em)[
+    #link(label(lbl-prefix + "line-" + str(n)))[
+      #code-window-circled-number(n)
+    ]
+    #h(0.4em)
+    #content
+  ] #label(lbl-prefix + "item-" + str(n))]
+}
+
+#let code-window-annotated-content(content, annotations: (:), bg-colour: none, block-id: 0) = {
+  if annotations.len() > 0 {
+    _cw-annotations.update((annotations: annotations, bg-colour: bg-colour, block-id: block-id))
+    content
+    _cw-annotations.update(none)
+  } else {
+    content
+  }
+}
+]==]
+
+--- Typst code-window body content template.
+--- Uses annotation wrapper when hot-fixes are active, plain content otherwise.
+local TYPST_CONTENT_WITH_ANNOTATIONS = [==[
+        code-window-annotated-content(
+          content,
+          annotations: annotations,
+          bg-colour: bg-colour,
+          block-id: block-id,
+        )
+]==]
+
+local TYPST_CONTENT_PLAIN = [==[
+        content
+]==]
+
+--- Build the complete Typst code-window function definition.
+--- @param has_hotfixes boolean Whether at least one hot-fix is active
+--- @return string Typst function definition(s)
+local function build_typst_function_def(has_hotfixes)
+  local content_block = has_hotfixes
+    and TYPST_CONTENT_WITH_ANNOTATIONS
+    or TYPST_CONTENT_PLAIN
+
+  local fn_def = string.format([==[
+#let code-window(
+  content,
+  filename: none,
+  is-auto: false,
+  style: "macos",
+  annotations: (:),
+  bg-colour: none,
+  block-id: 0,
+) = {
   let border-colour = luma(200)
   let surface-fill = luma(237)
   let muted-colour = luma(120)
@@ -130,13 +219,13 @@ local TYPST_FUNCTION_DEF = [==[
         dir: ltr,
         spacing: 0.8em,
         // Minimise (horizontal line)
-        box(width: 0.6em, height: 0.6em, align(horizon, line(length: 100%))),
+        box(width: 0.6em, height: 0.6em, align(horizon, line(length: 100%%))),
         // Maximise (square)
         box(width: 0.6em, height: 0.6em, stroke: 1pt + muted-colour),
         // Close (x)
         box(width: 0.6em, height: 0.6em, {
-          place(line(start: (0%, 0%), end: (100%, 100%)))
-          place(line(start: (100%, 0%), end: (0%, 100%)))
+          place(line(start: (0%%, 0%%), end: (100%%, 100%%)))
+          place(line(start: (100%%, 0%%), end: (0%%, 100%%)))
         }),
       )
     },
@@ -166,13 +255,13 @@ local TYPST_FUNCTION_DEF = [==[
   }
 
   block(
-    width: 100%,
+    width: 100%%,
     stroke: 1pt + border-colour,
     radius: 8pt,
     clip: true,
     {
       block(
-        width: 100%,
+        width: 100%%,
         fill: surface-fill,
         inset: (x: 1em, y: 0.6em),
         below: 0pt,
@@ -186,7 +275,7 @@ local TYPST_FUNCTION_DEF = [==[
       // show raw overrides the document-level raw block styling (fill, radius).
       {
         set block(
-          width: 100%,
+          width: 100%%,
           inset: 8pt,
           radius: 0pt,
           stroke: none,
@@ -195,59 +284,83 @@ local TYPST_FUNCTION_DEF = [==[
         )
         show raw.where(block: true): set block(
           fill: none,
-          width: 100%,
+          width: 100%%,
           radius: 0pt,
           stroke: none,
           above: 0pt,
           below: 0pt,
         )
-        content
-      }
+%s      }
     },
   )
 }
-]==]
+]==], content_block)
+
+  if has_hotfixes then
+    return TYPST_ANNOTATION_DEF .. fn_def
+  end
+  return fn_def
+end
 
 -- ============================================================================
 -- TYPST PROCESSING
 -- ============================================================================
 
---- Process CodeBlock for Typst format.
---- Returns a block sandwich: opening RawBlock, the original CodeBlock,
---- and a closing RawBlock. Pandoc's own Typst writer handles Skylighting
---- with the document's theme automatically.
---- @param block pandoc.CodeBlock Code block element
---- @return pandoc.List|pandoc.CodeBlock Block list or original block
-local function process_typst(block)
-  local block_style = read_block_style(block)
-  local explicit_filename = block.attributes['filename']
-  local filename = explicit_filename
-  local is_auto = false
+--- Get the next unique block ID for annotation linking.
+--- @return integer
+local function next_block_id()
+  ANNOTATION_BLOCK_COUNTER = ANNOTATION_BLOCK_COUNTER + 1
+  return ANNOTATION_BLOCK_COUNTER
+end
 
-  if not filename or filename == '' then
-    if CONFIG.auto_filename and block.classes and #block.classes > 0 then
-      filename = block.classes[1]
-      is_auto = true
-    end
+--- Build the Typst bg-colour parameter string.
+--- @return string Empty string or ', bg-colour: rgb("...")'
+local function typst_bg_colour_param()
+  if not TYPST_BG_COLOUR then
+    return ''
+  end
+  return string.format(', bg-colour: rgb("%s")', TYPST_BG_COLOUR)
+end
+
+--- Build a code-window opening RawBlock for Typst.
+--- @param filename string
+--- @param is_auto boolean
+--- @param style string
+--- @param annotations table|nil
+--- @param block_id integer
+--- @return pandoc.RawBlock
+local function typst_code_window_open(filename, is_auto, style, annotations, block_id)
+  local annot_param = ''
+  if annotations and next(annotations) then
+    annot_param = string.format(', annotations: %s, block-id: %d',
+      code_annotations.annotations_to_typst_dict(annotations), block_id)
   end
 
-  if not filename then
-    return block
-  end
+  return pandoc.RawBlock('typst', string.format(
+    '#%s(filename: "%s", is-auto: %s, style: "%s"%s%s)[',
+    CONFIG.typst_wrapper,
+    filename:gsub('"', '\\"'),
+    is_auto and 'true' or 'false',
+    style,
+    annot_param,
+    typst_bg_colour_param()
+  ))
+end
 
-  local effective_style = block_style or CONFIG.style
-
-  return {
-    pandoc.RawBlock('typst', string.format(
-      '#%s(filename: "%s", is-auto: %s, style: "%s")[',
-      CONFIG.typst_wrapper,
-      filename:gsub('"', '\\"'),
-      is_auto and 'true' or 'false',
-      effective_style
-    )),
-    block,
-    pandoc.RawBlock('typst', ']'),
-  }
+--- Build a standalone annotation wrapper for non-windowed blocks.
+--- @param annotations table
+--- @param block_id integer
+--- @return pandoc.RawBlock opening, pandoc.RawBlock closing
+local function typst_annotation_wrapper(annotations, block_id)
+  local open = pandoc.RawBlock('typst', string.format(
+    '#%s-annotated-content(annotations: %s, block-id: %d%s)[',
+    CONFIG.typst_wrapper,
+    code_annotations.annotations_to_typst_dict(annotations),
+    block_id,
+    typst_bg_colour_param()
+  ))
+  local close = pandoc.RawBlock('typst', ']')
+  return open, close
 end
 
 -- ============================================================================
@@ -261,6 +374,15 @@ end
 --- @param block pandoc.CodeBlock Code block element
 --- @return pandoc.Div|pandoc.CodeBlock Wrapped block or original
 local function process_html(block)
+  -- Per-block opt-out: code-window-enabled="false" skips window chrome.
+  local block_enabled = block.attributes['code-window-enabled']
+  if block_enabled then
+    block.attributes['code-window-enabled'] = nil
+  end
+  if block_enabled == 'false' then
+    return block
+  end
+
   local block_style = read_block_style(block)
   local explicit_filename = block.attributes['filename']
 
@@ -295,7 +417,7 @@ local function process_html(block)
     'html',
     string.format(
       '<div class="code-with-filename-file"><pre><strong>%s</strong></pre></div>',
-      filename
+      utils.escape_html(filename)
     )
   )
 
@@ -331,7 +453,7 @@ function Meta(meta)
   CURRENT_FORMAT = utils.get_quarto_format()
   local opts = utils.get_options({
     extension = EXTENSION_NAME,
-    keys = { 'enabled', 'auto-filename', 'style', 'wrapper', 'skylighting-fix' },
+    keys = { 'enabled', 'auto-filename', 'style', 'wrapper' },
     meta = meta,
     defaults = DEFAULTS,
   })
@@ -341,13 +463,67 @@ function Meta(meta)
       string.format('Unknown style "%s", falling back to "macos".', opts['style']))
   end
 
+  -- Read code-annotations metadata (Quarto standard option).
+  local annot_meta = meta['code-annotations']
+  local annot_value = annot_meta and pandoc.utils.stringify(annot_meta) or ''
+  local annotations_enabled = annot_value ~= 'none' and annot_value ~= 'false'
+
+  -- Read hotfix sub-table from extensions.code-window.hotfix.
+  local ext_config = utils.get_extension_config(meta, EXTENSION_NAME)
+  local hotfix_meta = ext_config and ext_config['hotfix'] or nil
+
+  -- Deprecation check for old flat skylighting-fix key.
+  if ext_config and ext_config['skylighting-fix'] ~= nil then
+    utils.log_warning(EXTENSION_NAME,
+      '"skylighting-fix" is deprecated. Use "hotfix: { skylighting: true/false }" instead.')
+  end
+
+  -- Parse hotfix options with version-based auto-disable.
+  local hotfix = {}
+  local hotfix_version_override = false
+  if hotfix_meta then
+    local version_str = hotfix_meta['quarto-version']
+    if version_str then
+      version_str = pandoc.utils.stringify(version_str)
+      if version_str ~= '' then
+        local ok, threshold = pcall(pandoc.types.Version, version_str)
+        if ok and quarto.version >= threshold then
+          hotfix_version_override = true
+        end
+      end
+    end
+  end
+
+  for key, default in pairs(HOTFIX_DEFAULTS) do
+    if hotfix_version_override then
+      hotfix[key] = false
+    elseif hotfix_meta and hotfix_meta[key] ~= nil then
+      hotfix[key] = pandoc.utils.stringify(hotfix_meta[key]) == 'true'
+    else
+      hotfix[key] = default
+    end
+  end
+
   CONFIG = {
     enabled = opts['enabled'] == 'true',
     auto_filename = opts['auto-filename'] == 'true',
     style = VALID_STYLES[opts['style']] and opts['style'] or 'macos',
     typst_wrapper = opts['wrapper'],
-    skylighting_fix = opts['skylighting-fix'] == 'true',
+    hotfix_code_annotations = hotfix['code-annotations'],
+    hotfix_skylighting = hotfix['skylighting'],
+    code_annotations = annotations_enabled,
   }
+
+  -- Cache syntax highlighting background colour for Typst contrast-aware annotations.
+  if CURRENT_FORMAT == 'typst' then
+    local hm = PANDOC_WRITER_OPTIONS and PANDOC_WRITER_OPTIONS.highlight_method
+    if hm then
+      local bg = hm['background-color']
+      if bg and type(bg) == 'string' then
+        TYPST_BG_COLOUR = bg
+      end
+    end
+  end
 
   if CURRENT_FORMAT == 'html' and CONFIG.enabled then
     utils.ensure_html_dependency({
@@ -365,16 +541,11 @@ function Meta(meta)
   return meta
 end
 
---- Process CodeBlock elements.
---- Typst: wraps blocks with RawBlock sandwich.
---- HTML/Reveal.js: wraps blocks with auto-filename Divs.
+--- Process CodeBlock elements for HTML/Reveal.js only.
+--- Typst processing is handled by the Blocks filter.
 function CodeBlock(block)
   if not CURRENT_FORMAT or not CONFIG or not CONFIG.enabled then
     return block
-  end
-
-  if CURRENT_FORMAT == 'typst' then
-    return process_typst(block)
   end
 
   if CURRENT_FORMAT == 'html' then
@@ -384,11 +555,178 @@ function CodeBlock(block)
   return block
 end
 
---- Inject Typst function definition at the start of the document.
+-- ============================================================================
+-- TYPST BLOCKS FILTER
+-- ============================================================================
+
+--- Determine whether a CodeBlock should get code-window chrome.
+--- @param block pandoc.CodeBlock
+--- @return string|nil filename
+--- @return boolean is_auto
+--- @return string|nil block_style
+--- @return boolean window_opted_out True when code-window-enabled="false" was set
+local function resolve_window_params(block)
+  -- Per-block opt-out: code-window-enabled="false" skips window chrome.
+  local block_enabled = block.attributes['code-window-enabled']
+  if block_enabled then
+    block.attributes['code-window-enabled'] = nil
+  end
+  if block_enabled == 'false' then
+    return nil, false, nil, true
+  end
+
+  local block_style = read_block_style(block)
+  local explicit_filename = block.attributes['filename']
+  local filename = explicit_filename
+  local is_auto = false
+
+  if not filename or filename == '' then
+    if CONFIG.auto_filename and block.classes and #block.classes > 0 then
+      filename = block.classes[1]
+      is_auto = true
+    end
+  end
+
+  return filename, is_auto, block_style, false
+end
+
+--- Process a single CodeBlock for Typst, returning replacement blocks.
+--- Handles both code-window wrapping and standalone annotation rendering.
+--- @param block pandoc.CodeBlock
+--- @param next_block pandoc.Block|nil The block following this CodeBlock
+--- @return pandoc.List replacement_blocks Blocks to splice in
+--- @return boolean consumed_next Whether the next block was consumed
+--- @return integer|nil annotation_block_id Block ID if annotations were found (for parent propagation)
+local function process_typst_block(block, next_block)
+  local filename, is_auto, block_style, window_opted_out = resolve_window_params(block)
+  local has_window = filename and filename ~= ''
+  local effective_style = block_style or CONFIG.style
+
+  -- Resolve annotations if enabled and the code-annotations hot-fix is active.
+  local annotations = nil
+  local should_handle_annotations = CONFIG.code_annotations and CONFIG.hotfix_code_annotations
+
+  if should_handle_annotations then
+    local cleaned_text
+    cleaned_text, annotations = code_annotations.resolve_annotations(block)
+    if annotations then
+      block.text = cleaned_text
+    end
+  end
+
+  -- Strip filename attribute to prevent Quarto's DecoratedCodeBlock (PR #14170).
+  if has_window and block.attributes['filename'] then
+    block.attributes['filename'] = nil
+  end
+
+  local has_annotations = annotations and next(annotations)
+  local consumed_next = false
+  local result = {}
+  local block_id = has_annotations and next_block_id() or 0
+
+  if has_window and has_annotations then
+    table.insert(result, typst_code_window_open(
+      filename, is_auto, effective_style, annotations, block_id))
+    table.insert(result, block)
+    table.insert(result, pandoc.RawBlock('typst', ']'))
+  elseif has_window then
+    table.insert(result, typst_code_window_open(
+      filename, is_auto, effective_style, nil, 0))
+    table.insert(result, block)
+    table.insert(result, pandoc.RawBlock('typst', ']'))
+  elseif has_annotations then
+    local open, close = typst_annotation_wrapper(annotations, block_id)
+    table.insert(result, open)
+    table.insert(result, block)
+    table.insert(result, close)
+  else
+    table.insert(result, block)
+  end
+
+  -- Consume the following OrderedList if it is an annotation list.
+  if has_annotations
+      and next_block
+      and code_annotations.is_annotation_ordered_list(next_block) then
+    local wrapper_prefix = CONFIG.typst_wrapper
+    local annot_blocks = code_annotations.ordered_list_to_typst_blocks(
+      next_block, wrapper_prefix, block_id)
+    for _, ab in ipairs(annot_blocks) do
+      table.insert(result, ab)
+    end
+    consumed_next = true
+  end
+
+  local returned_block_id = has_annotations and (not consumed_next) and block_id or nil
+  return result, consumed_next, returned_block_id
+end
+
+--- Process a flat list of blocks for Typst, handling CodeBlocks and their
+--- following OrderedLists. Called recursively on Div contents.
+--- @param blocks pandoc.Blocks|pandoc.List
+--- @return pandoc.Blocks processed_blocks
+--- @return integer|nil pending_annotation_block_id Block ID if the last block had annotations (for parent consumption)
+local function process_typst_blocks(blocks)
+  local new_blocks = {}
+  local pending_annot_block_id = nil
+  local i = 1
+  while i <= #blocks do
+    local blk = blocks[i]
+
+    if blk.t == 'CodeBlock' then
+      local next_blk = blocks[i + 1]
+      local replacement, consumed_next, annot_id = process_typst_block(blk, next_blk)
+      for _, rb in ipairs(replacement) do
+        table.insert(new_blocks, rb)
+      end
+      if consumed_next then
+        pending_annot_block_id = nil
+        i = i + 2
+      else
+        pending_annot_block_id = annot_id
+        i = i + 1
+      end
+    elseif blk.t == 'Div' then
+      local processed, inner_pending = process_typst_blocks(blk.content)
+      blk.content = processed
+      table.insert(new_blocks, blk)
+      -- If the Div's last processed block had pending annotations,
+      -- check if the next sibling is an OrderedList to consume.
+      if inner_pending then
+        local next_blk = blocks[i + 1]
+        if next_blk and code_annotations.is_annotation_ordered_list(next_blk) then
+          local annot_blocks = code_annotations.ordered_list_to_typst_blocks(
+            next_blk, CONFIG.typst_wrapper, inner_pending)
+          for _, ab in ipairs(annot_blocks) do
+            table.insert(new_blocks, ab)
+          end
+          pending_annot_block_id = nil
+          i = i + 2
+        else
+          pending_annot_block_id = inner_pending
+          i = i + 1
+        end
+      else
+        pending_annot_block_id = nil
+        i = i + 1
+      end
+    else
+      pending_annot_block_id = nil
+      table.insert(new_blocks, blk)
+      i = i + 1
+    end
+  end
+  return pandoc.Blocks(new_blocks), pending_annot_block_id
+end
+
+--- Inject Typst function definition and process code blocks for Typst format.
+--- Runs as a Pandoc filter to have full control over the document tree.
 function Pandoc(doc)
   if CURRENT_FORMAT ~= 'typst' or not CONFIG or not CONFIG.enabled then
     return doc
   end
+
+  -- Process code blocks and annotations throughout the document tree.
+  doc.blocks = process_typst_blocks(doc.blocks)
 
   -- Guard: check if the function definition is already present.
   local fn_pattern = '#let ' .. CONFIG.typst_wrapper
@@ -399,55 +737,35 @@ function Pandoc(doc)
     end
   end
 
-  local fn_def = TYPST_FUNCTION_DEF
+  local has_hotfixes = CONFIG.hotfix_code_annotations or CONFIG.hotfix_skylighting
+  local fn_def = build_typst_function_def(has_hotfixes)
   if CONFIG.typst_wrapper ~= 'code-window' then
-    fn_def = fn_def:gsub('#let code%-window', '#let ' .. CONFIG.typst_wrapper)
+    fn_def = fn_def:gsub('code%-window%-annote%-colour', CONFIG.typst_wrapper .. '-annote-colour')
+    fn_def = fn_def:gsub('code%-window%-circled%-number', CONFIG.typst_wrapper .. '-circled-number')
+    fn_def = fn_def:gsub('code%-window%-annotation%-item', CONFIG.typst_wrapper .. '-annotation-item')
+    fn_def = fn_def:gsub('code%-window%-annotated%-content', CONFIG.typst_wrapper .. '-annotated-content')
+    fn_def = fn_def:gsub('#let code%-window%(', '#let ' .. CONFIG.typst_wrapper .. '(')
   end
   table.insert(doc.blocks, 1, pandoc.RawBlock('typst', fn_def))
 
   return doc
 end
 
---- Load optional skylighting hot-fix subfilters from sibling file.
---- Kept as a single integration seam for easy future removal.
---- @return table List of subfilter tables to append
-local function load_skylighting_hotfix_filters()
-  local ok, result = pcall(require,
-    quarto.utils.resolve_path('skylighting-typst-fix.lua'):gsub('%.lua$', ''))
-  if not ok then
-    utils.log_warning(EXTENSION_NAME,
-      'Failed to load optional skylighting hot-fix: ' .. tostring(result))
-    return {}
-  end
-  if type(result) ~= 'table' then
-    utils.log_warning(EXTENSION_NAME,
-      'Skylighting hot-fix did not return a filter list.')
-    return {}
-  end
-  return result
+-- ============================================================================
+-- MODULE EXPORTS
+-- ============================================================================
+
+--- Inject the code-annotations module dependency.
+--- Called by main.lua before any filter handlers run.
+--- @param mod table The code-annotations module
+local function set_code_annotations(mod)
+  code_annotations = mod
 end
 
--- ============================================================================
--- FILTER EXPORTS
--- ============================================================================
-
-local filters = {
-  { Meta = Meta },
-  { Pandoc = Pandoc },
-  { CodeBlock = CodeBlock },
+return {
+  set_code_annotations = set_code_annotations,
+  Meta = Meta,
+  Pandoc = Pandoc,
+  CodeBlock = CodeBlock,
+  CONFIG = function() return CONFIG end,
 }
-
-for _, subfilter in ipairs(load_skylighting_hotfix_filters()) do
-  local wrapped = {}
-  for element_type, handler in pairs(subfilter) do
-    wrapped[element_type] = function(...)
-      if not CONFIG or not CONFIG.skylighting_fix then
-        return nil
-      end
-      return handler(...)
-    end
-  end
-  table.insert(filters, wrapped)
-end
-
-return filters
