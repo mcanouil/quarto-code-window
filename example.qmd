@@ -10,6 +10,7 @@ filters:
     path: code-window
 syntax-highlighting: github-dark
 code-annotations: below
+toc: true
 format:
   html:
     output-file: index
@@ -30,6 +31,8 @@ format-links:
   - revealjs
 ---
 
+{{< pagebreak >}}
+
 ## Explicit Filename
 
 Code blocks with a `filename` attribute display a window header with the filename.
@@ -48,6 +51,8 @@ def fibonacci(n: int) -> int:
 data <- read.csv("data.csv")
 summary(data)
 ```
+
+{{< pagebreak >}}
 
 ## Auto-Generated Filename
 
@@ -73,6 +78,8 @@ summary(data)
 echo "Hello, World!"
 ```
 
+{{< pagebreak >}}
+
 ## Plain Code Block
 
 Code blocks without a language are not affected by the extension.
@@ -82,10 +89,20 @@ This is a plain code block without any language specified.
 No window decoration is applied here.
 ```
 
+{{< pagebreak >}}
+
 ## Disabled Auto-Filename
 
 To disable auto-generated filenames, set `auto-filename: false` in the extension configuration.
 Only code blocks with an explicit `filename` attribute will display window decorations.
+
+```yaml
+extensions:
+  code-window:
+    auto-filename: false
+```
+
+{{< pagebreak >}}
 
 ## Window Styles
 
@@ -116,6 +133,8 @@ Plain filename on the left, no window decorations.
 ```{.python filename="default-example.py" code-window-style="default"}
 print("Default style window")
 ```
+
+{{< pagebreak >}}
 
 ## Code Annotations
 
