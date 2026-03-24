@@ -138,13 +138,19 @@ local TYPST_ANNOTATION_DEF = [==[
 
 #let code-window-annotation-item(block-id, n, content) = {
   let lbl-prefix = "cw-" + str(block-id) + "-"
-  [#block(above: 0.4em, below: 0.4em)[
-    #link(label(lbl-prefix + "line-" + str(n)))[
-      #code-window-circled-number(n)
-    ]
-    #h(0.4em)
-    #content
-  ] #label(lbl-prefix + "item-" + str(n))]
+  context {
+    let target = label(lbl-prefix + "line-" + str(n))
+    let has-target = query(target).len() > 0
+    [#block(above: 0.4em, below: 0.4em)[
+      #if has-target {
+        link(target)[#code-window-circled-number(n)]
+      } else {
+        code-window-circled-number(n)
+      }
+      #h(0.4em)
+      #content
+    ] #label(lbl-prefix + "item-" + str(n))]
+  }
 }
 
 #let code-window-annotated-content(content, annotations: (:), bg-colour: none, block-id: 0) = {

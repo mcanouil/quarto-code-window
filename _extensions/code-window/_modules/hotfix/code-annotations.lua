@@ -101,10 +101,7 @@ local function resolve_annotations(block)
   end
 
   local lang = block.classes[1]:lower()
-  local comment = LANG_COMMENT_CHARS[lang]
-  if not comment then
-    return block.text, nil
-  end
+  local comment = LANG_COMMENT_CHARS[lang] or '#'
 
   local escaped_comment = escape_pattern(comment)
   local pattern = '^(.-)%s*' .. escaped_comment .. '%s*<%s*(%d+)%s*>%s*$'
