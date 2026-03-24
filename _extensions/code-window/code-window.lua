@@ -51,34 +51,6 @@ local TYPST_BG_COLOUR = nil
 local ANNOTATION_BLOCK_COUNTER = 0
 
 -- ============================================================================
--- LANGUAGE DETECTION
--- ============================================================================
-
---- Cache of language detection results (lang -> boolean).
-local known_language_cache = {}
-
---- Check if a language is recognised by Pandoc's syntax highlighter.
---- Renders a test CodeBlock to HTML and checks for the sourceCode class.
---- Results are cached to avoid repeated rendering.
---- @param lang string Language identifier
---- @return boolean True if the language is known to Pandoc
-local function is_known_language(lang)
-  if not lang or lang == '' then
-    return false
-  end
-
-  if known_language_cache[lang] ~= nil then
-    return known_language_cache[lang]
-  end
-
-  local test_block = pandoc.CodeBlock('x', pandoc.Attr('', { lang }))
-  local html = pandoc.write(pandoc.Pandoc({ test_block }), 'html')
-  local is_known = html:find('sourceCode') ~= nil
-  known_language_cache[lang] = is_known
-  return is_known
-end
-
--- ============================================================================
 -- BLOCK-LEVEL STYLE OVERRIDE
 -- ============================================================================
 
@@ -410,18 +382,14 @@ local function process_html(block)
     return block
   end
 
-  if not block.classes or #block.classes == 0 then
+  local no_auto = block.attributes['code-window-no-auto-filename']
+  if no_auto then
+    block.attributes['code-window-no-auto-filename'] = nil
     return block
   end
 
   local filename = block.classes[1]
   local effective_style = block_style or CONFIG.style
-
-  -- Normalise unknown languages to 'default' so Pandoc renders them
-  -- with sourceCode wrapper, copy button, and consistent styling.
-  if not is_known_language(filename) then
-    block.classes[1] = 'default'
-  end
 
   local filename_header = pandoc.RawBlock(
     'html',
@@ -591,7 +559,10 @@ local function resolve_window_params(block)
   local is_auto = false
 
   if not filename or filename == '' then
-    if CONFIG.auto_filename and block.classes and #block.classes > 0 then
+    local no_auto = block.attributes['code-window-no-auto-filename']
+    if no_auto then
+      block.attributes['code-window-no-auto-filename'] = nil
+    elseif CONFIG.auto_filename and block.classes and #block.classes > 0 then
       filename = block.classes[1]
       is_auto = true
     end

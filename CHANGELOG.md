@@ -4,8 +4,13 @@
 
 ### Bug Fixes
 
+- fix: normalise code blocks with no or unknown language class to `default` for consistent styling across all formats.
 - fix: default to `#` comment symbol for unknown code block languages (`default`, `txt`, etc.) in annotation detection.
 - fix: support code annotations with `syntax-highlighting: idiomatic` (native Typst highlighting) via a `show raw.line` rule.
+
+### Refactoring
+
+- refactor: extract language normalisation into dedicated `_modules/language.lua` module.
 
 ## 0.3.0 (2026-03-23)
 

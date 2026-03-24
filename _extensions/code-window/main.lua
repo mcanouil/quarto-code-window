@@ -12,6 +12,9 @@ local log = require(quarto.utils.resolve_path('_modules/logging.lua'):gsub('%.lu
 -- LOAD SUBMODULES
 -- ============================================================================
 
+local language = require(
+  quarto.utils.resolve_path('_modules/language.lua'):gsub('%.lua$', ''))
+
 local code_annotations = require(
   quarto.utils.resolve_path('_modules/hotfix/code-annotations.lua'):gsub('%.lua$', ''))
 
@@ -47,6 +50,7 @@ end
 -- ============================================================================
 
 local filters = {
+  { CodeBlock = language.CodeBlock },
   { Meta = code_window.Meta },
   { Pandoc = code_window.Pandoc },
   { CodeBlock = code_window.CodeBlock },
