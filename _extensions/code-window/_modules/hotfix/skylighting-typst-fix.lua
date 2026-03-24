@@ -219,10 +219,6 @@ function Pandoc(doc)
 end
 
 --- Check if a Div is a Quarto title scaffold (inline-only content).
---- Quarto wraps theorem/example titles in __quarto_custom_scaffold Divs
---- containing a single Plain or Para block. Converting Code to RawInline
---- inside these Divs causes the raw Typst markup to be stringified as
---- literal text in the title parameter.
 --- @param div pandoc.Div
 --- @return boolean
 local function is_title_scaffold(div)
@@ -237,25 +233,23 @@ local function is_title_scaffold(div)
   return true
 end
 
---- Convert Code to plain Typst backtick code inside title scaffolds.
---- Prevents both the code-window box wrapping AND Pandoc's Skylighting
---- from generating Typst function calls that get stringified by Quarto.
---- @param el pandoc.Code
---- @return pandoc.RawInline
-local function neutralise_title_code(el)
-  return pandoc.RawInline('typst', '`' .. el.text .. '`')
-end
-
 --- Walk the document tree and convert inline Code to RawInline with
---- background styling, skipping title scaffolds where the conversion
---- would produce raw Typst markup that gets stringified by Quarto.
+--- background styling. Code in title scaffolds is converted to plain
+--- Typst backtick code to avoid Skylighting tokens with inner quotes
+--- that would break the string parameter Quarto generates.
+--- The typst-title-fix post-quarto filter then evaluates the string
+--- as markup so the backtick code renders with proper inline styling.
 local function process_inline_code(doc)
   if not quarto.doc.is_format('typst') then
     return doc
   end
 
   local code_filter = { Code = function(el) return process_typst_inline(el) end }
-  local title_filter = { Code = neutralise_title_code }
+  local title_filter = {
+    Code = function(el)
+      return pandoc.RawInline('typst', '`' .. el.text .. '`')
+    end,
+  }
 
   local function walk_blocks(blocks)
     local new_blocks = {}
