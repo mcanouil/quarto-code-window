@@ -6,4 +6,5 @@ contributes:
   filters:
     - at: pre-quarto
       path: main.lua
-    - path: _modules/hotfix/typst-title-fix.lua
+    - at: post-quarto
+      path: _modules/hotfix/typst-title-fix.lua

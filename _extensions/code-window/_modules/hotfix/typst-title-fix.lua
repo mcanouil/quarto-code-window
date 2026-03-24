@@ -4,32 +4,33 @@
 --- @author Mickaël Canouil
 --- @brief Hot-fix for Quarto rendering theorem titles as string parameters.
 --- Quarto renders custom type titles as title: "..." (string mode) which
---- stringifies any Typst markup. This filter injects a Typst show rule
---- that evaluates string titles as markup so inline code and other
---- formatting render correctly in theorem/example titles.
+--- stringifies any Typst markup. This post-quarto filter scans the Typst
+--- preamble for make-frame definitions, then injects wrapper functions that
+--- evaluate string titles as Typst markup via eval(mode: "markup").
 
---- Typst code that overrides simple-theorem-render to evaluate string
---- titles as Typst markup. Injected after the template definitions so
---- the override replaces the default. The make-frame calls are then
---- re-created with the fixed render function.
-local TYPST_TITLE_FIX = [==[
-// code-window: hot-fix for Quarto rendering theorem titles as strings.
-// Redefine simple-theorem-render to evaluate string titles as Typst markup.
-// This produces title: [...] semantics even though Quarto emits title: "...".
-#let simple-theorem-render(prefix: none, title: "", full-title: auto, body) = {
-  if full-title != "" and full-title != auto and full-title != none {
-    let rendered-title = if type(full-title) == str {
-      eval(full-title, mode: "markup")
-    } else {
-      full-title
-    }
-    strong[#rendered-title.]
-    h(0.5em)
+--- Typst wrapper template. %s is replaced with the function name.
+local WRAPPER_TEMPLATE = [==[
+#let _cw-orig-%s = %s
+#let %s(title: none, ..args) = {
+  let t = if title != none and type(title) == str {
+    eval(title, mode: "markup")
+  } else {
+    title
   }
-  emph(body)
-  parbreak()
+  _cw-orig-%s(title: t, ..args)
 }
 ]==]
+
+--- Build Typst code that wraps each theorem function to eval string titles.
+--- @param func_names table List of function names to wrap
+--- @return string Typst code
+local function build_wrappers(func_names)
+  local parts = { '// code-window: hot-fix for Quarto rendering theorem titles as strings.' }
+  for _, name in ipairs(func_names) do
+    table.insert(parts, string.format(WRAPPER_TEMPLATE, name, name, name, name))
+  end
+  return table.concat(parts, '\n')
+end
 
 return {
   {
@@ -64,15 +65,30 @@ return {
         end
       end
 
-      -- Insert at the end of the preamble (before the first non-RawBlock).
-      local insert_pos = 1
-      for idx, blk in ipairs(doc.blocks) do
-        if blk.t ~= 'RawBlock' then
-          insert_pos = idx
-          break
+      -- Scan preamble RawBlocks for make-frame definitions to find function names.
+      -- Pattern: #let (xxx-counter, xxx-box, xxx, show-xxx) = make-frame(
+      local func_names = {}
+      for _, blk in ipairs(doc.blocks) do
+        if blk.t == 'RawBlock' and blk.format == 'typst' then
+          for name in blk.text:gmatch('#let %([%w%-]+%-counter, [%w%-]+%-box, ([%w%-]+), show%-[%w%-]+%) = make%-frame%(') do
+            table.insert(func_names, name)
+          end
         end
       end
-      table.insert(doc.blocks, insert_pos, pandoc.RawBlock('typst', TYPST_TITLE_FIX))
+
+      if #func_names == 0 then
+        return doc
+      end
+
+      -- Insert wrappers after the last make-frame definition.
+      local insert_pos = 1
+      for idx, blk in ipairs(doc.blocks) do
+        if blk.t == 'RawBlock' and blk.format == 'typst'
+            and blk.text:find('make%-frame%(') then
+          insert_pos = idx + 1
+        end
+      end
+      table.insert(doc.blocks, insert_pos, pandoc.RawBlock('typst', build_wrappers(func_names)))
       return doc
     end,
   },
