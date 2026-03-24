@@ -4,9 +4,22 @@
 --- @author Mickaël Canouil
 --- @brief Hot-fix for Quarto rendering theorem titles as string parameters.
 --- Quarto renders custom type titles as title: "..." (string mode) which
---- stringifies any Typst markup. This post-quarto filter scans the Typst
---- preamble for make-frame definitions, then injects wrapper functions that
+--- stringifies any Typst markup. This post-quarto filter scans the source
+--- for cross-reference div IDs, then injects Typst wrapper functions that
 --- evaluate string titles as Typst markup via eval(mode: "markup").
+
+--- Mapping from Quarto cross-reference prefix to Typst function name.
+local PREFIX_TO_FUNC = {
+  thm = 'theorem',
+  lem = 'lemma',
+  cor = 'corollary',
+  prp = 'proposition',
+  cnj = 'conjecture',
+  def = 'definition',
+  exm = 'example',
+  exr = 'exercise',
+  sol = 'solution',
+}
 
 --- Typst wrapper template. %s is replaced with the function name.
 local WRAPPER_TEMPLATE = [==[
@@ -18,8 +31,7 @@ local WRAPPER_TEMPLATE = [==[
     title
   }
   _cw-orig-%s(title: t, ..args)
-}
-]==]
+}]==]
 
 --- Build Typst code that wraps each theorem function to eval string titles.
 --- @param func_names table List of function names to wrap
@@ -32,28 +44,32 @@ local function build_wrappers(func_names)
   return table.concat(parts, '\n')
 end
 
+--- Scan source files for cross-reference div IDs and return the
+--- corresponding Typst function names.
+--- @return table List of function names
+local function detect_theorem_types()
+  local func_names = {}
+  local seen = {}
+  for _, input_file in ipairs(PANDOC_STATE.input_files) do
+    local f = io.open(input_file, 'r')
+    if f then
+      local source = f:read('*a')
+      f:close()
+      for prefix in source:gmatch('::: *{#(%w+)%-') do
+        if PREFIX_TO_FUNC[prefix] and not seen[prefix] then
+          table.insert(func_names, PREFIX_TO_FUNC[prefix])
+          seen[prefix] = true
+        end
+      end
+    end
+  end
+  return func_names
+end
+
 return {
   {
     Pandoc = function(doc)
       if not quarto.doc.is_format('typst') then
-        return doc
-      end
-
-      -- Only inject if there are __quarto_custom Theorem Divs in the document.
-      local has_theorems = false
-      local function check_blocks(blocks)
-        for _, blk in ipairs(blocks) do
-          if blk.t == 'Div' and blk.attributes['__quarto_custom_type'] == 'Theorem' then
-            has_theorems = true
-            return
-          end
-          if blk.t == 'Div' then
-            check_blocks(blk.content)
-          end
-        end
-      end
-      check_blocks(doc.blocks)
-      if not has_theorems then
         return doc
       end
 
@@ -65,30 +81,16 @@ return {
         end
       end
 
-      -- Scan preamble RawBlocks for make-frame definitions to find function names.
-      -- Pattern: #let (xxx-counter, xxx-box, xxx, show-xxx) = make-frame(
-      local func_names = {}
-      for _, blk in ipairs(doc.blocks) do
-        if blk.t == 'RawBlock' and blk.format == 'typst' then
-          for name in blk.text:gmatch('#let %([%w%-]+%-counter, [%w%-]+%-box, ([%w%-]+), show%-[%w%-]+%) = make%-frame%(') do
-            table.insert(func_names, name)
-          end
-        end
-      end
-
+      local func_names = detect_theorem_types()
       if #func_names == 0 then
         return doc
       end
 
-      -- Insert wrappers after the last make-frame definition.
-      local insert_pos = 1
-      for idx, blk in ipairs(doc.blocks) do
-        if blk.t == 'RawBlock' and blk.format == 'typst'
-            and blk.text:find('make%-frame%(') then
-          insert_pos = idx + 1
-        end
-      end
-      table.insert(doc.blocks, insert_pos, pandoc.RawBlock('typst', build_wrappers(func_names)))
+      -- Insert at the start of doc.blocks. RawBlocks placed here appear
+      -- after the Typst template preamble (where make-frame defines the
+      -- theorem functions), so the wrappers can reference them.
+      table.insert(doc.blocks, 1, pandoc.RawBlock('typst', build_wrappers(func_names)))
+
       return doc
     end,
   },
