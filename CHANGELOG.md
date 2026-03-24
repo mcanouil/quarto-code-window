@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Bug Fixes
+
+- fix: default to `#` comment symbol for unknown code block languages (`default`, `txt`, etc.) in annotation detection.
+- fix: support code annotations with `syntax-highlighting: idiomatic` (native Typst highlighting) via a `show raw.line` rule.
+
 ## 0.3.0 (2026-03-23)
 
 ### New Features

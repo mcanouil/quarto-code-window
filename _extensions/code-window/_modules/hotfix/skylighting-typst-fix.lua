@@ -102,6 +102,56 @@ local function build_skylighting_override()
 ]==], bg, circled, circled)
 end
 
+--- Build a show raw.line rule for annotation support in idiomatic mode.
+--- When Skylighting is not available (idiomatic/native Typst highlighting),
+--- this rule reads _cw-annotations state and adds circled annotation markers
+--- to annotated lines, mirroring what the Skylighting override does.
+--- @return string Typst show rule definition
+local function build_raw_line_annotation_rule()
+  local circled = _wrapper_prefix .. '-circled-number'
+  return string.format([==[
+// idiomatic-mode annotation support for raw blocks
+#show raw.line: it => {
+  context {
+    let annot-data = _cw-annotations.get()
+    if annot-data == none {
+      it
+    } else {
+      let annot-num = annot-data.annotations.at(str(it.number), default: none)
+      if annot-num == none {
+        it
+      } else {
+        let lbl-prefix = "cw-" + str(annot-data.block-id) + "-"
+        let first-line = calc.min(
+          ..annot-data.annotations.pairs()
+            .filter(p => p.at(1) == annot-num)
+            .map(p => int(p.at(0)))
+        )
+        if it.number == first-line {
+          box(width: 100%%)[
+            #it
+            #h(1fr)
+            #link(label(lbl-prefix + "item-" + str(annot-num)))[
+              #%s(annot-num, bg-colour: annot-data.bg-colour)
+            ]
+            #label(lbl-prefix + "line-" + str(annot-num))
+          ]
+        } else {
+          box(width: 100%%)[
+            #it
+            #h(1fr)
+            #link(label(lbl-prefix + "item-" + str(annot-num)))[
+              #%s(annot-num, bg-colour: annot-data.bg-colour)
+            ]
+          ]
+        }
+      }
+    }
+  }
+}
+]==], circled, circled)
+end
+
 --- Process inline Code for Typst format.
 --- Renders the Code element through Pandoc's Typst writer to get syntax-
 --- highlighted output, then wraps it in a box with the theme background colour.
@@ -142,20 +192,19 @@ function Pandoc(doc)
     return doc
   end
 
-  -- Guard: skip if override already injected.
+  -- Guard: skip if override or annotation rule already injected.
   for _, blk in ipairs(doc.blocks) do
     if blk.t == 'RawBlock' and blk.format == 'typst'
-        and blk.text:find('// skylighting-typst-fix override', 1, true) then
+        and (blk.text:find('// skylighting-typst-fix override', 1, true)
+          or blk.text:find('// idiomatic-mode annotation support', 1, true)) then
       return doc
     end
   end
 
   local override = build_skylighting_override()
-  if not override then
-    return doc
-  end
+  local rule = override or build_raw_line_annotation_rule()
 
-  -- Insert after the code-window function definitions so Skylighting can
+  -- Insert after the code-window function definitions so the override/rule can
   -- reference _cw-annotations and the wrapper-prefixed circled-number function.
   local insert_pos = 1
   for idx, blk in ipairs(doc.blocks) do
@@ -165,7 +214,7 @@ function Pandoc(doc)
       break
     end
   end
-  table.insert(doc.blocks, insert_pos, pandoc.RawBlock('typst', override))
+  table.insert(doc.blocks, insert_pos, pandoc.RawBlock('typst', rule))
   return doc
 end
 
