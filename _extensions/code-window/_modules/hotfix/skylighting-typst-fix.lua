@@ -218,18 +218,70 @@ function Pandoc(doc)
   return doc
 end
 
---- Wrap inline Code elements with a background box in Typst output.
-function Code(el)
-  if not quarto.doc.is_format('typst') then
-    return el
+--- Check if a Div is a Quarto title scaffold (inline-only content).
+--- Quarto wraps theorem/example titles in __quarto_custom_scaffold Divs
+--- containing a single Plain or Para block. Converting Code to RawInline
+--- inside these Divs causes the raw Typst markup to be stringified as
+--- literal text in the title parameter.
+--- @param div pandoc.Div
+--- @return boolean
+local function is_title_scaffold(div)
+  if div.attributes['__quarto_custom_scaffold'] ~= 'true' then
+    return false
   end
-  return process_typst_inline(el)
+  for _, child in ipairs(div.content) do
+    if child.t ~= 'Plain' and child.t ~= 'Para' then
+      return false
+    end
+  end
+  return true
+end
+
+--- Convert Code to plain Typst backtick code inside title scaffolds.
+--- Prevents both the code-window box wrapping AND Pandoc's Skylighting
+--- from generating Typst function calls that get stringified by Quarto.
+--- @param el pandoc.Code
+--- @return pandoc.RawInline
+local function neutralise_title_code(el)
+  return pandoc.RawInline('typst', '`' .. el.text .. '`')
+end
+
+--- Walk the document tree and convert inline Code to RawInline with
+--- background styling, skipping title scaffolds where the conversion
+--- would produce raw Typst markup that gets stringified by Quarto.
+local function process_inline_code(doc)
+  if not quarto.doc.is_format('typst') then
+    return doc
+  end
+
+  local code_filter = { Code = function(el) return process_typst_inline(el) end }
+  local title_filter = { Code = neutralise_title_code }
+
+  local function walk_blocks(blocks)
+    local new_blocks = {}
+    for _, blk in ipairs(blocks) do
+      if blk.t == 'Div' then
+        if is_title_scaffold(blk) then
+          table.insert(new_blocks, blk:walk(title_filter))
+        else
+          blk.content = walk_blocks(blk.content)
+          table.insert(new_blocks, blk)
+        end
+      else
+        table.insert(new_blocks, blk:walk(code_filter))
+      end
+    end
+    return pandoc.Blocks(new_blocks)
+  end
+
+  doc.blocks = walk_blocks(doc.blocks)
+  return doc
 end
 
 return {
   set_wrapper = set_wrapper,
   filters = {
     { Pandoc = Pandoc },
-    { Code = Code },
+    { Pandoc = process_inline_code },
   },
 }
