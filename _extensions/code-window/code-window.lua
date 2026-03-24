@@ -595,7 +595,8 @@ local function process_typst_block(block, next_block)
     end
   end
 
-  -- Strip filename attribute to prevent Quarto's DecoratedCodeBlock (PR #14170).
+  -- Strip filename attribute so the CodeBlock renders as plain code inside the
+  -- code-window wrapper (the DecoratedCodeBlock Div is already unwrapped above).
   if has_window and block.attributes['filename'] then
     block.attributes['filename'] = nil
   end
@@ -641,6 +642,29 @@ local function process_typst_block(block, next_block)
   return result, consumed_next, returned_block_id
 end
 
+--- Check if a Div is Quarto's DecoratedCodeBlock wrapper.
+--- @param div pandoc.Div
+--- @return boolean
+local function is_decorated_codeblock(div)
+  return div.attributes['__quarto_custom_type'] == 'DecoratedCodeBlock'
+end
+
+--- Extract the CodeBlock from a DecoratedCodeBlock Div.
+--- Structure: DecoratedCodeBlock Div > scaffold Div > CodeBlock
+--- @param div pandoc.Div
+--- @return pandoc.CodeBlock|nil
+local function extract_codeblock(div)
+  for _, child in ipairs(div.content) do
+    if child.t == 'CodeBlock' then
+      return child
+    elseif child.t == 'Div' then
+      local found = extract_codeblock(child)
+      if found then return found end
+    end
+  end
+  return nil
+end
+
 --- Process a flat list of blocks for Typst, handling CodeBlocks and their
 --- following OrderedLists. Called recursively on Div contents.
 --- @param blocks pandoc.Blocks|pandoc.List
@@ -664,6 +688,31 @@ local function process_typst_blocks(blocks)
         i = i + 2
       else
         pending_annot_block_id = annot_id
+        i = i + 1
+      end
+    elseif blk.t == 'Div' and is_decorated_codeblock(blk) then
+      -- Unwrap Quarto's DecoratedCodeBlock to prevent double filename wrapping.
+      -- Process the inner CodeBlock directly, replacing the entire Div.
+      local inner_block = extract_codeblock(blk)
+      if inner_block then
+        local next_blk = blocks[i + 1]
+        local replacement, consumed_next, annot_id = process_typst_block(inner_block, next_blk)
+        for _, rb in ipairs(replacement) do
+          table.insert(new_blocks, rb)
+        end
+        if consumed_next then
+          pending_annot_block_id = nil
+          i = i + 2
+        else
+          pending_annot_block_id = annot_id
+          i = i + 1
+        end
+      else
+        -- Fallback: keep the Div as-is if no CodeBlock found.
+        local processed, inner_pending = process_typst_blocks(blk.content)
+        blk.content = processed
+        table.insert(new_blocks, blk)
+        pending_annot_block_id = inner_pending
         i = i + 1
       end
     elseif blk.t == 'Div' then
