@@ -36,9 +36,6 @@ end
 function M.CodeBlock(block)
   if not block.classes or #block.classes == 0 then
     block.classes:insert('default')
-    if block.attributes['filename'] == 'default' then
-      block.attributes['filename'] = nil
-    end
     block.attributes['code-window-no-auto-filename'] = 'true'
     return block
   end

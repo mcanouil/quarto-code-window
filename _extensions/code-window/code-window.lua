@@ -367,6 +367,10 @@ local function process_html(block)
 
   local block_style = read_block_style(block)
   local explicit_filename = block.attributes['filename']
+  local no_auto = block.attributes['code-window-no-auto-filename']
+  if no_auto then
+    block.attributes['code-window-no-auto-filename'] = nil
+  end
 
   if explicit_filename and explicit_filename ~= '' then
     -- Let Quarto create the .code-with-filename wrapper.
@@ -378,13 +382,7 @@ local function process_html(block)
     return block
   end
 
-  if not CONFIG.auto_filename then
-    return block
-  end
-
-  local no_auto = block.attributes['code-window-no-auto-filename']
-  if no_auto then
-    block.attributes['code-window-no-auto-filename'] = nil
+  if not CONFIG.auto_filename or no_auto then
     return block
   end
 
@@ -523,6 +521,7 @@ end
 --- Typst processing is handled by the Blocks filter.
 function CodeBlock(block)
   if not CURRENT_FORMAT or not CONFIG or not CONFIG.enabled then
+    block.attributes['code-window-no-auto-filename'] = nil
     return block
   end
 
@@ -557,12 +556,13 @@ local function resolve_window_params(block)
   local explicit_filename = block.attributes['filename']
   local filename = explicit_filename
   local is_auto = false
+  local no_auto = block.attributes['code-window-no-auto-filename']
+  if no_auto then
+    block.attributes['code-window-no-auto-filename'] = nil
+  end
 
-  if not filename or filename == '' then
-    local no_auto = block.attributes['code-window-no-auto-filename']
-    if no_auto then
-      block.attributes['code-window-no-auto-filename'] = nil
-    elseif CONFIG.auto_filename and block.classes and #block.classes > 0 then
+  if (not filename or filename == '') and not no_auto then
+    if CONFIG.auto_filename and block.classes and #block.classes > 0 then
       filename = block.classes[1]
       is_auto = true
     end
