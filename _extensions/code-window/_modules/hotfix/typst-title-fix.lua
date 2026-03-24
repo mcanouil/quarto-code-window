@@ -73,6 +73,15 @@ return {
         return doc
       end
 
+      -- Check if the hotfix is enabled via metadata set by the pre-quarto filter.
+      local hotfix_meta = doc.meta['_code-window-hotfix']
+      if hotfix_meta then
+        local enabled = hotfix_meta['typst-title']
+        if enabled and pandoc.utils.stringify(enabled) == 'false' then
+          return doc
+        end
+      end
+
       -- Guard: skip if already injected.
       for _, blk in ipairs(doc.blocks) do
         if blk.t == 'RawBlock' and blk.format == 'typst'

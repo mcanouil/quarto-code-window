@@ -10,6 +10,10 @@
 - fix: default to `#` comment symbol for unknown code block languages (`default`, `txt`, etc.) in annotation detection.
 - fix: support code annotations with `syntax-highlighting: idiomatic` (native Typst highlighting) via a `show raw.line` rule.
 
+### New Features
+
+- feat: support per-hotfix `quarto-version` thresholds for independent auto-disable.
+
 ### Refactoring
 
 - refactor: extract language normalisation into dedicated `_modules/language.lua` module.
