@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.4.0 (2026-03-29)
+
 ### Bug Fixes
 
 - fix: unwrap Quarto's `DecoratedCodeBlock` Div to prevent double filename wrapping in Typst output.
