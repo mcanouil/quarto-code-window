@@ -504,7 +504,7 @@ function Meta(meta)
     meta['_code-window-hotfix'] = pandoc.MetaMap({})
   end
   meta['_code-window-hotfix']['typst-title'] = pandoc.MetaString(
-    hotfix['typst-title'] and 'true' or 'false'
+    CONFIG.enabled and hotfix['typst-title'] and 'true' or 'false'
   )
 
   -- Cache syntax highlighting background colour for Typst contrast-aware annotations.
