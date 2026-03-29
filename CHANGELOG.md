@@ -5,9 +5,14 @@
 ### Bug Fixes
 
 - fix: unwrap Quarto's `DecoratedCodeBlock` Div to prevent double filename wrapping in Typst output.
+- fix: evaluate theorem/example title strings as Typst markup so inline code renders correctly instead of being stringified.
 - fix: normalise code blocks with no or unknown language class to `default` for consistent styling across all formats.
 - fix: default to `#` comment symbol for unknown code block languages (`default`, `txt`, etc.) in annotation detection.
 - fix: support code annotations with `syntax-highlighting: idiomatic` (native Typst highlighting) via a `show raw.line` rule.
+
+### New Features
+
+- feat: replace global `hotfix.quarto-version` with per-hotfix thresholds for independent auto-disable.
 
 ### Refactoring
 

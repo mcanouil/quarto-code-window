@@ -218,18 +218,66 @@ function Pandoc(doc)
   return doc
 end
 
---- Wrap inline Code elements with a background box in Typst output.
-function Code(el)
-  if not quarto.doc.is_format('typst') then
-    return el
+--- Check if a Div is a Quarto title scaffold (inline-only content).
+--- NOTE: relies on Quarto's internal `__quarto_custom_scaffold` attribute,
+--- which is not part of the public API and may change without notice.
+--- @param div pandoc.Div
+--- @return boolean
+local function is_title_scaffold(div)
+  if div.attributes['__quarto_custom_scaffold'] ~= 'true' then
+    return false
   end
-  return process_typst_inline(el)
+  for _, child in ipairs(div.content) do
+    if child.t ~= 'Plain' and child.t ~= 'Para' then
+      return false
+    end
+  end
+  return true
+end
+
+--- Walk the document tree and convert inline Code to RawInline with
+--- background styling. Code in title scaffolds is converted to plain
+--- Typst backtick code to avoid Skylighting tokens with inner quotes
+--- that would break the string parameter Quarto generates.
+--- The typst-title-fix post-quarto filter then evaluates the string
+--- as markup so the backtick code renders with proper inline styling.
+local function process_inline_code(doc)
+  if not quarto.doc.is_format('typst') then
+    return doc
+  end
+
+  local code_filter = { Code = function(el) return process_typst_inline(el) end }
+  local title_filter = {
+    Code = function(el)
+      return pandoc.RawInline('typst', '`' .. el.text .. '`')
+    end,
+  }
+
+  local function walk_blocks(blocks)
+    local new_blocks = {}
+    for _, blk in ipairs(blocks) do
+      if blk.t == 'Div' then
+        if is_title_scaffold(blk) then
+          table.insert(new_blocks, blk:walk(title_filter))
+        else
+          blk.content = walk_blocks(blk.content)
+          table.insert(new_blocks, blk)
+        end
+      else
+        table.insert(new_blocks, blk:walk(code_filter))
+      end
+    end
+    return pandoc.Blocks(new_blocks)
+  end
+
+  doc.blocks = walk_blocks(doc.blocks)
+  return doc
 end
 
 return {
   set_wrapper = set_wrapper,
   filters = {
     { Pandoc = Pandoc },
-    { Code = Code },
+    { Pandoc = process_inline_code },
   },
 }

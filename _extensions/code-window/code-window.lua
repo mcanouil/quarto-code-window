@@ -43,6 +43,7 @@ local DEFAULTS = {
 local HOTFIX_DEFAULTS = {
   ['code-annotations'] = true,
   ['skylighting'] = true,
+  ['typst-title'] = true,
 }
 
 local CURRENT_FORMAT = nil
@@ -454,27 +455,33 @@ function Meta(meta)
       '"skylighting-fix" is deprecated. Use "hotfix: { skylighting: true/false }" instead.')
   end
 
-  -- Parse hotfix options with version-based auto-disable.
+  -- Parse hotfix options with per-hotfix version-based auto-disable.
+  -- Each hotfix value can be:
+  --   boolean/string: true/false to enable/disable
+  --   map: { enabled: true/false, quarto-version: "x.y.z" }
   local hotfix = {}
-  local hotfix_version_override = false
-  if hotfix_meta then
-    local version_str = hotfix_meta['quarto-version']
-    if version_str then
-      version_str = pandoc.utils.stringify(version_str)
-      if version_str ~= '' then
-        local ok, threshold = pcall(pandoc.types.Version, version_str)
-        if ok and quarto.version >= threshold then
-          hotfix_version_override = true
+  for key, default in pairs(HOTFIX_DEFAULTS) do
+    local entry = hotfix_meta and hotfix_meta[key]
+    if entry ~= nil and pandoc.utils.type(entry) == 'table' then
+      -- Map form: { enabled: bool, quarto-version: "x.y.z" }
+      local enabled = true
+      if entry['enabled'] ~= nil then
+        enabled = pandoc.utils.stringify(entry['enabled']) == 'true'
+      end
+      local ver = entry['quarto-version']
+      if ver then
+        ver = pandoc.utils.stringify(ver)
+        if ver ~= '' then
+          local ok, threshold = pcall(pandoc.types.Version, ver)
+          if ok and quarto.version >= threshold then
+            enabled = false
+          end
         end
       end
-    end
-  end
-
-  for key, default in pairs(HOTFIX_DEFAULTS) do
-    if hotfix_version_override then
-      hotfix[key] = false
-    elseif hotfix_meta and hotfix_meta[key] ~= nil then
-      hotfix[key] = pandoc.utils.stringify(hotfix_meta[key]) == 'true'
+      hotfix[key] = enabled
+    elseif entry ~= nil then
+      -- Simple boolean/string form
+      hotfix[key] = pandoc.utils.stringify(entry) == 'true'
     else
       hotfix[key] = default
     end
@@ -487,8 +494,18 @@ function Meta(meta)
     typst_wrapper = opts['wrapper'],
     hotfix_code_annotations = hotfix['code-annotations'],
     hotfix_skylighting = hotfix['skylighting'],
+    hotfix_typst_title = hotfix['typst-title'],
     code_annotations = annotations_enabled,
   }
+
+  -- Store hotfix state in metadata so the post-quarto typst-title-fix filter
+  -- can read it (it runs as a separate filter and has no access to CONFIG).
+  if not meta['_code-window-hotfix'] then
+    meta['_code-window-hotfix'] = pandoc.MetaMap({})
+  end
+  meta['_code-window-hotfix']['typst-title'] = pandoc.MetaString(
+    CONFIG.enabled and hotfix['typst-title'] and 'true' or 'false'
+  )
 
   -- Cache syntax highlighting background colour for Typst contrast-aware annotations.
   if CURRENT_FORMAT == 'typst' then
