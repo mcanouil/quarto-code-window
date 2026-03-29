@@ -43,6 +43,9 @@ local function build_skylighting_override()
   let has-gutter = start + sourcelines.len() > 999
 
   context {
+    let _page-bg = _cw-page-bg()
+    let _fg = _cw-fg(_page-bg)
+    let _border-colour = color.mix((_fg, 15%%), (_page-bg, 85%%))
     let annot-data = _cw-annotations.get()
     let blocks = []
     let lnum = start - 1
@@ -94,7 +97,7 @@ local function build_skylighting_override()
       width: 100%%,
       inset: 8pt,
       radius: 2pt,
-      stroke: 0.5pt + luma(200),
+      stroke: 0.5pt + _border-colour,
       blocks,
     )
   }
@@ -159,7 +162,7 @@ end
 --- @return pandoc.RawInline|pandoc.Code Transformed or original element
 local function process_typst_inline(el)
   local hm = PANDOC_WRITER_OPTIONS and PANDOC_WRITER_OPTIONS.highlight_method
-  local bg_fill = 'luma(230)'
+  local bg_fill = nil
   local write_opts = nil
 
   if hm then
@@ -176,11 +179,18 @@ local function process_typst_inline(el)
   rendered = rendered:gsub('%s+$', '')
   if rendered == '' then return el end
 
-  local typst_code = string.format(
-    '#box(fill: %s, inset: (x: 3pt, y: 0pt), outset: (y: 3pt), radius: 2pt, stroke: none)[%s]',
-    bg_fill,
-    rendered
-  )
+  local typst_code
+  if bg_fill then
+    typst_code = string.format(
+      '#box(fill: %s, inset: (x: 3pt, y: 0pt), outset: (y: 3pt), radius: 2pt, stroke: none)[%s]',
+      bg_fill, rendered)
+  else
+    typst_code = string.format(
+      '#context { let _bg = _cw-page-bg(); let _f = _cw-fg(_bg); '
+      .. 'box(fill: color.mix((_f, 10%%), (_bg, 90%%)), '
+      .. 'inset: (x: 3pt, y: 0pt), outset: (y: 3pt), radius: 2pt, stroke: none)[%s] }',
+      rendered)
+  end
 
   return pandoc.RawInline('typst', typst_code)
 end
