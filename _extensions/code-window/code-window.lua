@@ -78,6 +78,27 @@ end
 -- TYPST FUNCTION DEFINITION
 -- ============================================================================
 
+--- Typst colour helpers for adaptive theme support.
+--- Always injected so the code-window function can derive border, surface,
+--- and muted colours from the page background at render time.
+local TYPST_COLOUR_HELPERS = [==[
+// code-window: adaptive colour helpers (derive UI tones from page background)
+#let _cw-page-bg() = {
+  let f = page.fill
+  if type(f) == color { f } else { luma(255) }
+}
+
+#let _cw-fg(bg) = {
+  let comps = bg.components(alpha: false)
+  let lum = if comps.len() == 1 {
+    comps.at(0) / 100%
+  } else {
+    0.2126 * comps.at(0) / 100% + 0.7152 * comps.at(1) / 100% + 0.0722 * comps.at(2) / 100%
+  }
+  if lum < 0.5 { luma(255) } else { luma(0) }
+}
+]==]
+
 --- Typst annotation helper functions (state, colour, circled numbers, annotation items).
 --- Only injected when at least one hot-fix is active.
 local TYPST_ANNOTATION_DEF = [==[
@@ -157,8 +178,8 @@ local TYPST_CONTENT_PLAIN = [==[
 --- @return string Typst function definition(s)
 local function build_typst_function_def(has_hotfixes)
   local content_block = has_hotfixes
-    and TYPST_CONTENT_WITH_ANNOTATIONS
-    or TYPST_CONTENT_PLAIN
+      and TYPST_CONTENT_WITH_ANNOTATIONS
+      or TYPST_CONTENT_PLAIN
 
   local fn_def = string.format([==[
 #let code-window(
@@ -170,9 +191,12 @@ local function build_typst_function_def(has_hotfixes)
   bg-colour: none,
   block-id: 0,
 ) = {
-  let border-colour = luma(200)
-  let surface-fill = luma(237)
-  let muted-colour = luma(120)
+  context {
+  let page-bg = _cw-page-bg()
+  let fg = _cw-fg(page-bg)
+  let border-colour = color.mix((fg, 15%%), (page-bg, 85%%))
+  let surface-fill = color.mix((fg, 5%%), (page-bg, 95%%))
+  let muted-colour = color.mix((fg, 50%%), (page-bg, 50%%))
 
   let filename-label = if filename != none {
     text(
@@ -276,13 +300,15 @@ local function build_typst_function_def(has_hotfixes)
 %s      }
     },
   )
+  }
 }
 ]==], content_block)
 
+  local result = TYPST_COLOUR_HELPERS
   if has_hotfixes then
-    return TYPST_ANNOTATION_DEF .. fn_def
+    result = result .. TYPST_ANNOTATION_DEF
   end
-  return fn_def
+  return result .. fn_def
 end
 
 -- ============================================================================
