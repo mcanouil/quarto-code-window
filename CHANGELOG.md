@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.0 (2026-03-29)
+
 ### New Features
 
 - feat: derive Typst window chrome colours from page background for dark theme support.
