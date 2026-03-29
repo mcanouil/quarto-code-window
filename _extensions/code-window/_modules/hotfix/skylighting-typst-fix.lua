@@ -219,6 +219,8 @@ function Pandoc(doc)
 end
 
 --- Check if a Div is a Quarto title scaffold (inline-only content).
+--- NOTE: relies on Quarto's internal `__quarto_custom_scaffold` attribute,
+--- which is not part of the public API and may change without notice.
 --- @param div pandoc.Div
 --- @return boolean
 local function is_title_scaffold(div)

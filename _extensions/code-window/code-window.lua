@@ -459,22 +459,7 @@ function Meta(meta)
   -- Each hotfix value can be:
   --   boolean/string: true/false to enable/disable
   --   map: { enabled: true/false, quarto-version: "x.y.z" }
-  -- A global quarto-version key is also supported as a fallback.
   local hotfix = {}
-  local global_version_disabled = false
-  if hotfix_meta then
-    local version_str = hotfix_meta['quarto-version']
-    if version_str then
-      version_str = pandoc.utils.stringify(version_str)
-      if version_str ~= '' then
-        local ok, threshold = pcall(pandoc.types.Version, version_str)
-        if ok and quarto.version >= threshold then
-          global_version_disabled = true
-        end
-      end
-    end
-  end
-
   for key, default in pairs(HOTFIX_DEFAULTS) do
     local entry = hotfix_meta and hotfix_meta[key]
     if entry ~= nil and pandoc.utils.type(entry) == 'table' then
@@ -497,8 +482,6 @@ function Meta(meta)
     elseif entry ~= nil then
       -- Simple boolean/string form
       hotfix[key] = pandoc.utils.stringify(entry) == 'true'
-    elseif global_version_disabled then
-      hotfix[key] = false
     else
       hotfix[key] = default
     end

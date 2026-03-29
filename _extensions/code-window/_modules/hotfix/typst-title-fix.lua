@@ -46,6 +46,8 @@ end
 
 --- Scan source files for cross-reference div IDs and return the
 --- corresponding Typst function names.
+--- NOTE: uses raw-text pattern matching on source files, so it will not
+--- detect divs inside `include` shortcodes or other indirect sources.
 --- @return table List of function names
 local function detect_theorem_types()
   local func_names = {}
@@ -98,6 +100,8 @@ return {
       -- Insert at the start of doc.blocks. RawBlocks placed here appear
       -- after the Typst template preamble (where make-frame defines the
       -- theorem functions), so the wrappers can reference them.
+      -- This relies on Quarto emitting the template preamble before
+      -- doc.blocks; if that ordering changes the wrappers will break.
       table.insert(doc.blocks, 1, pandoc.RawBlock('typst', build_wrappers(func_names)))
 
       return doc

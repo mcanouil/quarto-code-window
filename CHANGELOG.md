@@ -12,7 +12,7 @@
 
 ### New Features
 
-- feat: support per-hotfix `quarto-version` thresholds for independent auto-disable.
+- feat: replace global `hotfix.quarto-version` with per-hotfix thresholds for independent auto-disable.
 
 ### Refactoring
 

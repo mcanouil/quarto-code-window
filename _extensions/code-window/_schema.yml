@@ -22,17 +22,39 @@ options:
     type: object
     description: "Temporary hot-fixes for Typst output. These will be removed when Quarto natively supports the corresponding features (see quarto-dev/quarto-cli#14170)."
     properties:
-      quarto-version:
-        type: string
-        description: "Quarto version at or above which all hot-fixes are automatically disabled. Leave unset to use individual toggles."
       code-annotations:
-        type: boolean
+        type: [boolean, object]
         default: true
-        description: "Enable the code-annotations hot-fix for Typst output."
+        description: "Enable the code-annotations hot-fix for Typst output. Use a boolean or a map with 'enabled' and 'quarto-version' keys."
+        properties:
+          enabled:
+            type: boolean
+            description: "Explicitly enable or disable this hot-fix."
+          quarto-version:
+            type: string
+            description: "Quarto version at or above which this hot-fix is automatically disabled."
       skylighting:
-        type: boolean
+        type: [boolean, object]
         default: true
-        description: "Enable the Skylighting hot-fix for Typst output (overrides block styling and adds inline code background)."
+        description: "Enable the Skylighting hot-fix for Typst output (overrides block styling and adds inline code background). Use a boolean or a map with 'enabled' and 'quarto-version' keys."
+        properties:
+          enabled:
+            type: boolean
+            description: "Explicitly enable or disable this hot-fix."
+          quarto-version:
+            type: string
+            description: "Quarto version at or above which this hot-fix is automatically disabled."
+      typst-title:
+        type: [boolean, object]
+        default: true
+        description: "Enable the Typst title hot-fix (evaluates theorem title strings as markup). Use a boolean or a map with 'enabled' and 'quarto-version' keys."
+        properties:
+          enabled:
+            type: boolean
+            description: "Explicitly enable or disable this hot-fix."
+          quarto-version:
+            type: string
+            description: "Quarto version at or above which this hot-fix is automatically disabled."
 
 attributes:
   CodeBlock:
