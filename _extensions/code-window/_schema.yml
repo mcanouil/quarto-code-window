@@ -62,6 +62,10 @@ attributes:
       type: boolean
       default: true
       description: "Whether to apply window chrome to this specific code block. Set to false to disable. Annotations still render when disabled."
+    code-window-no-auto-filename:
+      type: boolean
+      default: false
+      description: "Suppress the auto-generated filename for this specific code block without changing the global setting."
     code-window-style:
       type: string
       enum: ["default", "macos", "windows"]
