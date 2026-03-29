@@ -91,9 +91,15 @@ Each hotfix value can be a simple boolean or a map with `enabled` and `quarto-ve
 - **`"windows"`**: Minimise, maximise, and close buttons on the right, filename on the left.
 - **`"default"`**: Plain filename on the left, no window decorations.
 
-### Block-Level Style Override
+### Block-Level Attributes
 
-Override the style for a single code block using the `code-window-style` attribute:
+Override the style or disable features for a single code block:
+
+| Attribute                       | Type    | Default | Description                                                            |
+| ------------------------------- | ------- | ------- | ---------------------------------------------------------------------- |
+| `code-window-style`             | string  |         | Override the global style for this block: `"macos"`, `"windows"`, or `"default"`. |
+| `code-window-enabled`           | boolean | `true`  | Set to `false` to disable window chrome while keeping annotations.     |
+| `code-window-no-auto-filename`  | boolean | `false` | Suppress the auto-generated filename for this block.                   |
 
 ````markdown
 ```{.python filename="example.py" code-window-style="windows"}
