@@ -55,8 +55,9 @@ local function detect_theorem_types()
   for _, input_file in ipairs(PANDOC_STATE.input_files) do
     local f = io.open(input_file, 'r')
     if f then
-      local source = f:read('*a')
+      local ok, source = pcall(f.read, f, '*a')
       f:close()
+      if not ok then source = '' end
       for prefix in source:gmatch('::: *{#(%w+)%-') do
         if PREFIX_TO_FUNC[prefix] and not seen[prefix] then
           table.insert(func_names, PREFIX_TO_FUNC[prefix])

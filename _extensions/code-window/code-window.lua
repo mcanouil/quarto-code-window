@@ -501,7 +501,7 @@ function Meta(meta)
   -- Store hotfix state in metadata so the post-quarto typst-title-fix filter
   -- can read it (it runs as a separate filter and has no access to CONFIG).
   if not meta['_code-window-hotfix'] then
-    meta['_code-window-hotfix'] = {}
+    meta['_code-window-hotfix'] = pandoc.MetaMap({})
   end
   meta['_code-window-hotfix']['typst-title'] = pandoc.MetaString(
     hotfix['typst-title'] and 'true' or 'false'
