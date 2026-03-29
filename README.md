@@ -112,28 +112,17 @@ After that, the extension will focus solely on **auto-filename** and **code-wind
 - **`hotfix.skylighting`**: overrides Pandoc's Skylighting output for Typst to fix block and inline code styling.
 - **`hotfix.typst-title`**: evaluates theorem title strings as Typst markup so that inline formatting (e.g., code) renders correctly.
 
-Each hotfix can specify its own `quarto-version` threshold, since upstream fixes may land in different Quarto releases:
+Each hotfix accepts either a boolean or a map with `enabled` and `quarto-version` keys for per-hotfix version thresholds (upstream fixes may land in different Quarto releases):
 
 ```yaml
 extensions:
   code-window:
     hotfix:
-      code-annotations:
-        quarto-version: "1.10.0"
-      skylighting:
-        quarto-version: "1.11.0"
-      typst-title:
-        quarto-version: "1.10.0"
-```
-
-The map form also accepts an `enabled` key to explicitly enable or disable a hotfix regardless of version:
-
-```yaml
-extensions:
-  code-window:
-    hotfix:
+      code-annotations: true
       skylighting:
         enabled: false
+      typst-title:
+        quarto-version: "1.10.0"
 ```
 
 Future removal playbook:

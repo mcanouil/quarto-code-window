@@ -93,7 +93,17 @@ No window decoration is applied here.
 
 ## Disabled Auto-Filename
 
-To disable auto-generated filenames, set `auto-filename: false` in the extension configuration.
+### Per Block
+
+Set `code-window-no-auto-filename="true"` on a single block to suppress the auto-generated filename without changing the global setting.
+
+```{.python code-window-no-auto-filename="true"}
+print("No auto-filename on this block")
+```
+
+### Globally
+
+To disable auto-generated filenames for the entire document, set `auto-filename: false` in the extension configuration.
 Only code blocks with an explicit `filename` attribute will display window decorations.
 
 ```yaml
@@ -212,11 +222,27 @@ Set the global style in the document front matter:
 ```yaml
 extensions:
   code-window:
+    enabled: true
+    auto-filename: true
     style: "macos"
+    wrapper: "code-window"
     hotfix:
-      quarto-version: ~
       code-annotations: true
       skylighting: true
+      typst-title: true
+```
+
+Each hotfix accepts either a boolean or a map with `enabled` and `quarto-version` keys for per-hotfix version thresholds:
+
+```yaml
+extensions:
+  code-window:
+    hotfix:
+      code-annotations: true
+      skylighting:
+        enabled: false
+      typst-title:
+        quarto-version: "1.10.0"
 ```
 
 Override per block with the `code-window-style` attribute:
