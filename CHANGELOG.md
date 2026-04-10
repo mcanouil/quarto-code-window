@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 1.0.1 (2026-04-10)
+
+### Bug Fixes
+
+- fix: reduce Reveal.js code-window title bar height by 35% so it is proportional to slide content.
+
 ## 1.0.0 (2026-03-29)
 
 ### New Features
