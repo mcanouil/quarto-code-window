@@ -32,8 +32,9 @@
   break-after: avoid;
 }
 
-/* Restore title bar padding for Reveal.js slides */
+/* Shrink title bar ~35% on Reveal.js slides (scales padding, decorations, and filename text proportionally) */
 .reveal .code-with-filename .code-with-filename-file {
+  font-size: 0.65em;
   padding: 0.3em 1em;
 }
 
