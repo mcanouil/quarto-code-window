@@ -414,38 +414,55 @@ local function process_html(block)
   end
 
   local filename = block.classes[1]
-  local effective_style = block_style or CONFIG.style
 
-  local filename_header = pandoc.RawBlock(
-    'html',
-    string.format(
-      '<div class="code-with-filename-file"><pre><strong>%s</strong></pre></div>',
-      str.escape_html(filename)
-    )
-  )
+  -- Set the filename attribute so Quarto creates its own .code-with-filename
+  -- wrapper. This preserves the CodeBlock+OrderedList sibling structure
+  -- needed by Quarto's code-annotations processor.
+  block.attributes['filename'] = filename
+  table.insert(block.classes, 'cw-auto')
+  if block_style then
+    table.insert(block.classes, 'cw-style-' .. block_style)
+  end
 
-  return pandoc.Div(
-    { filename_header, block },
-    pandoc.Attr('', { 'code-with-filename', 'code-window-' .. effective_style, 'code-window-auto' })
-  )
+  return block
 end
 
 -- ============================================================================
 -- FILTER HANDLERS
 -- ============================================================================
 
---- Generate a JS snippet that adds the configured default style class
---- to Quarto-created .code-with-filename wrappers (explicit filenames)
+--- Generate a JS snippet that builds .code-with-filename wrappers for
+--- auto-filename blocks (marked with cw-auto at pre-quarto), applies the
+--- configured default style class to all .code-with-filename wrappers,
 --- and promotes block-level cw-style-* marker classes.
 --- @param default_style string The configured default style
 --- @return string JavaScript code
 local function make_style_js(default_style)
   return string.format([=[
 document.addEventListener("DOMContentLoaded",function(){
+  document.querySelectorAll("pre.cw-auto").forEach(function(pre){
+    var fn=pre.closest("[data-filename]");
+    if(!fn)return;
+    var name=fn.getAttribute("data-filename");
+    if(!name)return;
+    var scaffold=pre.closest(".code-copy-outer-scaffold")||pre.closest(".sourceCode");
+    if(!scaffold)return;
+    var w=document.createElement("div");
+    w.className="code-with-filename code-window-auto";
+    var tb=document.createElement("div");
+    tb.className="code-with-filename-file";
+    var tp=document.createElement("pre");
+    var ts=document.createElement("strong");
+    ts.textContent=name;
+    tp.appendChild(ts);tb.appendChild(tp);
+    scaffold.parentNode.insertBefore(w,scaffold);
+    w.appendChild(tb);w.appendChild(scaffold);
+    pre.classList.remove("cw-auto");
+  });
   document.querySelectorAll(".code-with-filename").forEach(function(el){
     if(/\bcode-window-(macos|windows|default)\b/.test(el.className))return;
     var c=el.querySelector('[class*="cw-style-"]');
-    if(c){var m=c.className.match(/cw-style-(\w+)/);if(m){el.classList.add("code-window-"+m[1]);return;}}
+    if(c){var m=c.className.match(/cw-style-(\w+)/);if(m){el.classList.add("code-window-"+m[1]);c.classList.remove(m[0]);return;}}
     el.classList.add("code-window-%s");
   });
 });]=], default_style)
