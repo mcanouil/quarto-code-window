@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.1.0 (2026-04-12)
+
 ### Bug Fixes
 
 - fix: preserve code-annotation structure for HTML/Reveal.js auto-filename blocks.
