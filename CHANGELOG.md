@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Bug Fixes
+
+- fix: apply Typst code-window styling to code blocks inside lists, blockquotes, and definition lists.
+
 ## 1.1.0 (2026-04-12)
 
 ### Bug Fixes
