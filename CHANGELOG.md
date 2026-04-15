@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Bug Fixes
+
+- fix: use CSS `Canvas` system colour so code-window chrome and body render against the page background, not a parent container's background.
+
 ## 1.1.1 (2026-04-13)
 
 ### Bug Fixes
