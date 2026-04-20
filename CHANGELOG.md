@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.1.4 (2026-04-20)
+
 ### Bug Fixes
 
 - fix: wrap code-window blocks in a plain Div when they are direct children of a Quarto layout div (`layout-ncol`, `layout-nrow`, `layout`), so that Quarto's grid assigns one column per code block instead of one column per raw block.
