@@ -730,7 +730,7 @@ end
 --- @param blocks pandoc.Blocks|pandoc.List
 --- @return pandoc.Blocks processed_blocks
 --- @return integer|nil pending_annotation_block_id Block ID if the last block had annotations (for parent consumption)
-local function process_typst_blocks(blocks)
+local function process_typst_blocks(blocks, wrap_codeblocks)
   local new_blocks = {}
   local pending_annot_block_id = nil
   local i = 1
@@ -740,7 +740,9 @@ local function process_typst_blocks(blocks)
     if blk.t == 'CodeBlock' then
       local next_blk = blocks[i + 1]
       local replacement, consumed_next, annot_id = process_typst_block(blk, next_blk)
-      for _, rb in ipairs(replacement) do
+      local to_insert = (wrap_codeblocks and #replacement > 1)
+        and pandoc.Blocks({ pandoc.Div(pandoc.Blocks(replacement)) }) or replacement
+      for _, rb in ipairs(to_insert) do
         table.insert(new_blocks, rb)
       end
       if consumed_next then
@@ -757,7 +759,9 @@ local function process_typst_blocks(blocks)
       if inner_block then
         local next_blk = blocks[i + 1]
         local replacement, consumed_next, annot_id = process_typst_block(inner_block, next_blk)
-        for _, rb in ipairs(replacement) do
+        local to_insert = (wrap_codeblocks and #replacement > 1)
+          and pandoc.Blocks({ pandoc.Div(pandoc.Blocks(replacement)) }) or replacement
+        for _, rb in ipairs(to_insert) do
           table.insert(new_blocks, rb)
         end
         if consumed_next then
@@ -776,7 +780,10 @@ local function process_typst_blocks(blocks)
         i = i + 1
       end
     elseif blk.t == 'Div' then
-      local processed, inner_pending = process_typst_blocks(blk.content)
+      local is_layout = blk.attributes['layout-ncol']
+        or blk.attributes['layout-nrow']
+        or blk.attributes['layout']
+      local processed, inner_pending = process_typst_blocks(blk.content, is_layout)
       blk.content = processed
       table.insert(new_blocks, blk)
       -- If the Div's last processed block had pending annotations,
