@@ -741,7 +741,7 @@ local function process_typst_blocks(blocks, wrap_codeblocks)
       local next_blk = blocks[i + 1]
       local replacement, consumed_next, annot_id = process_typst_block(blk, next_blk)
       local to_insert = (wrap_codeblocks and #replacement > 1)
-        and pandoc.Blocks({ pandoc.Div(pandoc.Blocks(replacement)) }) or replacement
+        and { pandoc.Div(replacement) } or replacement
       for _, rb in ipairs(to_insert) do
         table.insert(new_blocks, rb)
       end
@@ -760,7 +760,7 @@ local function process_typst_blocks(blocks, wrap_codeblocks)
         local next_blk = blocks[i + 1]
         local replacement, consumed_next, annot_id = process_typst_block(inner_block, next_blk)
         local to_insert = (wrap_codeblocks and #replacement > 1)
-          and pandoc.Blocks({ pandoc.Div(pandoc.Blocks(replacement)) }) or replacement
+          and { pandoc.Div(replacement) } or replacement
         for _, rb in ipairs(to_insert) do
           table.insert(new_blocks, rb)
         end
