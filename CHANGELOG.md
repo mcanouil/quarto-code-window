@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Bug Fixes
+
+- fix: propagate `#| filename:` chunk option into the code-window wrapper for HTML and Typst output. Previously, using `#| filename:` (instead of the `filename=` Pandoc attribute) caused a double `.code-with-filename` wrapper in HTML and the wrong auto-generated filename in Typst.
+
 ## 1.1.4 (2026-04-20)
 
 ### Bug Fixes

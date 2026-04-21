@@ -725,6 +725,22 @@ local function extract_codeblock(div)
   return nil
 end
 
+--- Read the filename from Quarto's internal custom node registry for a
+--- DecoratedCodeBlock Div. Quarto stores the #| filename: value there rather
+--- than as a plain Pandoc attribute on the inner CodeBlock.
+--- @param div pandoc.Div A DecoratedCodeBlock Div
+--- @return string|nil filename, or nil when the data is unavailable
+local function get_decorated_codeblock_filename(div)
+  local custom_id = div.attributes['__quarto_custom_id']
+  if not custom_id then return nil end
+  if not (_quarto and _quarto.ast and _quarto.ast.custom_node_data) then return nil end
+  local entry = _quarto.ast.custom_node_data[custom_id]
+  if type(entry) == 'table' and entry.filename and entry.filename ~= '' then
+    return entry.filename
+  end
+  return nil
+end
+
 --- Process a flat list of blocks for Typst, handling CodeBlocks and their
 --- following OrderedLists. Called recursively on Div contents.
 --- @param blocks pandoc.Blocks|pandoc.List
@@ -757,6 +773,16 @@ local function process_typst_blocks(blocks, wrap_codeblocks)
       -- Process the inner CodeBlock directly, replacing the entire Div.
       local inner_block = extract_codeblock(blk)
       if inner_block then
+        -- Quarto stores the #| filename: value in its custom node registry, not as
+        -- a plain Pandoc attribute on the inner CodeBlock. Transfer it here so
+        -- resolve_window_params sees the explicit filename instead of falling back
+        -- to auto-filename.
+        if str.is_empty(inner_block.attributes['filename']) then
+          local fn = get_decorated_codeblock_filename(blk)
+          if fn then
+            inner_block.attributes['filename'] = fn
+          end
+        end
         local next_blk = blocks[i + 1]
         local replacement, consumed_next, annot_id = process_typst_block(inner_block, next_blk)
         local to_insert = (wrap_codeblocks and #replacement > 1)
@@ -836,10 +862,44 @@ local function process_typst_blocks(blocks, wrap_codeblocks)
   return pandoc.Blocks(new_blocks), pending_annot_block_id
 end
 
+--- Walk HTML document blocks and transfer the filename from any DecoratedCodeBlock
+--- outer Div to its inner CodeBlock, so process_html sees an explicit filename
+--- and does not trigger auto-filename (which would otherwise produce a second
+--- .code-with-filename wrapper alongside Quarto's own).
+--- @param blocks pandoc.Blocks
+--- @return pandoc.Blocks
+local function fix_html_decorated_filenames(blocks)
+  return blocks:walk({
+    Div = function(div)
+      if not is_decorated_codeblock(div) then return nil end
+      local fn = get_decorated_codeblock_filename(div)
+      if not fn then return nil end
+      local inner_block = extract_codeblock(div)
+      if inner_block and str.is_empty(inner_block.attributes['filename']) then
+        inner_block.attributes['filename'] = fn
+      end
+      return div
+    end
+  })
+end
+
 --- Inject Typst function definition and process code blocks for Typst format.
+--- Also repairs HTML DecoratedCodeBlock filename propagation.
 --- Runs as a Pandoc filter to have full control over the document tree.
 function Pandoc(doc)
-  if CURRENT_FORMAT ~= 'typst' or not CONFIG or not CONFIG.enabled then
+  if not CONFIG or not CONFIG.enabled then
+    return doc
+  end
+
+  -- For HTML: transfer filenames from DecoratedCodeBlock Divs to inner
+  -- CodeBlocks before the CodeBlock filter runs, preventing auto-filename
+  -- from adding a second .code-with-filename wrapper.
+  if CURRENT_FORMAT == 'html' then
+    doc.blocks = fix_html_decorated_filenames(doc.blocks)
+    return doc
+  end
+
+  if CURRENT_FORMAT ~= 'typst' then
     return doc
   end
 
