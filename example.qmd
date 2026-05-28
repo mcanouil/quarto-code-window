@@ -114,6 +114,53 @@ extensions:
 
 {{< pagebreak >}}
 
+## Highlighted Lines
+
+When a code block uses Quarto's `code-line-numbers` attribute, the line specification is shown as a chip next to the filename.
+
+```{.python filename="loader.py" code-line-numbers="1,4-5"}
+import pandas as pd
+
+def load(path):
+    df = pd.read_csv(path)
+    return df.dropna()
+```
+
+Use `code-window-lines` to override the displayed text without affecting Quarto's highlighting:
+
+```{.python filename="custom.py" code-window-lines="2-3"}
+def greet(name):
+    message = f"Hello, {name}!"
+    print(message)
+```
+
+Disable the chip globally with `lines-label: false` in the extension config.
+
+{{< pagebreak >}}
+
+## Collapsible Code Windows (HTML)
+
+Set `code-window-collapse` to wrap a code block in a `<details>` element.
+The title bar becomes the `<summary>`.
+This feature is HTML-only; Typst and PDF output is unaffected.
+
+### Closed by Default
+
+```{.python filename="hidden.py" code-window-collapse="closed"}
+print("Click the title bar to expand.")
+print("Useful for long boilerplate.")
+```
+
+### Open by Default
+
+```{.python filename="visible.py" code-window-collapse="open"}
+print("Visible by default, can be collapsed.")
+```
+
+Apply collapsing to every code window by setting `collapse: closed` (or `open`) in the extension config.
+
+{{< pagebreak >}}
+
 ## Window Styles
 
 Three decoration styles are available via the `style` option.
