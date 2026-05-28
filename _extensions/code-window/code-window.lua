@@ -83,18 +83,14 @@ local function read_block_style(block)
   return nil
 end
 
---- Read the per-block collapse override from code-window-collapse attribute.
---- Recognised values: "true"/"closed" (collapsed), "open" (expanded), "false".
---- Always strips the attribute from the block.
---- @param block pandoc.CodeBlock Code block element
---- @return string|nil Resolved collapse mode ("open"/"closed") or nil when off
-local function read_block_collapse(block)
-  local raw = block.attributes['code-window-collapse']
-  if raw == nil then
-    return nil
-  end
-  block.attributes['code-window-collapse'] = nil
-  if raw == '' then
+--- Resolve a collapse value coming from extension options or a code-block
+--- attribute. Returns "open"/"closed" when the window should be collapsible,
+--- nil when collapsing is off or the value is unrecognised.
+--- Emits a warning when the input is set but not understood.
+--- @param raw string|nil Raw collapse value
+--- @return string|nil Resolved collapse mode ("open"/"closed") or nil
+local function resolve_collapse(raw)
+  if raw == nil or raw == '' then
     return nil
   end
   local resolved = VALID_COLLAPSE[raw]
@@ -109,6 +105,19 @@ local function read_block_collapse(block)
   return resolved
 end
 
+--- Read the per-block collapse override from code-window-collapse attribute.
+--- Always strips the attribute from the block before resolving.
+--- @param block pandoc.CodeBlock Code block element
+--- @return string|nil Resolved collapse mode ("open"/"closed") or nil when off
+local function read_block_collapse(block)
+  local raw = block.attributes['code-window-collapse']
+  if raw == nil then
+    return nil
+  end
+  block.attributes['code-window-collapse'] = nil
+  return resolve_collapse(raw)
+end
+
 --- Read a highlight-lines spec from the block, looking at the
 --- code-window-lines attribute first and falling back to Quarto's
 --- code-line-numbers attribute when it carries a non-boolean spec.
@@ -117,12 +126,11 @@ end
 --- @return string|nil Line spec to display in the title bar
 local function read_block_lines_label(block)
   local raw = block.attributes['code-window-lines']
-  if raw and raw ~= '' then
-    block.attributes['code-window-lines'] = nil
-    return raw
-  end
   if raw ~= nil then
     block.attributes['code-window-lines'] = nil
+    if raw ~= '' then
+      return raw
+    end
   end
 
   local cln = block.attributes['code-line-numbers']
@@ -634,17 +642,7 @@ function Meta(meta)
       string.format('Unknown style "%s", falling back to "macos".', opts['style']))
   end
 
-  local global_collapse = nil
-  if opts['collapse'] and opts['collapse'] ~= '' and opts['collapse'] ~= 'false' then
-    local resolved = VALID_COLLAPSE[opts['collapse']]
-    if resolved == nil then
-      log.log_warning(EXTENSION_NAME,
-        string.format('Unknown collapse value "%s", expected one of true/false/open/closed.',
-          opts['collapse']))
-    elseif resolved ~= false then
-      global_collapse = resolved
-    end
-  end
+  local global_collapse = resolve_collapse(opts['collapse'])
 
   -- Read code-annotations metadata (Quarto standard option).
   local annot_meta = meta['code-annotations']
