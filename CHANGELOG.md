@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.2.0 (2026-05-31)
+
 ### New Features
 
 - feat: render a highlighted-lines chip alongside the filename in the code-window title bar (HTML, Reveal.js, and Typst).
