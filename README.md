@@ -58,6 +58,8 @@ extensions:
     auto-filename: true
     style: "macos"
     wrapper: "code-window"
+    collapse: false
+    lines-label: true
     hotfix:
       code-annotations: true
       skylighting: true
@@ -66,12 +68,14 @@ extensions:
 
 ### Options
 
-| Option          | Type    | Default         | Description                                                          |
-| --------------- | ------- | --------------- | -------------------------------------------------------------------- |
-| `enabled`       | boolean | `true`          | Enable or disable the code-window filter.                            |
-| `auto-filename` | boolean | `true`          | Automatically generate filename labels from the code block language. |
-| `style`         | string  | `"macos"`       | Window decoration style: `"macos"`, `"windows"`, or `"default"`.     |
-| `wrapper`       | string  | `"code-window"` | Typst wrapper function name for code-window rendering.               |
+| Option          | Type           | Default         | Description                                                                                              |
+| --------------- | -------------- | --------------- | -------------------------------------------------------------------------------------------------------- |
+| `enabled`       | boolean        | `true`          | Enable or disable the code-window filter.                                                                |
+| `auto-filename` | boolean        | `true`          | Automatically generate filename labels from the code block language. Set to `false` to disable globally. |
+| `style`         | string         | `"macos"`       | Window decoration style: `"macos"`, `"windows"`, or `"default"`.                                         |
+| `wrapper`       | string         | `"code-window"` | Typst wrapper function name for code-window rendering.                                                   |
+| `collapse`      | boolean/string | `false`         | Wrap every code window in a `<details>` element (HTML). Accepts `false`, `true`, `"open"`, `"closed"`.   |
+| `lines-label`   | boolean        | `true`          | Render a small chip next to the filename showing the highlighted-line spec.                              |
 
 ### Hotfix Options
 
@@ -93,19 +97,65 @@ Each hotfix value can be a simple boolean or a map with `enabled` and `quarto-ve
 
 ### Block-Level Attributes
 
-Override the style or disable features for a single code block:
+Override the style or toggle features for a single code block:
 
-| Attribute                       | Type    | Default | Description                                                            |
-| ------------------------------- | ------- | ------- | ---------------------------------------------------------------------- |
-| `code-window-style`             | string  |         | Override the global style for this block: `"macos"`, `"windows"`, or `"default"`. |
-| `code-window-enabled`           | boolean | `true`  | Set to `false` to disable window chrome while keeping annotations.     |
-| `code-window-no-auto-filename`  | boolean | `false` | Suppress the auto-generated filename for this block.                   |
+| Attribute                      | Type           | Default | Description                                                                                                          |
+| ------------------------------ | -------------- | ------- | -------------------------------------------------------------------------------------------------------------------- |
+| `code-window-style`            | string         |         | Override the global style for this block: `"macos"`, `"windows"`, or `"default"`.                                    |
+| `code-window-enabled`          | boolean        | `true`  | Set to `false` to disable window chrome while keeping annotations.                                                   |
+| `code-window-no-auto-filename` | boolean        | `false` | Suppress the auto-generated filename for this block.                                                                 |
+| `code-window-collapse`         | boolean/string |         | Render this code block inside a `<details>` element (HTML). Accepts `true` (closed), `false`, `"open"`, `"closed"`.  |
+| `code-window-lines`            | string         |         | Highlighted-lines spec rendered as a chip alongside the filename (e.g. `"1,3-5"`). Falls back to `code-line-numbers`. |
 
 ````markdown
 ```{.python filename="example.py" code-window-style="windows"}
 print("Windows style for this block only")
 ```
 ````
+
+### Highlighted Lines Chip
+
+When a code block carries Quarto's `code-line-numbers` attribute with a line specification (e.g. `"1,3-5"`), the spec is rendered as a small chip beside the filename in the title bar.
+
+````markdown
+```{.python filename="loader.py" code-line-numbers="1,4-5"}
+import pandas as pd
+
+def load(path):
+    df = pd.read_csv(path)
+    return df.dropna()
+```
+````
+
+Override the displayed text with `code-window-lines="..."` or disable the chip globally with `lines-label: false`.
+
+### Collapsible Code Windows (HTML)
+
+Set `code-window-collapse` on a block, or `collapse` at the document level, to wrap the code window in a `<details>` element.
+The title bar becomes the `<summary>`.
+
+````markdown
+```{.python filename="long.py" code-window-collapse="closed"}
+# Long block hidden behind a clickable title bar.
+print("Click the title bar to expand.")
+```
+````
+
+This feature applies to HTML and Reveal.js output only.
+
+### Customising Window-Button Icons (HTML)
+
+The macOS and Windows window-button icons are exposed as CSS custom properties so you can override them in your own stylesheet:
+
+```css
+:root {
+  --code-window-macos-icon: url("data:image/svg+xml,...");
+  --code-window-windows-icon: url("data:image/svg+xml,...");
+  --code-window-macos-icon-width: 3.4em;
+  --code-window-windows-icon-width: 3.6em;
+  --code-window-icon-height: 0.85em;
+}
+```
 
 ### Temporary Hot-fixes (Typst)
 

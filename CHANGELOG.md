@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### New Features
+
+- feat: render a highlighted-lines chip alongside the filename in the code-window title bar (HTML, Reveal.js, and Typst).
+  Uses Quarto's `code-line-numbers` attribute or a new `code-window-lines` attribute.
+  The chip can be disabled globally via `lines-label: false`.
+- feat: collapsible code windows via a `<details>` wrapper (HTML/Reveal.js).
+  Per-block opt-in with the `code-window-collapse` attribute (`true`/`false`/`open`/`closed`) or document-wide via the `collapse` option.
+- feat: expose CSS custom properties (`--code-window-macos-icon`, `--code-window-windows-icon`, `--code-window-macos-icon-width`, `--code-window-windows-icon-width`, `--code-window-icon-height`) so users can override the window-button icons.
+
+### Documentation
+
+- docs: document `code-line-numbers` integration, the new `collapse` option, and the CSS custom properties for icon overrides.
+
+### Refactoring
+
+- refactor: synchronise shared modules (`html`, `logging`, `metadata`, `pandoc-helpers`, `string`) with canonical versions.
+
 ## 1.1.5 (2026-04-21)
 
 ### Bug Fixes
