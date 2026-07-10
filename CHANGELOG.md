@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.2.1 (2026-07-10)
+
 ### Bug Fixes
 
 - fix(typst): remove `sticky: true` from the title-bar block so page-sized code windows start on the current page instead of being postponed, leaving near-empty pages behind (orphaned heading, then an empty window frame). The title bar may now occasionally sit alone at the bottom of a page; the code body still breaks across pages correctly.

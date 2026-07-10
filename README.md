@@ -7,7 +7,7 @@ Supports HTML, Reveal.js, and Typst formats.
 ## Installation
 
 ```bash
-quarto add mcanouil/quarto-code-window@1.2.0
+quarto add mcanouil/quarto-code-window@1.2.1
 ```
 
 This will install the extension under the `_extensions` subdirectory.
