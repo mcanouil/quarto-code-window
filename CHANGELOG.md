@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### New Features
+
+- feat: code blocks with no language or an unknown language are now framed like highlighted code cells instead of being left as bare blocks. A no-language block is labelled `default`; an unknown language keeps its original token as the label. Override per block with an explicit `filename`, `code-window-no-auto-filename="true"`, or `code-window-enabled="false"`, or globally with `auto-filename: false`.
+
 ## 1.2.1 (2026-07-10)
 
 ### Bug Fixes

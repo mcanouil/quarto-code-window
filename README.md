@@ -71,7 +71,7 @@ extensions:
 | Option          | Type           | Default         | Description                                                                                              |
 | --------------- | -------------- | --------------- | -------------------------------------------------------------------------------------------------------- |
 | `enabled`       | boolean        | `true`          | Enable or disable the code-window filter.                                                                |
-| `auto-filename` | boolean        | `true`          | Automatically generate filename labels from the code block language. Set to `false` to disable globally. |
+| `auto-filename` | boolean        | `true`          | Automatically generate filename labels from the code block language, and frame no-language / unknown-language blocks like highlighted cells (a no-language block is labelled `default`; an unknown language keeps its original token). Set to `false` to disable globally. |
 | `style`         | string         | `"macos"`       | Window decoration style: `"macos"`, `"windows"`, or `"default"`.                                         |
 | `wrapper`       | string         | `"code-window"` | Typst wrapper function name for code-window rendering.                                                   |
 | `collapse`      | boolean/string | `false`         | Wrap every code window in a `<details>` element (HTML). Accepts `false`, `true`, `"open"`, `"closed"`.   |
