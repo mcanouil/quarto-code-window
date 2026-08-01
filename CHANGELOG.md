@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.3.1 (2026-08-01)
+
 ### Bug Fixes
 
 - fix: Honour a boolean option written as a bare YAML `false`, such as `auto-filename: false`, `enabled: false`, or `lines-label: false`. The value was read as an absent option, so the default applied instead and only the quoted string worked.
