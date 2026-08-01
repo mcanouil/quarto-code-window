@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.3.2 (2026-08-01)
+
 ### Documentation
 
 - docs: Document the filter as `filters:` with the bare `code-window` name. The long form `path`/`at` overrides the entry point of every filter the extension contributes, so the documented `at: pre-quarto` pulled the Typst title hotfix from `post-quarto` to `pre-quarto`; the manifest already carries both entry points.
