@@ -4,14 +4,14 @@ subtitle: "Every style, and the folding."
 description: "Code blocks framed by the extension, one per style and option, with the source alongside."
 ---
 
-Every block on this site is framed by the extension, so this page is its own demonstration.
+Every named block on this site is framed by the extension, so this page is its own demonstration.
 The site sets:
 
-```yaml
+```{.yaml filename="_quarto.yml"}
 extensions:
   code-window:
     style: macos
-    auto-filename: false
+    auto-filename: "false"
 ```
 
 ## Naming the window
@@ -30,7 +30,8 @@ project:
   type: website
 ```
 
-With `auto-filename: true`, a block with no filename is labelled with its language instead.
+A block with no `filename` is left alone in HTML, whatever `auto-filename` says.
+Under Typst that same block is framed and labelled with its language.
 
 ## The three styles
 
@@ -69,7 +70,8 @@ for i in range(100):
 print("expanded by default")
 ```
 
-`closed` and `open` differ only in the initial state; both are ordinary `<details>` elements, so they work without JavaScript.
+`closed` and `open` differ only in the initial state.
+The `<details>` element is built at page load by the script the extension injects, so the fold needs JavaScript; without it the block renders open and unframed.
 
 Set `collapse` under `extensions.code-window` to fold every block, and `code-window-collapse="false"` to opt one out.
 

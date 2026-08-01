@@ -54,6 +54,19 @@ extensions:
 
 Quarto's own `filename` attribute names the window.
 
+::: {.callout-important}
+In HTML output only a block with an author-set `filename` is framed.
+Quarto builds the wrapper the chrome attaches to before this filter runs, so a filename derived by `auto-filename` arrives too late: the block keeps its language as a `data-filename` attribute and renders without a window.
+Typst is unaffected, and frames derived and author-set filenames alike.
+:::
+
+## How the chrome is applied
+
+In HTML the extension marks blocks and injects a stylesheet and a script.
+The script runs at page load and builds the title bar, the fold, and the line chip from those marks, so all three need JavaScript.
+
+In Typst the chrome is a call to the `wrapper` function, emitted into the document, and needs nothing at read time.
+
 ## Hot-fixes
 
 Typst output needs a few corrections that Quarto does not yet make itself.
@@ -90,3 +103,6 @@ Two extensions in this family are affected: [`typst-render`](https://m.canouil.d
 
 - HTML formats and Typst. Elsewhere the code block is left as it is.
 - Folding is HTML only; Typst has no equivalent.
+- The HTML chrome is built by script at page load, so a reader with JavaScript off sees plain code blocks.
+- `auto-filename` frames nothing in HTML; give a block an explicit `filename` there.
+- A boolean option written as `false` under `extensions.code-window` is read as unset and reverts to its default. Write `"false"` in quotes until this is fixed.

@@ -13,9 +13,9 @@ Which file is which, which one is a shell command and which a configuration file
 
 `code-window` frames each block as a window: a title bar with the filename, traffic lights or title-bar buttons, and, where it helps, a fold.
 
-Every code block on this site is drawn by it, including this one:
+Every named code block on this site is drawn by it, including this one:
 
-```yaml
+```{.yaml filename="_quarto.yml"}
 filters:
   - path: code-window
     at: pre-quarto
@@ -48,9 +48,7 @@ filters:
     at: pre-quarto
 ```
 
-That is enough: every code block is framed, and its language becomes the filename.
-
-Name the file yourself where the language is not the point:
+Name the file, and the block is framed with it:
 
 ````markdown
 ```{.yaml filename="_quarto.yml"}
@@ -65,6 +63,7 @@ See the [Reference](reference.qmd) for every option, and the [Examples](examples
 
 HTML formats, and Typst.
 
+In HTML the chrome is assembled at page load by a script the extension injects, so the frame needs JavaScript.
 Under Typst the chrome is drawn by a wrapper function, and the extension carries hot-fixes for a few Quarto behaviours that Typst output still needs; the [Reference](reference.qmd#hot-fixes) lists them and when they switch themselves off.
 
 ## Links
