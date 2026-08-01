@@ -11,7 +11,7 @@ The site sets:
 extensions:
   code-window:
     style: macos
-    auto-filename: "false"
+    auto-filename: false
 ```
 
 ## Naming the window
@@ -30,8 +30,8 @@ project:
   type: website
 ```
 
-A block with no `filename` is left alone in HTML, whatever `auto-filename` says.
-Under Typst that same block is framed and labelled with its language.
+A block with no `filename` is left alone here, because this site turns `auto-filename` off.
+With it on, that same block is framed and labelled with its language, in HTML and under Typst alike.
 
 ## The three styles
 
