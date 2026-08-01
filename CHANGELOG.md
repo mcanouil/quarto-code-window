@@ -2,7 +2,13 @@
 
 ## Unreleased
 
+### Bug Fixes
+
+- fix: Honour a boolean option written as a bare YAML `false`, such as `auto-filename: false`, `enabled: false`, or `lines-label: false`. The value was read as an absent option, so the default applied instead and only the quoted string worked.
+
 ### Documentation
+
+- docs: Correct the reference and the examples page, which said a derived filename frames nothing in HTML. It frames the block through the injected script, as the rest of the HTML chrome does.
 
 - docs: Add a documentation website under `docs/`, built on the `atelier` project type and published to <https://m.canouil.dev/quarto-code-window/>, framed by the extension itself.
 - docs: Record that the filter claims code blocks at `pre-quarto`, which prevents `typst-render` from seeing its own `{typst}` blocks and double-decorates alongside `language-cell-decorator`.

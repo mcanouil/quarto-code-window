@@ -124,7 +124,4 @@ extensions:
     style: "macos"
     # Blocks here are configuration to copy rather than files to save, so a
     # filename derived from the language would only add noise.
-    #
-    # Quoted deliberately. A bare `false` is read as unset and reverts to the
-    # default, because the option lookup treats a Lua `false` as absent.
-    auto-filename: "false"
+    auto-filename: false
