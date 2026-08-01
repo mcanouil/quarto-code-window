@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Documentation
+
+- docs: Add a documentation website under `docs/`, built on the `atelier` project type and published to <https://m.canouil.dev/quarto-code-window/>, framed by the extension itself.
+- docs: Record that the filter claims code blocks at `pre-quarto`, which prevents `typst-render` from seeing its own `{typst}` blocks and double-decorates alongside `language-cell-decorator`.
+- docs: Trim `README.md` to a landing page pointing at the website.
+- docs: Add the Pages workflow, which renders `docs/` on pull requests and deploys it from the release tag.
+- docs: Add the Quarto Extensions Updates workflow, scanning `docs` for the website's own dependencies.
+
 ## 1.3.0 (2026-07-22)
 
 ### New Features

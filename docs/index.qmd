@@ -1,0 +1,75 @@
+---
+title: "Code Window"
+subtitle: "Code blocks dressed as application windows."
+description: "What the code-window extension does, how to enable it, and the chrome it puts on a block."
+authors:
+  - name: "Mickaël CANOUIL, _Ph.D._"
+    orcid: "0000-0002-3396-4549"
+    url: "https://mickael.canouil.fr"
+---
+
+A page of code blocks is a page of grey rectangles.
+Which file is which, which one is a shell command and which a configuration file, has to be worked out from the contents.
+
+`code-window` frames each block as a window: a title bar with the filename, traffic lights or title-bar buttons, and, where it helps, a fold.
+
+Every code block on this site is drawn by it, including this one:
+
+```yaml
+filters:
+  - path: code-window
+    at: pre-quarto
+```
+
+## Installation
+
+```bash
+quarto add {{< var extension.reference >}}
+```
+
+This will install the extension under the `_extensions` subdirectory.
+If you are using version control, you will want to check in this directory.
+
+Or install it from your editor with [Quarto Wizard](https://m.canouil.dev/quarto-wizard):
+
+::: {.btn-group role="group" aria-label="Quarto Wizard installer options"}
+
+[Visual Studio Code](vscode://mcanouil.quarto-wizard/install?repo={{< var extension.wizard-reference >}}){.btn .btn-outline-primary title="Install {{< var extension.reference >}} in Visual Studio Code using the Quarto Wizard extension."}
+[Positron](positron://mcanouil.quarto-wizard/install?repo={{< var extension.wizard-reference >}}){.btn .btn-outline-primary title="Install {{< var extension.reference >}} in Positron using the Quarto Wizard extension."}
+[VSCodium](vscodium://mcanouil.quarto-wizard/install?repo={{< var extension.wizard-reference >}}){.btn .btn-outline-primary title="Install {{< var extension.reference >}} in VSCodium using the Quarto Wizard extension."}
+
+:::
+
+## Quick start
+
+```yaml
+filters:
+  - path: code-window
+    at: pre-quarto
+```
+
+That is enough: every code block is framed, and its language becomes the filename.
+
+Name the file yourself where the language is not the point:
+
+````markdown
+```{.yaml filename="_quarto.yml"}
+project:
+  type: website
+```
+````
+
+See the [Reference](reference.qmd) for every option, and the [Examples](examples.qmd) for each style and the folding.
+
+## Where it works
+
+HTML formats, and Typst.
+
+Under Typst the chrome is drawn by a wrapper function, and the extension carries hot-fixes for a few Quarto behaviours that Typst output still needs; the [Reference](reference.qmd#hot-fixes) lists them and when they switch themselves off.
+
+## Links
+
+- [Reference](reference.qmd) for every option and attribute.
+- [Examples](examples.qmd) for the styles, the folding, and the line chips.
+- [Changelog](changelog.qmd) for what each release changed.
+- [Source and issues](https://github.com/mcanouil/quarto-code-window) on GitHub.

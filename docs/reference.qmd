@@ -1,0 +1,92 @@
+---
+title: "Reference"
+subtitle: "Every option the code-window extension accepts."
+description: "The complete code-window configuration: the document options, the per-block attributes, the window styles, and the Typst hot-fixes."
+---
+
+## Enabling the filter
+
+```yaml
+filters:
+  - path: code-window
+    at: pre-quarto
+```
+
+## Options
+
+```yaml
+extensions:
+  code-window:
+    style: macos
+    auto-filename: true
+    collapse: false
+    lines-label: true
+```
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `enabled` | boolean | `true` | Whether the filter runs at all. |
+| `style` | string | `macos` | The window chrome: `macos` for traffic lights, `windows` for title-bar buttons, `default` for a plain filename. |
+| `auto-filename` | boolean | `true` | Use the block's language as the filename when none is given. |
+| `collapse` | boolean or string | `false` | Wrap every block in a `<details>`. `open` renders it expanded, `closed` or `true` collapsed. HTML only. |
+| `lines-label` | boolean | `true` | Show a chip beside the filename with the highlighted-line spec. |
+| `wrapper` | string | `code-window` | The Typst function used to draw the chrome. |
+| `hotfix` | object | all on | The Typst hot-fixes below. |
+
+: Document and project options. {.striped .hover tbl-colwidths="[18,16,12,54]"}
+
+## Per-block attributes
+
+````markdown
+```{.yaml filename="_quarto.yml" code-window-style="windows"}
+```
+````
+
+| Attribute | Type | Description |
+| --- | --- | --- |
+| `code-window-enabled` | boolean | Whether this block gets chrome. Annotations still render when it does not. |
+| `code-window-no-auto-filename` | boolean | Suppress the derived filename for this block alone. |
+| `code-window-style` | string | Override the style for this block: `macos`, `windows`, `default`. |
+| `code-window-collapse` | boolean or string | Fold this block: `open`, `closed`, `true`, or `false`. HTML only. |
+| `code-window-lines` | string | The line spec shown in the chip, such as `1,3-5`. Defaults to Quarto's `code-line-numbers`. |
+
+: Attributes accepted on a code block. {.striped .hover tbl-colwidths="[30,14,56]"}
+
+Quarto's own `filename` attribute names the window.
+
+## Hot-fixes
+
+Typst output needs a few corrections that Quarto does not yet make itself.
+Each is on by default and each can be given a version at which it switches itself off, so an upgrade retires it without a code change.
+
+| Hot-fix | What it corrects |
+| --- | --- |
+| `code-annotations` | Code annotations in Typst output. |
+| `skylighting` | Block styling and inline code backgrounds in Typst output. |
+| `typst-title` | Theorem title strings, evaluated as markup. |
+
+: The Typst hot-fixes. {.striped .hover tbl-colwidths="[26,74]"}
+
+```yaml
+extensions:
+  code-window:
+    hotfix:
+      skylighting:
+        enabled: true
+        quarto-version: "1.9.0"
+```
+
+They exist for [quarto-dev/quarto-cli#14170](https://github.com/quarto-dev/quarto-cli/issues/14170) and will be removed once Quarto covers the same ground.
+
+## Interactions
+
+::: {.callout-caution}
+This filter claims code blocks at `pre-quarto`, which puts it ahead of anything else that wants them.
+
+Two extensions in this family are affected: [`typst-render`](https://m.canouil.dev/quarto-typst-render) never sees its ```` ```{typst} ```` blocks when this one runs, so no figure is produced; and [`language-cell-decorator`](https://m.canouil.dev/quarto-language-cell-decorator), which this extension supersedes, decorates the same blocks a second time.
+:::
+
+## Limitations
+
+- HTML formats and Typst. Elsewhere the code block is left as it is.
+- Folding is HTML only; Typst has no equivalent.
