@@ -1,0 +1,111 @@
+---
+title: "Examples"
+subtitle: "Every style, and the folding."
+description: "Code blocks framed by the extension, one per style and option, with the source alongside."
+---
+
+Every named block on this site is framed by the extension, so this page is its own demonstration.
+The site sets:
+
+```{.yaml filename="_quarto.yml"}
+extensions:
+  code-window:
+    style: macos
+    auto-filename: "false"
+```
+
+## Naming the window
+
+Quarto's `filename` attribute names it:
+
+````markdown
+```{.yaml filename="_quarto.yml"}
+project:
+  type: website
+```
+````
+
+```{.yaml filename="_quarto.yml"}
+project:
+  type: website
+```
+
+A block with no `filename` is left alone in HTML, whatever `auto-filename` says.
+Under Typst that same block is framed and labelled with its language.
+
+## The three styles
+
+````markdown
+```{.r filename="analysis.R" code-window-style="macos"}
+```
+````
+
+```{.r filename="analysis.R" code-window-style="macos"}
+summary(cars)
+```
+
+```{.r filename="analysis.R" code-window-style="windows"}
+summary(cars)
+```
+
+```{.r filename="analysis.R" code-window-style="default"}
+summary(cars)
+```
+
+Traffic lights, title-bar buttons, and a plain filename.
+
+## Folding
+
+````markdown
+```{.python filename="long.py" code-window-collapse="closed"}
+```
+````
+
+```{.python filename="long.py" code-window-collapse="closed"}
+for i in range(100):
+    print(i)
+```
+
+```{.python filename="short.py" code-window-collapse="open"}
+print("expanded by default")
+```
+
+`closed` and `open` differ only in the initial state.
+The `<details>` element is built at page load by the script the extension injects, so the fold needs JavaScript; without it the block renders open and unframed.
+
+Set `collapse` under `extensions.code-window` to fold every block, and `code-window-collapse="false"` to opt one out.
+
+## Highlighted lines
+
+A block that highlights lines gets a chip beside its filename:
+
+````markdown
+```{.r filename="steps.R" code-line-numbers="2-3"}
+```
+````
+
+```{.r filename="steps.R" code-line-numbers="2-3"}
+x <- seq_len(10)
+y <- x^2
+z <- sum(y)
+z
+```
+
+`code-window-lines` sets the chip independently of the highlighting, and `lines-label: false` turns the chip off.
+
+## Leaving a block alone
+
+````markdown
+```{.bash code-window-enabled="false"}
+```
+````
+
+```{.bash code-window-enabled="false"}
+echo "no chrome on this one"
+```
+
+Annotations still render on a block with the chrome turned off.
+
+## Source
+
+The repository ships a short, standalone starting point you can copy: [`example.qmd`](https://github.com/mcanouil/quarto-code-window/blob/main/example.qmd).

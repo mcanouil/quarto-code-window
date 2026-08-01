@@ -9,3 +9,5 @@ docs/api/*.qmd
 /.luarc.json
 /example.typ
 /example-typst.pdf
+/.quarto/
+**/*.quarto_ipynb
