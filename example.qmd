@@ -6,8 +6,7 @@ author:
     orcid: "0000-0002-3396-4549"
     url: "https://mickael.canouil.fr"
 filters:
-  - at: pre-quarto
-    path: code-window
+  - code-window
 syntax-highlighting: github-dark
 code-annotations: below
 toc: true
