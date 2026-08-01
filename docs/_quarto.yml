@@ -91,10 +91,8 @@ filters:
   # Resolved from the copy sync-extension.sh takes from the repository root,
   # not from a committed dependency: this repository publishes code-window, so
   # the site runs the version being released.
-  - at: pre-quarto
-    path: code-window
-  - at: post-quarto
-    path: gitlink
+  - code-window
+  - gitlink
 
 extensions:
   # Quarto keeps the `website` block out of the metadata it hands to Lua
