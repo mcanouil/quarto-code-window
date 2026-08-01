@@ -8,8 +8,7 @@ description: "The complete code-window configuration: the document options, the 
 
 ```yaml
 filters:
-  - path: code-window
-    at: pre-quarto
+  - code-window
 ```
 
 ## Options

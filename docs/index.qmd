@@ -17,8 +17,7 @@ Every named code block on this site is drawn by it, including this one:
 
 ```{.yaml filename="_quarto.yml"}
 filters:
-  - path: code-window
-    at: pre-quarto
+  - code-window
 ```
 
 ## Installation
@@ -44,8 +43,7 @@ Or install it from your editor with [Quarto Wizard](https://m.canouil.dev/quarto
 
 ```yaml
 filters:
-  - path: code-window
-    at: pre-quarto
+  - code-window
 ```
 
 Name the file, and the block is framed with it:
