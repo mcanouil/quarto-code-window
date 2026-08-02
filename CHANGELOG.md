@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.3.3 (2026-08-02)
+
 ### Refactoring
 
 - refactor: Target the Quarto Wizard v2 extension schema in `_schema.yml`.
