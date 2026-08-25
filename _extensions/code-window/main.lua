@@ -1,4 +1,4 @@
---- @module main
+--- @module "main"
 --- @license MIT
 --- @copyright 2026 Mickaël Canouil
 --- @author Mickaël Canouil
