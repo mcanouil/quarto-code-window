@@ -64,6 +64,18 @@ local TYPST_BG_COLOUR = nil
 local ANNOTATION_BLOCK_COUNTER = 0
 
 -- ============================================================================
+-- CELL OUTPUT
+-- ============================================================================
+
+--- Check whether a block holds the output of an executed cell that the engine
+--- did not name. Such a block keeps the shape Quarto gave it.
+--- @param block pandoc.CodeBlock Code block element
+--- @return boolean
+local function is_unnamed_cell_output(block)
+  return cell_output.is_marked(block) and str.is_empty(block.attributes['filename'])
+end
+
+-- ============================================================================
 -- BLOCK-LEVEL STYLE OVERRIDE
 -- ============================================================================
 
@@ -483,6 +495,12 @@ end
 --- @param block pandoc.CodeBlock Code block element
 --- @return pandoc.Div|pandoc.CodeBlock Wrapped block or original
 local function process_html(block)
+  -- Default/unknown/no-language blocks carry their label on
+  -- code-window-auto-label (set by the language module). Read it here so no
+  -- return path can leak it into the rendered document.
+  local auto_label = block.attributes['code-window-auto-label']
+  block.attributes['code-window-auto-label'] = nil
+
   -- Per-block opt-out: code-window-enabled="false" skips window chrome.
   local block_enabled = block.attributes['code-window-enabled']
   if block_enabled then
@@ -523,11 +541,8 @@ local function process_html(block)
     return block
   end
 
-  -- Default/unknown/no-language blocks carry their label on
-  -- code-window-auto-label (set by the language module); everything else uses
-  -- its language class.
-  local filename = block.attributes['code-window-auto-label'] or block.classes[1]
-  block.attributes['code-window-auto-label'] = nil
+  -- Blocks with a language of their own are labelled with its class.
+  local filename = auto_label or block.classes[1]
 
   -- Set the filename attribute so Quarto creates its own .code-with-filename
   -- wrapper. This preserves the CodeBlock+OrderedList sibling structure
@@ -754,8 +769,8 @@ end
 function CodeBlock(block)
   -- The Typst path reads the marker in the Pandoc filter, which runs first, so
   -- this pass is where it is removed for every format.
-  local is_cell_output = cell_output.is_marked(block)
-  if is_cell_output then
+  local is_plain_output = is_unnamed_cell_output(block)
+  if cell_output.is_marked(block) then
     cell_output.strip(block)
   end
 
@@ -765,7 +780,7 @@ function CodeBlock(block)
     return block
   end
 
-  if is_cell_output and str.is_empty(block.attributes['filename']) then
+  if is_plain_output then
     return block
   end
 
@@ -787,12 +802,6 @@ end
 --- @return string|nil block_style
 --- @return string|nil lines_label Highlighted-lines spec for the title bar
 local function resolve_window_params(block)
-  -- The output of an executed cell keeps the shape Quarto gave it, unless the
-  -- engine gave it a filename of its own.
-  if cell_output.is_marked(block) and str.is_empty(block.attributes['filename']) then
-    return nil, false, nil, nil
-  end
-
   -- Per-block opt-out: code-window-enabled="false" skips window chrome.
   local block_enabled = block.attributes['code-window-enabled']
   if block_enabled then
@@ -837,6 +846,12 @@ end
 --- @return boolean consumed_next Whether the next block was consumed
 --- @return integer|nil annotation_block_id Block ID if annotations were found (for parent propagation)
 local function process_typst_block(block, next_block)
+  -- The output of an executed cell keeps the shape Quarto gave it, annotations
+  -- included, unless the engine gave it a filename of its own.
+  if is_unnamed_cell_output(block) then
+    return { block }, false, nil
+  end
+
   local filename, is_auto, block_style, lines_label = resolve_window_params(block)
   local has_window = filename and filename ~= ''
   local effective_style = block_style or CONFIG.style

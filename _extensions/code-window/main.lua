@@ -39,7 +39,7 @@ code_window.set_code_annotations(code_annotations)
 --- @return pandoc.Pandoc|nil Marked document, or nil when the pass is skipped
 local function mark_cell_output(doc)
   local config = code_window.CONFIG()
-  if not config or config.cell_output then
+  if not config or (config.enabled and config.cell_output) then
     return nil
   end
   doc.blocks = doc.blocks:walk({ Div = cell_output.Div })

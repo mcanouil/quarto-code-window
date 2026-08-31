@@ -8,7 +8,7 @@
 
 ### Bug Fixes
 
-- fix: Remove the internal `code-window-auto-label` attribute from the rendered document when the filter is off.
+- fix: Remove the internal `code-window-auto-label` attribute from the rendered document.
 
 ## 1.3.3 (2026-08-02)
 
