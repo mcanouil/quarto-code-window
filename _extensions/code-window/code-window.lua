@@ -761,6 +761,7 @@ function CodeBlock(block)
 
   if not CURRENT_FORMAT or not CONFIG or not CONFIG.enabled then
     block.attributes['code-window-no-auto-filename'] = nil
+    block.attributes['code-window-auto-label'] = nil
     return block
   end
 

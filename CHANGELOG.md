@@ -6,6 +6,10 @@
 
 - feat: Add the `cell-output` option. The output of an executed cell is no longer framed, and `cell-output: true` frames it again. (#39)
 
+### Bug Fixes
+
+- fix: Remove the internal `code-window-auto-label` attribute from the rendered document when the filter is off.
+
 ## 1.3.3 (2026-08-02)
 
 ### Refactoring
