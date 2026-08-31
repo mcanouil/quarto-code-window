@@ -12,6 +12,9 @@ local log = require(quarto.utils.resolve_path('_modules/logging.lua'):gsub('%.lu
 -- LOAD SUBMODULES
 -- ============================================================================
 
+local cell_output = require(
+  quarto.utils.resolve_path('_modules/cell-output.lua'):gsub('%.lua$', ''))
+
 local language = require(
   quarto.utils.resolve_path('_modules/language.lua'):gsub('%.lua$', ''))
 
@@ -22,6 +25,7 @@ local code_window = require(
   quarto.utils.resolve_path('code-window.lua'):gsub('%.lua$', ''))
 
 code_window.set_code_annotations(code_annotations)
+cell_output.set_config(code_window.CONFIG)
 
 -- ============================================================================
 -- SKYLIGHTING HOT-FIX
@@ -49,9 +53,12 @@ end
 -- FILTER ASSEMBLY
 -- ============================================================================
 
+-- Meta runs first because the cell-output pass needs the configuration, and
+-- that pass runs before the language pass so a marked block is never relabelled.
 local filters = {
-  { CodeBlock = language.CodeBlock },
   { Meta = code_window.Meta },
+  { Div = cell_output.Div },
+  { CodeBlock = language.CodeBlock },
   { Pandoc = code_window.Pandoc },
   { CodeBlock = code_window.CodeBlock },
 }

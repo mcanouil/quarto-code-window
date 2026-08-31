@@ -18,6 +18,7 @@ extensions:
   code-window:
     style: macos
     auto-filename: true
+    cell-output: false
     collapse: false
     lines-label: true
 ```
@@ -27,6 +28,7 @@ extensions:
 | `enabled` | boolean | `true` | Whether the filter runs at all. |
 | `style` | string | `macos` | The window chrome: `macos` for traffic lights, `windows` for title-bar buttons, `default` for a plain filename. |
 | `auto-filename` | boolean | `true` | Use the block's language as the filename when none is given. |
+| `cell-output` | boolean | `false` | Frame the output of an executed cell as well as its source. |
 | `collapse` | boolean or string | `false` | Wrap every block in a `<details>`. `open` renders it expanded, `closed` or `true` collapsed. HTML only. |
 | `lines-label` | boolean | `true` | Show a chip beside the filename with the highlighted-line spec. |
 | `wrapper` | string | `code-window` | The Typst function used to draw the chrome. |
@@ -59,6 +61,22 @@ Quarto builds its own wrapper before this filter runs, so a block with no `filen
 The result is the same window; it needs JavaScript, as the rest of the HTML chrome does.
 Typst frames derived and author-set filenames alike, without a script.
 :::
+
+## Executed cells
+
+Quarto writes the output of an executed cell as a code block with no language.
+That block keeps the shape Quarto gives it: no chrome, and no derived filename.
+Only the source of the cell is framed.
+
+Set `cell-output` to `true` to frame the output as well.
+
+```yaml
+extensions:
+  code-window:
+    cell-output: true
+```
+
+The output has no attributes an author can reach, so this option is the only control over it.
 
 ## How the chrome is applied
 

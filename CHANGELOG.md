@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### New Features
+
+- feat: Add the `cell-output` option. The output of an executed cell is no longer framed, and `cell-output: true` frames it again. (#39)
+
 ## 1.3.3 (2026-08-02)
 
 ### Refactoring

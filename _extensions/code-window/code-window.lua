@@ -17,6 +17,7 @@ local log = require(quarto.utils.resolve_path('_modules/logging.lua'):gsub('%.lu
 local meta_mod = require(quarto.utils.resolve_path('_modules/metadata.lua'):gsub('%.lua$', ''))
 local pdoc = require(quarto.utils.resolve_path('_modules/pandoc-helpers.lua'):gsub('%.lua$', ''))
 local html_mod = require(quarto.utils.resolve_path('_modules/html.lua'):gsub('%.lua$', ''))
+local cell_output = require(quarto.utils.resolve_path('_modules/cell-output.lua'):gsub('%.lua$', ''))
 local code_annotations = nil
 
 -- ============================================================================
@@ -27,6 +28,7 @@ local code_annotations = nil
 --- @field enabled boolean Whether code-window styling is enabled
 --- @field auto_filename boolean Whether to auto-generate filename from language
 --- @field style string Window decoration style ('macos', 'windows', 'default')
+--- @field cell_output boolean Whether the output of an executed cell is framed
 --- @field typst_wrapper string Typst wrapper function name
 --- @field hotfix_code_annotations boolean Whether to apply the code-annotations hot-fix for Typst
 --- @field hotfix_skylighting boolean Whether to apply the Skylighting hot-fix for Typst
@@ -37,6 +39,7 @@ local DEFAULTS = {
   ['enabled'] = 'true',
   ['auto-filename'] = 'true',
   ['style'] = 'macos',
+  ['cell-output'] = 'false',
   ['wrapper'] = 'code-window',
   ['collapse'] = 'false',
   ['lines-label'] = 'true',
@@ -635,7 +638,9 @@ function Meta(meta)
   CURRENT_FORMAT = pdoc.get_quarto_format()
   local opts = meta_mod.get_options({
     extension = EXTENSION_NAME,
-    keys = { 'enabled', 'auto-filename', 'style', 'wrapper', 'collapse', 'lines-label' },
+    keys = {
+      'enabled', 'auto-filename', 'style', 'cell-output', 'wrapper', 'collapse', 'lines-label',
+    },
     meta = meta,
     defaults = DEFAULTS,
   })
@@ -698,6 +703,7 @@ function Meta(meta)
     enabled = opts['enabled'] == 'true',
     auto_filename = opts['auto-filename'] == 'true',
     style = VALID_STYLES[opts['style']] and opts['style'] or 'macos',
+    cell_output = opts['cell-output'] == 'true',
     typst_wrapper = opts['wrapper'],
     collapse = global_collapse,
     lines_label = opts['lines-label'] == 'true',
@@ -746,8 +752,17 @@ end
 --- Process CodeBlock elements for HTML/Reveal.js only.
 --- Typst processing is handled by the Blocks filter.
 function CodeBlock(block)
+  -- The Typst path reads the marker in the Pandoc filter, which runs first, so
+  -- this pass is where it is removed for every format.
+  local is_cell_output = cell_output.is_marked(block)
+  cell_output.strip(block)
+
   if not CURRENT_FORMAT or not CONFIG or not CONFIG.enabled then
     block.attributes['code-window-no-auto-filename'] = nil
+    return block
+  end
+
+  if is_cell_output then
     return block
   end
 
@@ -770,6 +785,11 @@ end
 --- @return boolean window_opted_out True when code-window-enabled="false" was set
 --- @return string|nil lines_label Highlighted-lines spec for the title bar
 local function resolve_window_params(block)
+  -- The output of an executed cell keeps the shape Quarto gave it.
+  if cell_output.is_marked(block) then
+    return nil, false, nil, true, nil
+  end
+
   -- Per-block opt-out: code-window-enabled="false" skips window chrome.
   local block_enabled = block.attributes['code-window-enabled']
   if block_enabled then
