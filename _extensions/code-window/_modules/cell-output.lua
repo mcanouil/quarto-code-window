@@ -14,15 +14,6 @@ local M = {}
 
 local MARKER = 'code-window-cell-output'
 
-local get_config = nil
-
---- Inject the configuration accessor.
---- Called by main.lua before any filter handler runs.
---- @param fn function Accessor returning the CodeWindowConfig table
-function M.set_config(fn)
-  get_config = fn
-end
-
 --- Check whether a Div holds the output of an executed cell.
 --- @param div pandoc.Div
 --- @return boolean
@@ -36,15 +27,9 @@ local function is_cell_output(div)
 end
 
 --- Mark every code block inside a cell-output Div.
---- Does nothing when the extension is off, or when cell output is framed on
---- request through the `cell-output` option.
 --- @param div pandoc.Div
 --- @return pandoc.Div|nil Marked Div, or nil when the Div is left as it is
 function M.Div(div)
-  local config = get_config and get_config()
-  if not config or not config.enabled or config.cell_output then
-    return nil
-  end
   if not is_cell_output(div) then
     return nil
   end

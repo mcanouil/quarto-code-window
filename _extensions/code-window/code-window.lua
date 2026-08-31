@@ -755,7 +755,9 @@ function CodeBlock(block)
   -- The Typst path reads the marker in the Pandoc filter, which runs first, so
   -- this pass is where it is removed for every format.
   local is_cell_output = cell_output.is_marked(block)
-  cell_output.strip(block)
+  if is_cell_output then
+    cell_output.strip(block)
+  end
 
   if not CURRENT_FORMAT or not CONFIG or not CONFIG.enabled then
     block.attributes['code-window-no-auto-filename'] = nil
@@ -782,12 +784,11 @@ end
 --- @return string|nil filename
 --- @return boolean is_auto
 --- @return string|nil block_style
---- @return boolean window_opted_out True when code-window-enabled="false" was set
 --- @return string|nil lines_label Highlighted-lines spec for the title bar
 local function resolve_window_params(block)
   -- The output of an executed cell keeps the shape Quarto gave it.
   if cell_output.is_marked(block) then
-    return nil, false, nil, true, nil
+    return nil, false, nil, nil
   end
 
   -- Per-block opt-out: code-window-enabled="false" skips window chrome.
@@ -796,7 +797,7 @@ local function resolve_window_params(block)
     block.attributes['code-window-enabled'] = nil
   end
   if block_enabled == 'false' then
-    return nil, false, nil, true, nil
+    return nil, false, nil, nil
   end
 
   local block_style = read_block_style(block)
@@ -823,7 +824,7 @@ local function resolve_window_params(block)
     lines_label = read_block_lines_label(block)
   end
 
-  return filename, is_auto, block_style, false, lines_label
+  return filename, is_auto, block_style, lines_label
 end
 
 --- Process a single CodeBlock for Typst, returning replacement blocks.
@@ -834,7 +835,7 @@ end
 --- @return boolean consumed_next Whether the next block was consumed
 --- @return integer|nil annotation_block_id Block ID if annotations were found (for parent propagation)
 local function process_typst_block(block, next_block)
-  local filename, is_auto, block_style, window_opted_out, lines_label = resolve_window_params(block)
+  local filename, is_auto, block_style, lines_label = resolve_window_params(block)
   local has_window = filename and filename ~= ''
   local effective_style = block_style or CONFIG.style
 

@@ -25,7 +25,24 @@ local code_window = require(
   quarto.utils.resolve_path('code-window.lua'):gsub('%.lua$', ''))
 
 code_window.set_code_annotations(code_annotations)
-cell_output.set_config(code_window.CONFIG)
+
+-- ============================================================================
+-- CELL OUTPUT
+-- ============================================================================
+
+--- Mark the code blocks that hold the output of an executed cell, so the later
+--- passes leave them as Quarto wrote them. Reads the configuration once and
+--- walks the document only when the output has to stay unframed.
+--- @param doc pandoc.Pandoc
+--- @return pandoc.Pandoc|nil Marked document, or nil when nothing is marked
+local function mark_cell_output(doc)
+  local config = code_window.CONFIG()
+  if not config or not config.enabled or config.cell_output then
+    return nil
+  end
+  doc.blocks = doc.blocks:walk({ Div = cell_output.Div })
+  return doc
+end
 
 -- ============================================================================
 -- SKYLIGHTING HOT-FIX
@@ -57,7 +74,7 @@ end
 -- that pass runs before the language pass so a marked block is never relabelled.
 local filters = {
   { Meta = code_window.Meta },
-  { Div = cell_output.Div },
+  { Pandoc = mark_cell_output },
   { CodeBlock = language.CodeBlock },
   { Pandoc = code_window.Pandoc },
   { CodeBlock = code_window.CodeBlock },
