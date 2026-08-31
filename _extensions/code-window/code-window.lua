@@ -764,7 +764,7 @@ function CodeBlock(block)
     return block
   end
 
-  if is_cell_output then
+  if is_cell_output and str.is_empty(block.attributes['filename']) then
     return block
   end
 
@@ -786,8 +786,9 @@ end
 --- @return string|nil block_style
 --- @return string|nil lines_label Highlighted-lines spec for the title bar
 local function resolve_window_params(block)
-  -- The output of an executed cell keeps the shape Quarto gave it.
-  if cell_output.is_marked(block) then
+  -- The output of an executed cell keeps the shape Quarto gave it, unless the
+  -- engine gave it a filename of its own.
+  if cell_output.is_marked(block) and str.is_empty(block.attributes['filename']) then
     return nil, false, nil, nil
   end
 

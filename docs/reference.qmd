@@ -76,7 +76,8 @@ extensions:
     cell-output: true
 ```
 
-The output has no attributes an author can reach, so this option is the only control over it.
+An engine can put a filename on the output block, through knitr's `attr-output` for example.
+Output named that way is always framed, whatever this option says.
 
 ## How the chrome is applied
 
