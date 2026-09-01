@@ -12,6 +12,9 @@ local log = require(quarto.utils.resolve_path('_modules/logging.lua'):gsub('%.lu
 -- LOAD SUBMODULES
 -- ============================================================================
 
+local cell_output = require(
+  quarto.utils.resolve_path('_modules/cell-output.lua'):gsub('%.lua$', ''))
+
 local language = require(
   quarto.utils.resolve_path('_modules/language.lua'):gsub('%.lua$', ''))
 
@@ -22,6 +25,26 @@ local code_window = require(
   quarto.utils.resolve_path('code-window.lua'):gsub('%.lua$', ''))
 
 code_window.set_code_annotations(code_annotations)
+
+-- ============================================================================
+-- CELL OUTPUT
+-- ============================================================================
+
+--- Mark the code blocks that hold the output of an executed cell, so the later
+--- passes leave them as Quarto wrote them. Reads the configuration once and
+--- walks the document only when the output has to stay unframed. The language
+--- pass runs whether the extension is on or off, so the mark is set in both
+--- cases; the window passes remove it either way.
+--- @param doc pandoc.Pandoc
+--- @return pandoc.Pandoc|nil Marked document, or nil when the pass is skipped
+local function mark_cell_output(doc)
+  local config = code_window.CONFIG()
+  if not config or (config.enabled and config.cell_output) then
+    return nil
+  end
+  doc.blocks = doc.blocks:walk({ Div = cell_output.Div })
+  return doc
+end
 
 -- ============================================================================
 -- SKYLIGHTING HOT-FIX
@@ -49,9 +72,12 @@ end
 -- FILTER ASSEMBLY
 -- ============================================================================
 
+-- Meta runs first because the cell-output pass needs the configuration, and
+-- that pass runs before the language pass so a marked block is never relabelled.
 local filters = {
-  { CodeBlock = language.CodeBlock },
   { Meta = code_window.Meta },
+  { Pandoc = mark_cell_output },
+  { CodeBlock = language.CodeBlock },
   { Pandoc = code_window.Pandoc },
   { CodeBlock = code_window.CodeBlock },
 }
