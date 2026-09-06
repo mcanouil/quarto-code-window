@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Refactoring
+
+- build: Declare the vendored Lua modules in `_extensions/code-window/_dependencies.yml` and move them to `_extensions/code-window/_vendor/`, so each one names the release it came from and can be checked against it.
+
 ## 1.4.0 (2026-09-01)
 
 ### New Features
