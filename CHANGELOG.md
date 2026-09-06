@@ -4,11 +4,11 @@
 
 ### New Features
 
-- feat: Check the document configuration against the extension schema and report what it does not accept.
+- feat: Check the document configuration against the extension schema and report what it does not accept. (#54)
 
 ### Refactoring
 
-- build: Declare the vendored Lua modules in `_extensions/code-window/_dependencies.yml` and move them to `_extensions/code-window/_vendor/`, so each one names the release it came from and can be checked against it.
+- build: Declare the vendored Lua modules in `_extensions/code-window/_dependencies.yml` and move them to `_extensions/code-window/_vendor/`. Each module names the release it came from, so it can be checked against that release. (#53)
 
 ## 1.4.0 (2026-09-01)
 
