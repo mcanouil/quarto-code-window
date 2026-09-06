@@ -19,6 +19,7 @@ local pdoc = require(quarto.utils.resolve_path('_vendor/quarto-lua-modules/pando
 local html_mod = require(quarto.utils.resolve_path('_vendor/quarto-lua-modules/html.lua'):gsub('%.lua$', ''))
 local cell_output = require(quarto.utils.resolve_path('_modules/cell-output.lua'):gsub('%.lua$', ''))
 local code_annotations = nil
+local checker = nil
 
 -- ============================================================================
 -- DEFAULTS AND STATE
@@ -651,6 +652,13 @@ end
 --- Load configuration and inject CSS/JS dependencies.
 function Meta(meta)
   CURRENT_FORMAT = pdoc.get_quarto_format()
+
+  -- This is the pass that reads the configuration, so the check runs here,
+  -- before the first option is read. An option the check rejects is still
+  -- read below, because the report says what the extension cannot use and the
+  -- document renders either way.
+  checker:options(meta)
+
   local opts = meta_mod.get_options({
     extension = EXTENSION_NAME,
     keys = {
@@ -1153,8 +1161,16 @@ local function set_code_annotations(mod)
   code_annotations = mod
 end
 
+--- Inject the schema checker.
+--- Called by main.lua before any filter handlers run.
+--- @param mod table The checker built from the vendored validator
+local function set_checker(mod)
+  checker = mod
+end
+
 return {
   set_code_annotations = set_code_annotations,
+  set_checker = set_checker,
   Meta = Meta,
   Pandoc = Pandoc,
   CodeBlock = CodeBlock,

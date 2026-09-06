@@ -7,6 +7,16 @@
 
 local EXTENSION_NAME = 'code-window'
 local log = require(quarto.utils.resolve_path('_vendor/quarto-lua-modules/logging.lua'):gsub('%.lua$', ''))
+local schema = require(quarto.utils.resolve_path('_vendor/quarto-wizard/schema.lua'):gsub('%.lua$', ''))
+local check = require(quarto.utils.resolve_path('_vendor/quarto-lua-modules/schema-check.lua'):gsub('%.lua$', ''))
+
+--- The checker reports what "extensions.code-window" declares that this
+--- extension cannot use. The validator is handed to it rather than required by
+--- it, so the two vendored sources stay independent of each other. Building it
+--- here reads "_schema.yml" once for the whole render. A schema that cannot be
+--- read is reported and the render carries on: a fault in the configuration
+--- must not remove the document.
+local checker = check.new(schema, EXTENSION_NAME)
 
 -- ============================================================================
 -- LOAD SUBMODULES
@@ -25,6 +35,7 @@ local code_window = require(
   quarto.utils.resolve_path('code-window.lua'):gsub('%.lua$', ''))
 
 code_window.set_code_annotations(code_annotations)
+code_window.set_checker(checker)
 
 -- ============================================================================
 -- CELL OUTPUT
