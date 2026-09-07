@@ -20,9 +20,15 @@ website:
   title: "Code Window"
   description: "A Quarto filter that dresses code blocks as application windows, with a filename, traffic lights, and optional folding."
   # No trailing slash: Quarto builds the social image URL by concatenating this
-  # with a leading-slash image path, without normalising.
+  # with the image path, without normalising.
   site-url: &site-url https://m.canouil.dev/quarto-code-window
   repo-url: https://github.com/mcanouil/quarto-code-window
+  open-graph:
+    image: assets/social/og-image.png
+    image-alt: "The quarto-code-window social card: the extension name and the \"filter\" badge over the line \"Style code blocks as macOS-style windows with title bars\", beside a dark code window showing document.qmd."
+  twitter-card:
+    image: assets/social/og-image.png
+    image-alt: "The quarto-code-window social card: the extension name and the \"filter\" badge over the line \"Style code blocks as macOS-style windows with title bars\", beside a dark code window showing document.qmd."
   # The Quarto project root is `docs/`, so without this every edit and issue
   # link points at a path one level up from the page it was built for.
   repo-subdir: docs
