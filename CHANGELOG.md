@@ -6,6 +6,15 @@
 
 - feat: Report a key nested inside an option that the schema does not declare, such as a typo in a nested setting. Only top-level keys were checked before. (#60)
 
+### Bug Fixes
+
+- fix: Check every code block attribute in the code-window group against the schema, so a value nothing validated before, such as code-window-enabled, is now reported when it is wrong. The extension's own duplicate warnings for an invalid code-window-style or code-window-collapse are removed, since the schema already names the same mistake. (#60)
+- fix: Honour an explicit code-window-no-auto-filename="false", which previously suppressed auto-filename exactly like "true". (#60)
+- fix: Remove the extension's own duplicate collapse and style warnings at the document option level, now that the schema reports each mistake once. (#60)
+- fix: Match the code-window-collapse attribute schema to the string Pandoc always provides, so a documented "true" or "false" value no longer warns. (#60)
+- fix: Validate a code block's attributes on the HTML path the same way the Typst path already does, so an invalid attribute on a block holding executed-cell output is now reported on HTML too, instead of being silently accepted. (#60)
+- fix: Gate the options check on the html and typst formats so non-acting formats stay silent. (#60)
+
 ### Documentation
 
 - docs: Serve the extension's social card as the Open Graph image, so a shared link shows the card rather than the first image on the page. (#58)
