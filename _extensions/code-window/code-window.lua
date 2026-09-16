@@ -563,10 +563,14 @@ local function process_html(block, resolved)
   local explicit_filename = block.attributes['filename']
   -- code-window-no-auto-filename declares default: false, matching this
   -- file's own fallback, and never layers over a document option either.
-  -- Presence, not the resolved boolean, decides this flag: see the note on
-  -- the identical read in resolve_window_params below for why.
-  local no_auto = block.attributes['code-window-no-auto-filename'] ~= nil
-  if no_auto then
+  -- Presence (does the block carry the attribute at all) and meaning (what
+  -- the written value says) are read separately here: presence decides
+  -- whether to strip the attribute from the block, and the stringified
+  -- resolved value decides the flag, so an explicit "false" behaves like
+  -- absence rather than like "true".
+  local no_auto_written = block.attributes['code-window-no-auto-filename'] ~= nil
+  local no_auto = stringify_bool(resolved['code-window-no-auto-filename']) == 'true'
+  if no_auto_written then
     block.attributes['code-window-no-auto-filename'] = nil
   end
 
@@ -893,14 +897,14 @@ local function resolve_window_params(block, resolved)
   local is_auto = false
   -- code-window-no-auto-filename declares default: false, matching this
   -- file's own fallback, and never layers over a document option either.
-  -- Pre-existing behaviour (unchanged here): this flag was always read for
-  -- presence, not for the value written, because Lua treats a non-nil string
-  -- as true regardless of its text, so "code-window-no-auto-filename=false"
-  -- has always suppressed auto-filename exactly like "=true". Reading
-  -- resolved's coerced boolean here instead would quietly fix that; this
-  -- keeps the existing behaviour and reports it separately.
-  local no_auto = block.attributes['code-window-no-auto-filename'] ~= nil
-  if no_auto then
+  -- Presence (does the block carry the attribute at all) and meaning (what
+  -- the written value says) are read separately here: presence decides
+  -- whether to strip the attribute from the block, and the stringified
+  -- resolved value decides the flag, so an explicit "false" behaves like
+  -- absence rather than like "true".
+  local no_auto_written = block.attributes['code-window-no-auto-filename'] ~= nil
+  local no_auto = stringify_bool(resolved['code-window-no-auto-filename']) == 'true'
+  if no_auto_written then
     block.attributes['code-window-no-auto-filename'] = nil
   end
 
