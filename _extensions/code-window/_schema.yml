@@ -88,8 +88,8 @@ attributes:
       enum: ["default", "macos", "windows"]
       description: "Override the global window decoration style for this specific code block."
     code-window-collapse:
-      type: [boolean, string]
-      enum: [true, false, "open", "closed"]
+      type: string
+      enum: ["true", "false", "open", "closed"]
       description: "Wrap this code block in a collapsible <details> element (HTML only). Use 'open' to render expanded, 'closed' or true to render collapsed, false to disable."
     code-window-lines:
       type: string

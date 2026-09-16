@@ -128,10 +128,20 @@ end
 --- restating the same enum with no remedy, legal alternative, or
 --- format-specific consequence the schema message lacks, so neither call
 --- site asks for it any more.
+--- raw is never a Lua boolean here, for either caller: the "collapse"
+--- document option is read through meta_mod.get_options, which always
+--- stringifies, and "code-window-collapse" declares type: string in
+--- _schema.yml (not a [boolean, string] union), specifically because a
+--- Pandoc attribute value is always a string, so a union type paired with
+--- an enum holding an unquoted true/false can never match it: `_coerce`
+--- returns a value unchanged as soon as its current Lua type already
+--- matches a member of the declared type list, so the string always wins
+--- and boolean coercion is never attempted, which made the enum check
+--- compare the string "true" against the schema's own boolean `true` and
+--- fail on every legal value. No stringify step is needed on this path.
 --- @param raw string|nil Raw collapse value
 --- @return string|nil Resolved collapse mode ("open"/"closed") or nil
 local function resolve_collapse(raw)
-  raw = stringify_bool(raw)
   if raw == nil or raw == '' then
     return nil
   end
