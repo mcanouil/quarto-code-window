@@ -80,29 +80,65 @@ end
 -- BLOCK-LEVEL STYLE OVERRIDE
 -- ============================================================================
 
+--- Turn a schema-resolved boolean back into the "true"/"false" string this
+--- file's own comparisons already use. A value the schema rejects arrives
+--- here unchanged (the original string the document wrote), and is passed
+--- through as-is.
+--- @param value any Resolved attribute value
+--- @return any
+local function stringify_bool(value)
+  if type(value) == 'boolean' then
+    return value and 'true' or 'false'
+  end
+  return value
+end
+
 --- Read the block-level style override from code-window-style attribute.
 --- Returns the validated style value or nil.
 --- Strips the attribute from the block.
+--- An unrecognised value is not warned about here: the schema check this
+--- block's caller already ran (checker:attributes, group "CodeBlock") reports
+--- the same mistake in its own words, and this file's own message added
+--- nothing beyond restating the fallback, which the schema check's
+--- documented policy ("no finding stops a render") already implies for every
+--- attribute.
 --- @param block pandoc.CodeBlock Code block element
+--- @param resolved table<string, any> This block's attributes, resolved against the schema
 --- @return string|nil Style override value
-local function read_block_style(block)
-  local block_style = block.attributes['code-window-style']
+local function read_block_style(block, resolved)
+  local block_style = resolved['code-window-style']
   if not block_style or block_style == '' then
     return nil
   end
   block.attributes['code-window-style'] = nil
-  if VALID_STYLES[block_style] then
+  if type(block_style) == 'string' and VALID_STYLES[block_style] then
     return block_style
   end
-  log.log_warning(EXTENSION_NAME,
-    string.format('Unknown block style "%s", using configured default.', block_style))
   return nil
 end
 
 --- Resolve a collapse value coming from extension options or a code-block
 --- attribute. Returns "open"/"closed" when the window should be collapsible,
 --- nil when collapsing is off or the value is unrecognised.
---- Emits a warning when the input is set but not understood.
+--- Both callers are now covered by a schema check that reports an
+--- unrecognised value in its own words: the "collapse" document option by
+--- checker:options (Meta, below), and the "code-window-collapse" block
+--- attribute by checker:attributes on the "CodeBlock" group
+--- (read_block_collapse, below). This function used to warn again for both,
+--- restating the same enum with no remedy, legal alternative, or
+--- format-specific consequence the schema message lacks, so neither call
+--- site asks for it any more.
+--- raw is never a Lua boolean here, for either caller: the "collapse"
+--- document option is read through meta_mod.get_options, which always
+--- stringifies, and "code-window-collapse" declares type: string in
+--- _schema.yml (not a [boolean, string] union), specifically because a
+--- Pandoc attribute value is always a string, so a union type paired with
+--- an enum holding an unquoted true/false can never match it: `_coerce`
+--- returns a value unchanged as soon as its current Lua type already
+--- matches a member of the declared type list, so the string always wins
+--- and boolean coercion is never attempted, which made the enum check
+--- compare the string "true" against the schema's own boolean `true` and
+--- fail on every legal value. No stringify step is needed on this path.
 --- @param raw string|nil Raw collapse value
 --- @return string|nil Resolved collapse mode ("open"/"closed") or nil
 local function resolve_collapse(raw)
@@ -111,8 +147,6 @@ local function resolve_collapse(raw)
   end
   local resolved = VALID_COLLAPSE[raw]
   if resolved == nil then
-    log.log_warning(EXTENSION_NAME,
-      string.format('Unknown collapse value "%s", expected one of true/false/open/closed.', raw))
     return nil
   end
   if resolved == false then
@@ -122,11 +156,19 @@ local function resolve_collapse(raw)
 end
 
 --- Read the per-block collapse override from code-window-collapse attribute.
+--- code-window-collapse layers over the "collapse" document option
+--- (CONFIG.collapse), which is the reason it must not be read with a bare
+--- "or": a resolved boolean false has to reach resolve_collapse and disable
+--- collapsing, not fall through to the document option. The schema declares
+--- no default for this attribute, so the merged table already answers nil
+--- exactly when the document left it unwritten, with no separate presence
+--- test needed.
 --- Always strips the attribute from the block before resolving.
 --- @param block pandoc.CodeBlock Code block element
+--- @param resolved table<string, any> This block's attributes, resolved against the schema
 --- @return string|nil Resolved collapse mode ("open"/"closed") or nil when off
-local function read_block_collapse(block)
-  local raw = block.attributes['code-window-collapse']
+local function read_block_collapse(block, resolved)
+  local raw = resolved['code-window-collapse']
   if raw == nil then
     return nil
   end
@@ -139,9 +181,10 @@ end
 --- code-line-numbers attribute when it carries a non-boolean spec.
 --- Returns the cleaned spec string or nil.
 --- @param block pandoc.CodeBlock Code block element
+--- @param resolved table<string, any> This block's attributes, resolved against the schema
 --- @return string|nil Line spec to display in the title bar
-local function read_block_lines_label(block)
-  local raw = block.attributes['code-window-lines']
+local function read_block_lines_label(block, resolved)
+  local raw = resolved['code-window-lines']
   if raw ~= nil then
     block.attributes['code-window-lines'] = nil
     if raw ~= '' then
@@ -494,33 +537,47 @@ end
 --- is added when a block-level style override is present.
 --- Auto-filename blocks are wrapped directly with the style class.
 --- @param block pandoc.CodeBlock Code block element
+--- @param resolved table<string, any> This block's attributes, resolved against the schema
 --- @return pandoc.Div|pandoc.CodeBlock Wrapped block or original
-local function process_html(block)
+local function process_html(block, resolved)
   -- Default/unknown/no-language blocks carry their label on
   -- code-window-auto-label (set by the language module). Read it here so no
-  -- return path can leak it into the rendered document.
+  -- return path can leak it into the rendered document. code-window-auto-label
+  -- is not a document-facing attribute the schema declares, so it is read
+  -- straight from the block, not from resolved.
   local auto_label = block.attributes['code-window-auto-label']
   block.attributes['code-window-auto-label'] = nil
 
   -- Per-block opt-out: code-window-enabled="false" skips window chrome.
-  local block_enabled = block.attributes['code-window-enabled']
-  if block_enabled then
+  -- code-window-enabled declares default: true, matching this file's own
+  -- fallback (chrome applies unless turned off), and it never layers over a
+  -- document option, so the resolved value is read directly.
+  local block_enabled = resolved['code-window-enabled']
+  if block.attributes['code-window-enabled'] ~= nil then
     block.attributes['code-window-enabled'] = nil
   end
-  if block_enabled == 'false' then
+  if stringify_bool(block_enabled) == 'false' then
     return block
   end
 
-  local block_style = read_block_style(block)
-  local block_collapse = read_block_collapse(block)
+  local block_style = read_block_style(block, resolved)
+  local block_collapse = read_block_collapse(block, resolved)
   local effective_collapse = block_collapse or CONFIG.collapse
   local explicit_filename = block.attributes['filename']
-  local no_auto = block.attributes['code-window-no-auto-filename']
-  if no_auto then
+  -- code-window-no-auto-filename declares default: false, matching this
+  -- file's own fallback, and never layers over a document option either.
+  -- Presence (does the block carry the attribute at all) and meaning (what
+  -- the written value says) are read separately here: presence decides
+  -- whether to strip the attribute from the block, and the stringified
+  -- resolved value decides the flag, so an explicit "false" behaves like
+  -- absence rather than like "true".
+  local no_auto_written = block.attributes['code-window-no-auto-filename'] ~= nil
+  local no_auto = stringify_bool(resolved['code-window-no-auto-filename']) == 'true'
+  if no_auto_written then
     block.attributes['code-window-no-auto-filename'] = nil
   end
 
-  local lines_label = CONFIG.lines_label and read_block_lines_label(block) or nil
+  local lines_label = CONFIG.lines_label and read_block_lines_label(block, resolved) or nil
 
   if explicit_filename and explicit_filename ~= '' then
     -- Let Quarto create the .code-with-filename wrapper.
@@ -656,8 +713,11 @@ function Meta(meta)
   -- This is the pass that reads the configuration, so the check runs here,
   -- before the first option is read. An option the check rejects is still
   -- read below, because the report says what the extension cannot use and the
-  -- document renders either way.
-  checker:options(meta)
+  -- document renders either way. The extension only acts on html and typst,
+  -- so the check is gated on the same union those formats already use below.
+  if CURRENT_FORMAT == 'html' or CURRENT_FORMAT == 'typst' then
+    checker:options(meta)
+  end
 
   local opts = meta_mod.get_options({
     extension = EXTENSION_NAME,
@@ -668,10 +728,12 @@ function Meta(meta)
     defaults = DEFAULTS,
   })
 
-  if not VALID_STYLES[opts['style']] then
-    log.log_warning(EXTENSION_NAME,
-      string.format('Unknown style "%s", falling back to "macos".', opts['style']))
-  end
+  -- checker:options (above) already reports an unrecognised "style" value in
+  -- its own words; this used to warn again with no remedy, legal
+  -- alternative, or format-specific consequence the schema message lacks
+  -- (the same shape already removed for "collapse"), so it is silent here.
+  -- The fallback (VALID_STYLES[opts['style']] and opts['style'] or 'macos',
+  -- below in CONFIG) is unchanged.
 
   local global_collapse = resolve_collapse(opts['collapse'])
 
@@ -774,6 +836,25 @@ end
 
 --- Process CodeBlock elements for HTML/Reveal.js only.
 --- Typst processing is handled by the Blocks filter.
+--- This handler runs on every CodeBlock structurally, for every format,
+--- because a plain `CodeBlock` filter entry is not format-scoped the way
+--- CONFIG.enabled or CURRENT_FORMAT are. For a Typst render, the same block
+--- is already checked once by process_typst_block through the Pandoc filter
+--- above it in main.lua's filter list, so checker:attributes is called here
+--- only in the two branches that do not overlap with that pass: the
+--- disabled/unconfigured branch (where the Typst pass never runs at all,
+--- because Pandoc() returns before reaching it) and the html branch (where
+--- the Typst pass never runs either, because it is typst-only). Calling it
+--- unconditionally at the top of this function double-validated every
+--- CodeBlock-group attribute the Typst path leaves unstripped, such as
+--- code-window-collapse, which is HTML-only and never read on that path.
+--- Within the html branch, the check runs before the is_plain_output return,
+--- not after: process_typst_block (below) checks every attribute
+--- unconditionally, before its own is_unnamed_cell_output test, so an
+--- output-of-an-executed-cell block is validated on the Typst path even
+--- though nothing about it is otherwise touched. The html branch matches
+--- that rather than skipping validation for the same kind of block, so the
+--- same document reports the same finding in both formats.
 function CodeBlock(block)
   -- The Typst path reads the marker in the Pandoc filter, which runs first, so
   -- this pass is where it is removed for every format.
@@ -783,17 +864,18 @@ function CodeBlock(block)
   end
 
   if not CURRENT_FORMAT or not CONFIG or not CONFIG.enabled then
+    checker:attributes(block.attributes, 'CodeBlock')
     block.attributes['code-window-no-auto-filename'] = nil
     block.attributes['code-window-auto-label'] = nil
     return block
   end
 
-  if is_plain_output then
-    return block
-  end
-
   if CURRENT_FORMAT == 'html' then
-    return process_html(block)
+    local resolved = checker:attributes(block.attributes, 'CodeBlock')
+    if is_plain_output then
+      return block
+    end
+    return process_html(block, resolved)
   end
 
   return block
@@ -805,26 +887,38 @@ end
 
 --- Determine whether a CodeBlock should get code-window chrome.
 --- @param block pandoc.CodeBlock
+--- @param resolved table<string, any> This block's attributes, resolved against the schema
 --- @return string|nil filename
 --- @return boolean is_auto
 --- @return string|nil block_style
 --- @return string|nil lines_label Highlighted-lines spec for the title bar
-local function resolve_window_params(block)
+local function resolve_window_params(block, resolved)
   -- Per-block opt-out: code-window-enabled="false" skips window chrome.
-  local block_enabled = block.attributes['code-window-enabled']
-  if block_enabled then
+  -- code-window-enabled declares default: true, matching this file's own
+  -- fallback, and never layers over a document option, so the resolved value
+  -- is read directly.
+  local block_enabled = resolved['code-window-enabled']
+  if block.attributes['code-window-enabled'] ~= nil then
     block.attributes['code-window-enabled'] = nil
   end
-  if block_enabled == 'false' then
+  if stringify_bool(block_enabled) == 'false' then
     return nil, false, nil, nil
   end
 
-  local block_style = read_block_style(block)
+  local block_style = read_block_style(block, resolved)
   local explicit_filename = block.attributes['filename']
   local filename = explicit_filename
   local is_auto = false
-  local no_auto = block.attributes['code-window-no-auto-filename']
-  if no_auto then
+  -- code-window-no-auto-filename declares default: false, matching this
+  -- file's own fallback, and never layers over a document option either.
+  -- Presence (does the block carry the attribute at all) and meaning (what
+  -- the written value says) are read separately here: presence decides
+  -- whether to strip the attribute from the block, and the stringified
+  -- resolved value decides the flag, so an explicit "false" behaves like
+  -- absence rather than like "true".
+  local no_auto_written = block.attributes['code-window-no-auto-filename'] ~= nil
+  local no_auto = stringify_bool(resolved['code-window-no-auto-filename']) == 'true'
+  if no_auto_written then
     block.attributes['code-window-no-auto-filename'] = nil
   end
 
@@ -840,7 +934,7 @@ local function resolve_window_params(block)
 
   local lines_label = nil
   if CONFIG.lines_label then
-    lines_label = read_block_lines_label(block)
+    lines_label = read_block_lines_label(block, resolved)
   end
 
   return filename, is_auto, block_style, lines_label
@@ -854,13 +948,17 @@ end
 --- @return boolean consumed_next Whether the next block was consumed
 --- @return integer|nil annotation_block_id Block ID if annotations were found (for parent propagation)
 local function process_typst_block(block, next_block)
+  -- Check this block's own attributes against the CodeBlock group of the
+  -- schema before anything below reads or rewrites them, in either branch.
+  local resolved = checker:attributes(block.attributes, 'CodeBlock')
+
   -- The output of an executed cell keeps the shape Quarto gave it, annotations
   -- included, unless the engine gave it a filename of its own.
   if is_unnamed_cell_output(block) then
     return { block }, false, nil
   end
 
-  local filename, is_auto, block_style, lines_label = resolve_window_params(block)
+  local filename, is_auto, block_style, lines_label = resolve_window_params(block, resolved)
   local has_window = filename and filename ~= ''
   local effective_style = block_style or CONFIG.style
 
