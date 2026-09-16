@@ -713,8 +713,11 @@ function Meta(meta)
   -- This is the pass that reads the configuration, so the check runs here,
   -- before the first option is read. An option the check rejects is still
   -- read below, because the report says what the extension cannot use and the
-  -- document renders either way.
-  checker:options(meta)
+  -- document renders either way. The extension only acts on html and typst,
+  -- so the check is gated on the same union those formats already use below.
+  if CURRENT_FORMAT == 'html' or CURRENT_FORMAT == 'typst' then
+    checker:options(meta)
+  end
 
   local opts = meta_mod.get_options({
     extension = EXTENSION_NAME,
