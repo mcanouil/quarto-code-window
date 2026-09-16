@@ -120,30 +120,23 @@ end
 --- Resolve a collapse value coming from extension options or a code-block
 --- attribute. Returns "open"/"closed" when the window should be collapsible,
 --- nil when collapsing is off or the value is unrecognised.
---- Emits a warning when the input is set but not understood, and only when
---- the caller asks for it. The "collapse" document option (Meta, below) is
---- unchanged by this task and keeps asking for the warning, whatever a
---- separate, pre-existing checker:options duplicate for that option may be;
---- fixing that belongs to whichever task added the options check, not this
---- one. The "code-window-collapse" block attribute, this function's other
---- caller, is what this task adds a schema check for
---- (checker:attributes on the "CodeBlock" group), and that check reports the
---- same unrecognised-value mistake in its own words, so read_block_collapse
---- asks for silence here rather than reporting it twice.
+--- Both callers are now covered by a schema check that reports an
+--- unrecognised value in its own words: the "collapse" document option by
+--- checker:options (Meta, below), and the "code-window-collapse" block
+--- attribute by checker:attributes on the "CodeBlock" group
+--- (read_block_collapse, below). This function used to warn again for both,
+--- restating the same enum with no remedy, legal alternative, or
+--- format-specific consequence the schema message lacks, so neither call
+--- site asks for it any more.
 --- @param raw string|nil Raw collapse value
---- @param warn_on_unknown boolean|nil Report an unrecognised value; default false
 --- @return string|nil Resolved collapse mode ("open"/"closed") or nil
-local function resolve_collapse(raw, warn_on_unknown)
+local function resolve_collapse(raw)
   raw = stringify_bool(raw)
   if raw == nil or raw == '' then
     return nil
   end
   local resolved = VALID_COLLAPSE[raw]
   if resolved == nil then
-    if warn_on_unknown then
-      log.log_warning(EXTENSION_NAME,
-        string.format('Unknown collapse value "%s", expected one of true/false/open/closed.', raw))
-    end
     return nil
   end
   if resolved == false then
@@ -727,7 +720,7 @@ function Meta(meta)
       string.format('Unknown style "%s", falling back to "macos".', opts['style']))
   end
 
-  local global_collapse = resolve_collapse(opts['collapse'], true)
+  local global_collapse = resolve_collapse(opts['collapse'])
 
   -- Read code-annotations metadata (Quarto standard option).
   local annot_meta = meta['code-annotations']
