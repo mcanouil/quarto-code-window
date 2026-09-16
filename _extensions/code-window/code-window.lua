@@ -715,10 +715,12 @@ function Meta(meta)
     defaults = DEFAULTS,
   })
 
-  if not VALID_STYLES[opts['style']] then
-    log.log_warning(EXTENSION_NAME,
-      string.format('Unknown style "%s", falling back to "macos".', opts['style']))
-  end
+  -- checker:options (above) already reports an unrecognised "style" value in
+  -- its own words; this used to warn again with no remedy, legal
+  -- alternative, or format-specific consequence the schema message lacks
+  -- (the same shape already removed for "collapse"), so it is silent here.
+  -- The fallback (VALID_STYLES[opts['style']] and opts['style'] or 'macos',
+  -- below in CONFIG) is unchanged.
 
   local global_collapse = resolve_collapse(opts['collapse'])
 
