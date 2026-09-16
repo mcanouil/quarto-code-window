@@ -845,6 +845,13 @@ end
 --- unconditionally at the top of this function double-validated every
 --- CodeBlock-group attribute the Typst path leaves unstripped, such as
 --- code-window-collapse, which is HTML-only and never read on that path.
+--- Within the html branch, the check runs before the is_plain_output return,
+--- not after: process_typst_block (below) checks every attribute
+--- unconditionally, before its own is_unnamed_cell_output test, so an
+--- output-of-an-executed-cell block is validated on the Typst path even
+--- though nothing about it is otherwise touched. The html branch matches
+--- that rather than skipping validation for the same kind of block, so the
+--- same document reports the same finding in both formats.
 function CodeBlock(block)
   -- The Typst path reads the marker in the Pandoc filter, which runs first, so
   -- this pass is where it is removed for every format.
@@ -860,12 +867,11 @@ function CodeBlock(block)
     return block
   end
 
-  if is_plain_output then
-    return block
-  end
-
   if CURRENT_FORMAT == 'html' then
     local resolved = checker:attributes(block.attributes, 'CodeBlock')
+    if is_plain_output then
+      return block
+    end
     return process_html(block, resolved)
   end
 
