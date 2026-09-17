@@ -14,6 +14,7 @@
 - fix: Match the code-window-collapse attribute schema to the string Pandoc always provides, so a documented "true" or "false" value no longer warns. (#60)
 - fix: Validate a code block's attributes on the HTML path the same way the Typst path already does, so an invalid attribute on a block holding executed-cell output is now reported on HTML too, instead of being silently accepted. (#60)
 - fix: Gate the options check on the html and typst formats so non-acting formats stay silent. (#60)
+- fix: Report that nested key as a warning rather than an error, so the typo does not invalidate the whole configuration. (#60)
 
 ### Documentation
 
@@ -22,7 +23,7 @@
 ### Refactoring
 
 - build: Update the vendored Lua modules to 2.3.0. A module no longer carries a version line in its header, so its checksum changes only when its code changes. (#59)
-- build: Update the vendored Lua modules to 2.5.0, which adds the accessors that read what the schema resolves an option, an element's attributes and a format's options to. The schema validator moves to its own release train and is pinned at `schema-v2.1.0`, which accepts only `true` and `false` as a boolean. (#60)
+- build: Update the vendored Lua modules to 2.5.0, which adds the accessors that read what the schema resolves an option, an element's attributes and a format's options to. The schema validator moves to its own release train and is pinned at `schema-v2.2.0`, which accepts only `true` and `false` as a boolean. (#60)
 
 ## 1.5.0 (2026-09-06)
 
