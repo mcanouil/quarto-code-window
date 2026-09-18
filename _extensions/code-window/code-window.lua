@@ -97,10 +97,10 @@ local function stringify_bool(value)
   return value
 end
 
---- Take every attribute in this extension's namespace off a block the filter
---- processes, and answer the label the language module wrote.
+--- Take the attributes an author can write off a block the filter processes,
+--- and answer the label the language module wrote.
 --- Pandoc writes an attribute nothing removes into the HTML as
---- data-code-window-*, so a block this filter ran on must carry none of them
+--- data-code-window-*, so a block this filter ran on carries none of them
 --- onward, whatever the block or the options asked for: a block that sets
 --- code-window-enabled="false" leaves with as clean an attribute list as one
 --- that gets the full chrome, and "lines-label" decides whether the chip is
@@ -110,15 +110,21 @@ end
 --- caller builds from the block before this runs, so nothing below needs the
 --- block's own copy and no reader has to strip before its own early return.
 --- An attribute added to the schema later is covered with no change here.
---- code-window-auto-label matches the same prefix and is returned rather than
---- dropped, because the windowing paths still need its value.
+--- Two attributes share the prefix and are not author-written, so each is
+--- handled on its own terms: code-window-auto-label is returned rather than
+--- dropped, because the windowing paths still need its value, and the
+--- cell-output marker is left in place, because the passes that ask whether a
+--- block holds the output of an executed cell run after this one. The
+--- cell-output module removes its own marker.
+--- The HTML path writes code-window-lines-label back onto the block after
+--- this runs, for the injected script to read and remove in the browser.
 --- @param block pandoc.CodeBlock Code block element
 --- @return string|nil auto_label Label written by the language module, if any
 local function take_block_attributes(block)
   local auto_label = block.attributes['code-window-auto-label']
   local owned = {}
   for key, _ in pairs(block.attributes) do
-    if key:sub(1, #ATTRIBUTE_PREFIX) == ATTRIBUTE_PREFIX then
+    if key:sub(1, #ATTRIBUTE_PREFIX) == ATTRIBUTE_PREFIX and not cell_output.is_marker(key) then
       owned[#owned + 1] = key
     end
   end
