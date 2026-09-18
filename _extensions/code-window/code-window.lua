@@ -881,11 +881,12 @@ function CodeBlock(block)
     cell_output.strip(block)
   end
 
-  -- A filter that is switched off changes nothing an author wrote. The
+  -- A filter that draws nothing changes nothing an author wrote. The
   -- attributes it would read stay on the block and reach the output, which is
   -- also what a document with this extension not installed produces. Only
   -- code-window-auto-label goes, because the language module wrote it and no
-  -- author did.
+  -- author did. This holds for a filter switched off, below, and for a format
+  -- the extension does not act on, at the end of this function.
   if not CURRENT_FORMAT or not CONFIG or not CONFIG.enabled then
     checker:attributes(block.attributes, 'CodeBlock')
     block.attributes['code-window-auto-label'] = nil
@@ -901,6 +902,11 @@ function CodeBlock(block)
     return process_html(block, resolved, auto_label)
   end
 
+  -- Typst is finished by the Pandoc filter ahead of this one, which takes the
+  -- attributes off there. Every other format draws no chrome, so the block
+  -- keeps what its author wrote and loses only the language module's label,
+  -- which a writer that preserves attributes would otherwise print.
+  block.attributes['code-window-auto-label'] = nil
   return block
 end
 
