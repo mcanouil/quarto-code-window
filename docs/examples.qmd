@@ -33,6 +33,33 @@ project:
 A block with no `filename` is left alone here, because this site turns `auto-filename` off.
 With it on, that same block is framed and labelled with its language, in HTML and under Typst alike.
 
+## Deriving the name
+
+With `auto-filename` on, a block that names no file is labelled after its language:
+
+````markdown
+```python
+print("hello")
+```
+````
+
+The title bar then reads `PYTHON`.
+A derived name is drawn smaller and in capitals, so a reader can tell it from a file that exists on disk.
+A block with no language at all is labelled `DEFAULT`, and a block whose language Pandoc cannot highlight keeps its own token as the label.
+
+This section shows source only.
+The site sets `auto-filename: false`, so it frames no block that leaves `filename` out.
+A single block opts out where the option is on:
+
+````markdown
+```{.python code-window-no-auto-filename="true"}
+print("hello")
+```
+````
+
+The attribute only suppresses a derived name.
+It cannot ask for one, so `code-window-no-auto-filename="false"` reads exactly like leaving the attribute out.
+
 ## The three styles
 
 ````markdown
@@ -91,7 +118,24 @@ z <- sum(y)
 z
 ```
 
-`code-window-lines` sets the chip independently of the highlighting, and `lines-label: false` turns the chip off.
+`code-window-lines` writes the chip on its own and leaves Quarto's highlighting alone:
+
+````markdown
+```{.r filename="notes.R" code-window-lines="1,4"}
+```
+````
+
+```{.r filename="notes.R" code-window-lines="1,4"}
+x <- seq_len(10)
+y <- x^2
+z <- sum(y)
+z
+```
+
+The chip above reads `L1,4`, and no line is highlighted.
+Under Typst the same block prints `1,4` in the chip, without the leading `L`.
+
+`lines-label: false` under `extensions.code-window` removes the chip from every block.
 
 ## Leaving a block alone
 
@@ -105,6 +149,112 @@ echo "no chrome on this one"
 ```
 
 Annotations still render on a block with the chrome turned off.
+
+## Turning the filter off
+
+`enabled` stops the filter for a whole document or project:
+
+```{.yaml filename="_quarto.yml"}
+extensions:
+  code-window:
+    enabled: false
+```
+
+The filter still checks each block's attributes against its schema.
+It then leaves every block as Quarto wrote it, and loads neither the stylesheet nor the script.
+So `code-window-enabled="true"` on a block cannot switch the chrome back on.
+`code-window-enabled` can only turn a block off, never on.
+
+A block that names a file still gets the plain title bar Quarto builds for it.
+That bar carries no traffic lights, no fold, and no line chip.
+
+See [Options](reference.qmd#options) for the option and [Per-block attributes](reference.qmd#per-block-attributes) for the attribute.
+
+## The output of an executed cell
+
+An engine writes the output of a cell as a code block with no language, inside a `cell-output` div.
+The filter leaves that block as Quarto wrote it:
+
+````markdown
+::: {.cell-output .cell-output-stdout}
+
+```
+[1] 1 4 9 16
+```
+
+:::
+````
+
+`cell-output: true` frames it instead.
+The frame comes from the derived name, so `auto-filename` has to be on as well.
+The title bar then reads `DEFAULT`, because the output block carries no language of its own.
+This site turns `auto-filename` off, so `cell-output: true` would change nothing here.
+
+An engine can name the output instead, through knitr's `attr-output` for example.
+Output named that way is framed whatever `cell-output` says:
+
+::: {.cell-output .cell-output-stdout}
+
+```{.default filename="console"}
+[1] 1 4 9 16
+```
+
+:::
+
+This page runs no engine, so the div above is written by hand in the shape an engine produces.
+See [Executed cells](reference.qmd#executed-cells) for the option itself.
+
+## Renaming the Typst function
+
+Under Typst the chrome is a call to a function the extension writes into the document.
+`wrapper` renames that function and the helper functions beside it:
+
+```{.yaml filename="_quarto.yml"}
+extensions:
+  code-window:
+    wrapper: "my-window"
+```
+
+Each block then emits `#my-window(...)` in place of `#code-window(...)`, and the annotation helpers become `my-window-annotation-item` and `my-window-circled-number`.
+Rename it when the document already defines a function called `code-window`.
+The option does nothing in HTML, which draws its chrome from the stylesheet and the script instead.
+
+## The Typst hot-fixes
+
+The three hot-fixes act on Typst output only.
+Each one is on by default.
+A boolean turns one off:
+
+```{.yaml filename="_quarto.yml"}
+extensions:
+  code-window:
+    hotfix:
+      code-annotations: true
+      skylighting: false
+      typst-title: true
+```
+
+A map adds a version at which the hot-fix switches itself off:
+
+```{.yaml filename="_quarto.yml"}
+extensions:
+  code-window:
+    hotfix:
+      skylighting:
+        enabled: true
+        quarto-version: "1.9.0"
+```
+
+The extension compares that string with the running Quarto.
+At or above the named version the hot-fix stays out, whatever `enabled` says.
+An upgrade thus retires the hot-fix with no further edit.
+
+Two of them are linked.
+`skylighting` supplies the rule that draws the circled marker beside an annotated line.
+Turn it off, and the numbered list stays under the block while every marker inside the block goes.
+`typst-title` follows `enabled`: with the filter off, theorem titles stay as Quarto writes them.
+
+See [Hot-fixes](reference.qmd#hot-fixes) for what each one corrects.
 
 ## Source
 
