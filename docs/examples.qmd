@@ -192,7 +192,9 @@ The filter leaves that block as Quarto wrote it:
 The frame comes from the derived name, so `auto-filename` has to be on as well.
 The title bar then reads `DEFAULT`, because the output block carries no language of its own.
 This site turns `auto-filename` off, so `cell-output: true` adds no frame here.
-The output block still gains the `default` class, because the pass that normalises a block's language runs either way.
+
+With `cell-output` off, which is the default, the extension marks every block inside a `cell-output` div and then leaves it alone, so the output keeps the shape Quarto gives it.
+Only `cell-output: true` lets the rest of the extension touch those blocks.
 
 An engine can name the output instead, through knitr's `attr-output` for example.
 Output named that way is framed whatever `cell-output` says:
