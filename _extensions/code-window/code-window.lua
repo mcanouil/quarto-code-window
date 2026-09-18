@@ -107,10 +107,13 @@ end
 --- @return string|nil Style override value
 local function read_block_style(block, resolved)
   local block_style = resolved['code-window-style']
+  -- Stripped before any return, so an empty or unrecognised value leaves the
+  -- block as clean as a legal one does. Removing a key the block never carried
+  -- is a no-op, so no presence test is needed.
+  block.attributes['code-window-style'] = nil
   if not block_style or block_style == '' then
     return nil
   end
-  block.attributes['code-window-style'] = nil
   if type(block_style) == 'string' and VALID_STYLES[block_style] then
     return block_style
   end
@@ -169,10 +172,10 @@ end
 --- @return string|nil Resolved collapse mode ("open"/"closed") or nil when off
 local function read_block_collapse(block, resolved)
   local raw = resolved['code-window-collapse']
+  block.attributes['code-window-collapse'] = nil
   if raw == nil then
     return nil
   end
-  block.attributes['code-window-collapse'] = nil
   return resolve_collapse(raw)
 end
 
@@ -180,16 +183,17 @@ end
 --- code-window-lines attribute first and falling back to Quarto's
 --- code-line-numbers attribute when it carries a non-boolean spec.
 --- Returns the cleaned spec string or nil.
+--- code-window-lines is stripped on every path, including the one where the
+--- value is empty and the code-line-numbers fallback answers instead.
+--- code-line-numbers belongs to Quarto and stays on the block.
 --- @param block pandoc.CodeBlock Code block element
 --- @param resolved table<string, any> This block's attributes, resolved against the schema
 --- @return string|nil Line spec to display in the title bar
 local function read_block_lines_label(block, resolved)
   local raw = resolved['code-window-lines']
-  if raw ~= nil then
-    block.attributes['code-window-lines'] = nil
-    if raw ~= '' then
-      return raw
-    end
+  block.attributes['code-window-lines'] = nil
+  if raw ~= nil and raw ~= '' then
+    return raw
   end
 
   local cln = block.attributes['code-line-numbers']
@@ -548,36 +552,37 @@ local function process_html(block, resolved)
   local auto_label = block.attributes['code-window-auto-label']
   block.attributes['code-window-auto-label'] = nil
 
-  -- Per-block opt-out: code-window-enabled="false" skips window chrome.
+  -- Every code-window attribute is read, and removed from the block, before
+  -- the per-block opt-out below. A block that turns the chrome off is still a
+  -- block this filter ran on, so it must not carry the filter's own attributes
+  -- into the document, where Pandoc would write each one as data-code-window-*.
+  -- The same reason keeps the reads above the "lines-label" test: the option
+  -- decides whether the chip is drawn, never whether the attribute is removed.
   -- code-window-enabled declares default: true, matching this file's own
   -- fallback (chrome applies unless turned off), and it never layers over a
   -- document option, so the resolved value is read directly.
   local block_enabled = resolved['code-window-enabled']
-  if block.attributes['code-window-enabled'] ~= nil then
-    block.attributes['code-window-enabled'] = nil
+  block.attributes['code-window-enabled'] = nil
+  local block_style = read_block_style(block, resolved)
+  local block_collapse = read_block_collapse(block, resolved)
+  -- code-window-no-auto-filename declares default: false, matching this
+  -- file's own fallback, and never layers over a document option either. The
+  -- stringified resolved value decides the flag, so an explicit "false"
+  -- behaves like absence rather than like "true".
+  local no_auto = stringify_bool(resolved['code-window-no-auto-filename']) == 'true'
+  block.attributes['code-window-no-auto-filename'] = nil
+  local lines_label = read_block_lines_label(block, resolved)
+  if not CONFIG.lines_label then
+    lines_label = nil
   end
+
+  -- Per-block opt-out: code-window-enabled="false" skips window chrome.
   if stringify_bool(block_enabled) == 'false' then
     return block
   end
 
-  local block_style = read_block_style(block, resolved)
-  local block_collapse = read_block_collapse(block, resolved)
   local effective_collapse = block_collapse or CONFIG.collapse
   local explicit_filename = block.attributes['filename']
-  -- code-window-no-auto-filename declares default: false, matching this
-  -- file's own fallback, and never layers over a document option either.
-  -- Presence (does the block carry the attribute at all) and meaning (what
-  -- the written value says) are read separately here: presence decides
-  -- whether to strip the attribute from the block, and the stringified
-  -- resolved value decides the flag, so an explicit "false" behaves like
-  -- absence rather than like "true".
-  local no_auto_written = block.attributes['code-window-no-auto-filename'] ~= nil
-  local no_auto = stringify_bool(resolved['code-window-no-auto-filename']) == 'true'
-  if no_auto_written then
-    block.attributes['code-window-no-auto-filename'] = nil
-  end
-
-  local lines_label = CONFIG.lines_label and read_block_lines_label(block, resolved) or nil
 
   if explicit_filename and explicit_filename ~= '' then
     -- Let Quarto create the .code-with-filename wrapper.
@@ -863,9 +868,13 @@ function CodeBlock(block)
     cell_output.strip(block)
   end
 
+  -- A filter that is switched off changes nothing an author wrote. The
+  -- attributes it would read stay on the block and reach the output, which is
+  -- also what a document with this extension not installed produces. Only
+  -- code-window-auto-label goes, because the language module wrote it and no
+  -- author did.
   if not CURRENT_FORMAT or not CONFIG or not CONFIG.enabled then
     checker:attributes(block.attributes, 'CodeBlock')
-    block.attributes['code-window-no-auto-filename'] = nil
     block.attributes['code-window-auto-label'] = nil
     return block
   end
@@ -893,48 +902,51 @@ end
 --- @return string|nil block_style
 --- @return string|nil lines_label Highlighted-lines spec for the title bar
 local function resolve_window_params(block, resolved)
-  -- Per-block opt-out: code-window-enabled="false" skips window chrome.
+  -- Every code-window attribute is read, and removed from the block, before
+  -- the per-block opt-out below, for the reason process_html gives: a block
+  -- this filter ran on must not carry the filter's own attributes onward. The
+  -- Typst writer has no syntax for an attribute it does not know, so nothing
+  -- escapes into the rendered document here, and this path is kept in step
+  -- with the HTML one so the two cannot drift apart.
+  -- code-window-auto-label is set by the language module and is not a
+  -- document-facing attribute the schema declares, so it is read straight from
+  -- the block, not from resolved.
+  local auto_label = block.attributes['code-window-auto-label']
+  block.attributes['code-window-auto-label'] = nil
+
   -- code-window-enabled declares default: true, matching this file's own
   -- fallback, and never layers over a document option, so the resolved value
   -- is read directly.
   local block_enabled = resolved['code-window-enabled']
-  if block.attributes['code-window-enabled'] ~= nil then
-    block.attributes['code-window-enabled'] = nil
+  block.attributes['code-window-enabled'] = nil
+  local block_style = read_block_style(block, resolved)
+  -- code-window-no-auto-filename declares default: false, matching this
+  -- file's own fallback, and never layers over a document option either. The
+  -- stringified resolved value decides the flag, so an explicit "false"
+  -- behaves like absence rather than like "true".
+  local no_auto = stringify_bool(resolved['code-window-no-auto-filename']) == 'true'
+  block.attributes['code-window-no-auto-filename'] = nil
+  local lines_label = read_block_lines_label(block, resolved)
+  if not CONFIG.lines_label then
+    lines_label = nil
   end
+
+  -- Per-block opt-out: code-window-enabled="false" skips window chrome.
   if stringify_bool(block_enabled) == 'false' then
     return nil, false, nil, nil
   end
 
-  local block_style = read_block_style(block, resolved)
   local explicit_filename = block.attributes['filename']
   local filename = explicit_filename
   local is_auto = false
-  -- code-window-no-auto-filename declares default: false, matching this
-  -- file's own fallback, and never layers over a document option either.
-  -- Presence (does the block carry the attribute at all) and meaning (what
-  -- the written value says) are read separately here: presence decides
-  -- whether to strip the attribute from the block, and the stringified
-  -- resolved value decides the flag, so an explicit "false" behaves like
-  -- absence rather than like "true".
-  local no_auto_written = block.attributes['code-window-no-auto-filename'] ~= nil
-  local no_auto = stringify_bool(resolved['code-window-no-auto-filename']) == 'true'
-  if no_auto_written then
-    block.attributes['code-window-no-auto-filename'] = nil
-  end
 
   if (not filename or filename == '') and not no_auto then
     if CONFIG.auto_filename and block.classes and #block.classes > 0 then
       -- Default/unknown/no-language blocks carry their label on
       -- code-window-auto-label; everything else uses its language class.
-      filename = block.attributes['code-window-auto-label'] or block.classes[1]
-      block.attributes['code-window-auto-label'] = nil
+      filename = auto_label or block.classes[1]
       is_auto = true
     end
-  end
-
-  local lines_label = nil
-  if CONFIG.lines_label then
-    lines_label = read_block_lines_label(block, resolved)
   end
 
   return filename, is_auto, block_style, lines_label
