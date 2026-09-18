@@ -191,7 +191,8 @@ The filter leaves that block as Quarto wrote it:
 `cell-output: true` frames it instead.
 The frame comes from the derived name, so `auto-filename` has to be on as well.
 The title bar then reads `DEFAULT`, because the output block carries no language of its own.
-This site turns `auto-filename` off, so `cell-output: true` would change nothing here.
+This site turns `auto-filename` off, so `cell-output: true` adds no frame here.
+The output block still gains the `default` class, because the pass that normalises a block's language runs either way.
 
 An engine can name the output instead, through knitr's `attr-output` for example.
 Output named that way is framed whatever `cell-output` says:
@@ -252,9 +253,11 @@ The extension compares that string with the running Quarto.
 At or above the named version the hot-fix stays out, whatever `enabled` says.
 An upgrade thus retires the hot-fix with no further edit.
 
-Two of them are linked.
-`skylighting` supplies the rule that draws the circled marker beside an annotated line.
-Turn it off, and the numbered list stays under the block while every marker inside the block goes.
+Two pairs are linked.
+
+`code-annotations` and `skylighting` work together: the first resolves the annotations, and the second supplies the rule that draws the circled marker beside an annotated line.
+Turn `skylighting` off, and the numbered list stays under the block while every marker inside it goes, along with the block styling and the inline code backgrounds the same module supplies.
+
 `typst-title` follows `enabled`: with the filter off, theorem titles stay as Quarto writes them.
 
 See [Hot-fixes](reference.qmd#hot-fixes) for what each one corrects.
