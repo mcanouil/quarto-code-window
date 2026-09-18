@@ -101,23 +101,16 @@ end
 --- and answer the label the language module wrote.
 --- Pandoc writes an attribute nothing removes into the HTML as
 --- data-code-window-*, so a block this filter ran on carries none of them
---- onward, whatever the block or the options asked for: a block that sets
---- code-window-enabled="false" leaves with as clean an attribute list as one
---- that gets the full chrome, and "lines-label" decides whether the chip is
---- drawn, never whether the attribute is removed.
---- Removing them in one place, at the top of each format path, is what keeps
---- that true. Each value is read from the schema-resolved table, which the
---- caller builds from the block before this runs, so nothing below needs the
---- block's own copy and no reader has to strip before its own early return.
---- An attribute added to the schema later is covered with no change here.
---- Two attributes share the prefix and are not author-written, so each is
---- handled on its own terms: code-window-auto-label is returned rather than
---- dropped, because the windowing paths still need its value, and the
---- cell-output marker is left in place, because the passes that ask whether a
---- block holds the output of an executed cell run after this one. The
---- cell-output module removes its own marker.
---- The HTML path writes code-window-lines-label back onto the block after
---- this runs, for the injected script to read and remove in the browser.
+--- onward: one call per format path, above every early return, is what keeps
+--- that true, and an attribute added to the schema later is covered with no
+--- change here.
+--- Two prefixed attributes are not author-written and are treated on their
+--- own terms. code-window-auto-label is returned rather than dropped, because
+--- the windowing paths still need its value. The cell-output marker is left
+--- alone, because the Typst pass reads it after this runs, and the
+--- cell-output module removes it itself.
+--- The HTML path writes code-window-lines-label back afterwards, for the
+--- injected script to read and remove in the browser.
 --- @param block pandoc.CodeBlock Code block element
 --- @return string|nil auto_label Label written by the language module, if any
 local function take_block_attributes(block)
@@ -132,6 +125,25 @@ local function take_block_attributes(block)
     block.attributes[key] = nil
   end
   return auto_label
+end
+
+--- Resolve a block's attributes against the schema, then take this
+--- extension's attributes off the block.
+--- The resolved values are copied into a table of their own before anything
+--- is removed. checker:attributes hands back the list it was given when it
+--- has no schema to check against, which is a case this extension carries on
+--- through by design, and the caller would then hold the block's live
+--- attributes. Taking them off would empty the very table every reader below
+--- reads, and each per-block override would be ignored with no warning.
+--- @param block pandoc.CodeBlock Code block element
+--- @return table<string, any> resolved What this block's attributes resolve to
+--- @return string|nil auto_label Label written by the language module, if any
+local function resolve_and_take(block)
+  local resolved = {}
+  for key, value in pairs(checker:attributes(block.attributes, 'CodeBlock')) do
+    resolved[key] = value
+  end
+  return resolved, take_block_attributes(block)
 end
 
 --- Read the block-level style override from code-window-style attribute.
@@ -900,8 +912,7 @@ function CodeBlock(block)
   end
 
   if CURRENT_FORMAT == 'html' then
-    local resolved = checker:attributes(block.attributes, 'CodeBlock')
-    local auto_label = take_block_attributes(block)
+    local resolved, auto_label = resolve_and_take(block)
     if is_plain_output then
       return block
     end
@@ -973,8 +984,7 @@ end
 local function process_typst_block(block, next_block)
   -- Check this block's own attributes against the CodeBlock group of the
   -- schema before anything below reads or rewrites them, in either branch.
-  local resolved = checker:attributes(block.attributes, 'CodeBlock')
-  local auto_label = take_block_attributes(block)
+  local resolved, auto_label = resolve_and_take(block)
 
   -- The output of an executed cell keeps the shape Quarto gave it, annotations
   -- included, unless the engine gave it a filename of its own.
