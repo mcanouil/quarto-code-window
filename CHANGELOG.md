@@ -18,6 +18,7 @@
 
 ### Documentation
 
+- docs: Add worked examples for the derived filename, the highlighted-lines chip, the executed-cell output, the `enabled` option, the Typst wrapper name, and the Typst hot-fixes.
 - docs: Serve the extension's social card as the Open Graph image, so a shared link shows the card rather than the first image on the page. (#58)
 
 ### Refactoring
