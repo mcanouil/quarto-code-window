@@ -161,9 +161,12 @@ extensions:
 ```
 
 The filter still checks each block's attributes against its schema.
-It then leaves every block as Quarto wrote it, and loads neither the stylesheet nor the script.
+It then adds no chrome to any block, and loads neither the stylesheet nor the script.
 So `code-window-enabled="true"` on a block cannot switch the chrome back on.
 `code-window-enabled` can only turn a block off, never on.
+
+Switching the filter off does not put the document back exactly as Quarto would write it.
+The pass that normalises a block's language runs either way, so a block with no language still gains the `default` class.
 
 A block that names a file still gets the plain title bar Quarto builds for it.
 That bar carries no traffic lights, no fold, and no line chip.
