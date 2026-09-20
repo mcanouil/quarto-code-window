@@ -919,9 +919,12 @@ function CodeBlock(block)
   -- A filter that draws nothing changes nothing an author wrote. The
   -- attributes it would read stay on the block and reach the output, which is
   -- also what a document with this extension not installed produces. Only
-  -- code-window-auto-label goes, because the language module wrote it and no
-  -- author did. This holds for a filter switched off, below, and for a format
-  -- the extension does not act on, at the end of this function.
+  -- code-window-auto-label goes. The language module no longer writes it in
+  -- either of the two branches that clear it, since it asks the same question
+  -- before it runs, so what is left to clear is a document that wrote the
+  -- extension's own attribute name on a fence by hand. This holds for a filter
+  -- switched off, below, and for a format the extension does not act on, at
+  -- the end of this function.
   if not CURRENT_FORMAT or not CONFIG or not CONFIG.enabled then
     checker:attributes(block.attributes, 'CodeBlock')
     block.attributes['code-window-auto-label'] = nil
@@ -938,8 +941,9 @@ function CodeBlock(block)
 
   -- Typst is finished by the Pandoc filter ahead of this one, which takes the
   -- attributes off there. Every other format draws no chrome, so the block
-  -- keeps what its author wrote and loses only the language module's label,
-  -- which a writer that preserves attributes would otherwise print.
+  -- keeps what its author wrote and loses only the label, which a writer that
+  -- preserves attributes would otherwise print. Nothing writes that label here
+  -- any more, for the reason given above, so this guards a hand-written one.
   block.attributes['code-window-auto-label'] = nil
   return block
 end

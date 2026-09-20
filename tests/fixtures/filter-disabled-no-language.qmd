@@ -1,0 +1,13 @@
+---
+title: "The filter turned off, and a block with no language"
+filters:
+  - code-window
+extensions:
+  code-window:
+    enabled: false
+---
+
+A block with no language gains none while the filter is off. The block below is
+indented rather than fenced, which gives the same code block with no language.
+
+    x = 1

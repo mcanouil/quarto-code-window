@@ -193,6 +193,26 @@ else
 		"a foo class on the block"
 fi
 
+# The other branch of the same pass inserts a class where the block had none,
+# which turns a bare block into a highlighted one.
+render filter-disabled-no-language html
+if block_classes "${work_dir}/filter-disabled-no-language.html" | grep -q 'default'; then
+	report fail "filter-disabled-no-language: the block gains no class" \
+		"no default class on the block"
+else
+	report pass "filter-disabled-no-language: the block gains no class"
+fi
+
+# A render with no derived name to build reads no label either, whatever the
+# format, so the pass has no reader there.
+render auto-filename-off html
+if block_classes "${work_dir}/auto-filename-off.html" | grep -q 'foo'; then
+	report pass "auto-filename-off: the block keeps its own language"
+else
+	report fail "auto-filename-off: the block keeps its own language" \
+		"a foo class on the block"
+fi
+
 # The same pass serves no reader on a format that gets no chrome either.
 if grep -q '^``` foo' "${work_dir}/unsupported-format.md"; then
 	report pass "unsupported-format: the block keeps its own language"
