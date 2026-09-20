@@ -100,6 +100,16 @@ else
 		"a #let NormalTok( definition in inline-code-only.typ"
 fi
 
+# A theme that gives no background colour takes the other box, which mixes its
+# colour from the page. The render compiles that box.
+render inline-code-no-theme typst
+if grep -q 'box(fill: color.mix' "${work_dir}/inline-code-no-theme.typ"; then
+	report pass "inline-code-no-theme: the box takes its colour from the page"
+else
+	report fail "inline-code-no-theme: the box takes its colour from the page" \
+		"a box(fill: color.mix call in inline-code-no-theme.typ"
+fi
+
 # ============================================================================
 # A per-block style override reaches the output
 # ============================================================================
