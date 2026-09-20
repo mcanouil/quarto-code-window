@@ -235,8 +235,8 @@ local function is_title_scaffold(div)
   return true
 end
 
---- Walk the document tree and convert inline Code to RawInline with
---- background styling. Code in title scaffolds is converted to plain
+--- Walk the document tree and box inline Code with background styling.
+--- Code in title scaffolds is converted to plain
 --- Typst backtick code to avoid Skylighting tokens with inner quotes
 --- that would break the string parameter Quarto generates.
 --- The typst-title-fix post-quarto filter then evaluates the string
