@@ -1,0 +1,13 @@
+---
+title: "A language Pandoc cannot highlight"
+filters:
+  - code-window
+---
+
+The filter labels a block whose language Pandoc cannot highlight, and frames it
+like any other. The label keeps the language the author wrote, and the class
+becomes `default`, which is the one Pandoc has a theme for.
+
+```foo
+x = 1
+```

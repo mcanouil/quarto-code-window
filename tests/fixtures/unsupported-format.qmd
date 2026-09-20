@@ -4,9 +4,9 @@ filters:
   - code-window
 ---
 
-The filter draws no chrome outside HTML and Typst. The language module still
-labels the block below, and that label is the filter's own, so it does not
-reach the output.
+The filter draws no chrome outside HTML and Typst. Nothing reads a label here,
+so the block below keeps the language its author wrote, and the filter's own
+label for it is never written at all.
 
 ```foo
 x = 1

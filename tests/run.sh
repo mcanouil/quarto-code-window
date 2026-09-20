@@ -168,8 +168,9 @@ for fixture in disabled-block lines-label-off; do
 	fi
 done
 
-# The label the language module writes is the filter's own, so a format that
-# draws no chrome drops it rather than printing it.
+# The label is the filter's own name for a block, and no reader of it exists on
+# a format that draws no chrome, so neither the label nor the pass that writes
+# it reaches the output.
 render unsupported-format markdown
 if grep -q 'code-window-auto-label' "${work_dir}/unsupported-format.md"; then
 	report fail "unsupported-format: the internal label stays out of the output" \
@@ -198,6 +199,20 @@ if grep -q '^``` foo' "${work_dir}/unsupported-format.md"; then
 else
 	report fail "unsupported-format: the block keeps its own language" \
 		"a fence reading \`\`\` foo in unsupported-format.md"
+fi
+
+# Where the chrome is drawn, the pass has work to do: the class becomes the one
+# Pandoc has a theme for, the block is framed, and the title bar keeps the
+# language the author wrote. Without this, the two tests above would stay green
+# if the gate ever closed on a render it should let through.
+render language-relabelled html
+if block_classes "${work_dir}/language-relabelled.html" | grep -q 'default' &&
+	block_classes "${work_dir}/language-relabelled.html" | grep -q 'cw-auto' &&
+	block_wrappers "${work_dir}/language-relabelled.html" | grep -q 'data-filename="foo"'; then
+	report pass "language-relabelled: the block is relabelled and framed"
+else
+	report fail "language-relabelled: the block is relabelled and framed" \
+		"a default class, a cw-auto class, and data-filename=\"foo\" on the block"
 fi
 
 # ============================================================================
