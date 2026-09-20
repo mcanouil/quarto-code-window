@@ -1,9 +1,0 @@
-// These fixtures feed the render check, so each one is written for the filter
-// rather than for a reader. A fence with no language is one of the shapes
-// under test, which MD040 forbids, so that rule is off here and only here.
-{
-  "extends": null,
-  "config": {
-    "MD040": false
-  }
-}
