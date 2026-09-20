@@ -1,0 +1,12 @@
+---
+title: "A block that turns the chrome off"
+filters:
+  - code-window
+---
+
+The block below turns the chrome off for itself, and writes every other
+attribute the extension reads. None of them belongs in the rendered document.
+
+```{.python filename="a.py" code-window-enabled="false" code-window-style="windows" code-window-collapse="open" code-window-lines="1,2" code-window-no-auto-filename="true"}
+x = 1
+```
