@@ -100,6 +100,14 @@ else
 		"a #let NormalTok( definition in inline-code-only.typ"
 fi
 
+# A theme with a background colour takes the box that names the colour.
+if grep -q 'box(fill: rgb(' "${work_dir}/inline-code-only.typ"; then
+	report pass "inline-code-only: the box takes the colour of the theme"
+else
+	report fail "inline-code-only: the box takes the colour of the theme" \
+		"a box(fill: rgb( call in inline-code-only.typ"
+fi
+
 # A theme that gives no background colour takes the other box, which mixes its
 # colour from the page. The render compiles that box.
 render inline-code-no-theme typst
