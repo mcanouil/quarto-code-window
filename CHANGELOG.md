@@ -8,6 +8,7 @@
 
 ### Bug Fixes
 
+- fix: Keep inline code in a Typst document as a code element, so Pandoc writes the syntax highlighting definitions for it. A document with inline code and no code block failed to compile before. (#65)
 - fix: Remove the code-window attributes from a block that sets code-window-enabled="false", and from a block that sets code-window-lines when lines-label is off. They reached the HTML output as data-code-window-* attributes before. (#63)
 - fix: Remove the extension's own label attribute when the output format gets no window chrome, so a writer that keeps attributes no longer prints it. (#63)
 - fix: Check every code block attribute in the code-window group against the schema, so a value nothing validated before, such as code-window-enabled, is now reported when it is wrong. The extension's own duplicate warnings for an invalid code-window-style or code-window-collapse are removed, since the schema already names the same mistake. (#60)

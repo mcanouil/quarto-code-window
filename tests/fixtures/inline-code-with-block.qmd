@@ -1,0 +1,19 @@
+---
+title: "Inline code and a block"
+filters:
+  - code-window
+format:
+  typst:
+    keep-typ: true
+---
+
+The document below has inline code and a code block.
+
+The boxed inline code and the block that goes through the Skylighting
+override share one document, and that document has to compile.
+
+A paragraph with `inline code` in it.
+
+```python
+x = 1
+```

@@ -1,0 +1,17 @@
+---
+title: "Inline code, no theme"
+filters:
+  - code-window
+highlight-style: none
+format:
+  typst:
+    keep-typ: true
+---
+
+The document below turns syntax highlighting off, so the theme gives no
+background colour.
+
+The filter then boxes the inline code with a colour it mixes from the page,
+and that box has to compile too.
+
+A paragraph with `inline code` in it.

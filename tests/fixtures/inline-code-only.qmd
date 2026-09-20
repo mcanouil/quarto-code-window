@@ -1,0 +1,15 @@
+---
+title: "Inline code, no block"
+filters:
+  - code-window
+format:
+  typst:
+    keep-typ: true
+---
+
+The document below has inline code and no code block.
+
+The filter boxes the inline code and leaves the element in place, so Pandoc
+writes the token definitions for it.
+
+A paragraph with `inline code` in it.

@@ -86,6 +86,50 @@ for fixture in cell-output-bare cell-output-classed; do
 done
 
 # ============================================================================
+# Inline code keeps the token definitions in a document with no code block
+# ============================================================================
+
+# The filter boxes inline code and leaves the element itself in place, so
+# Pandoc highlights it and writes the token definitions. The render fails to
+# compile when they are missing, and the grep says why.
+render inline-code-only typst
+if grep -q '^#let NormalTok(' "${work_dir}/inline-code-only.typ"; then
+	report pass "inline-code-only: the token definitions reach the document"
+else
+	report fail "inline-code-only: the token definitions reach the document" \
+		"a #let NormalTok( definition in inline-code-only.typ"
+fi
+
+# A theme with a background colour takes the box that names the colour.
+if grep -q 'box(fill: rgb(' "${work_dir}/inline-code-only.typ"; then
+	report pass "inline-code-only: the box takes the colour of the theme"
+else
+	report fail "inline-code-only: the box takes the colour of the theme" \
+		"a box(fill: rgb( call in inline-code-only.typ"
+fi
+
+# A code block goes through the Skylighting override, and the inline code
+# keeps its own box in the same document.
+render inline-code-with-block typst
+if grep -q '^#Skylighting(' "${work_dir}/inline-code-with-block.typ" &&
+	grep -q 'box(fill: rgb(' "${work_dir}/inline-code-with-block.typ"; then
+	report pass "inline-code-with-block: the block and the inline code share the document"
+else
+	report fail "inline-code-with-block: the block and the inline code share the document" \
+		"a #Skylighting( call and a box(fill: rgb( call in inline-code-with-block.typ"
+fi
+
+# A theme that gives no background colour takes the other box, which mixes its
+# colour from the page. The render compiles that box.
+render inline-code-no-theme typst
+if grep -q 'box(fill: color.mix' "${work_dir}/inline-code-no-theme.typ"; then
+	report pass "inline-code-no-theme: the box takes its colour from the page"
+else
+	report fail "inline-code-no-theme: the box takes its colour from the page" \
+		"a box(fill: color.mix call in inline-code-no-theme.typ"
+fi
+
+# ============================================================================
 # A per-block style override reaches the output
 # ============================================================================
 
