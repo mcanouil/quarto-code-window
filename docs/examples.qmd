@@ -165,8 +165,9 @@ It then adds no chrome to any block, and loads neither the stylesheet nor the sc
 So `code-window-enabled="true"` on a block cannot switch the chrome back on.
 `code-window-enabled` can only turn a block off, never on.
 
-Switching the filter off does not put the document back exactly as Quarto would write it.
-The pass that normalises a block's language runs either way, so a block with no language still gains the `default` class.
+With the filter off, every code block keeps the classes Quarto gives it.
+A block whose language Pandoc cannot highlight keeps that language, and a block with no language gains none.
+The attributes the filter reads stay on the block too, and reach the HTML as `data-code-window-*`, which is what a document without the extension also produces.
 
 A block that names a file still gets the plain title bar Quarto builds for it.
 That bar carries no traffic lights, no fold, and no line chip.

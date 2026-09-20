@@ -179,6 +179,20 @@ else
 fi
 
 # ============================================================================
+# A filter that draws no chrome leaves a block's language alone
+# ============================================================================
+
+# The pass that relabels a language serves the derived filename, and nothing
+# derives a filename with the filter off.
+render filter-disabled html
+if block_classes "${work_dir}/filter-disabled.html" | grep -q 'foo'; then
+	report pass "filter-disabled: the block keeps its own language"
+else
+	report fail "filter-disabled: the block keeps its own language" \
+		"a foo class on the block"
+fi
+
+# ============================================================================
 
 printf '\n%s passed, %s failed\n' "${passed}" "${failed}"
 [ "${failed}" -eq 0 ]

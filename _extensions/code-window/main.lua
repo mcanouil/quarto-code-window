@@ -43,18 +43,36 @@ code_window.set_checker(checker)
 
 --- Mark the code blocks that hold the output of an executed cell, so the later
 --- passes leave them as Quarto wrote them. Reads the configuration once and
---- walks the document only when the output has to stay unframed. The language
---- pass runs whether the extension is on or off, so the mark is set in both
---- cases; the window passes remove it either way.
+--- walks the document only when there is a pass to hold back: the extension is
+--- on, and the output has to stay unframed. The window passes remove the mark.
 --- @param doc pandoc.Pandoc
 --- @return pandoc.Pandoc|nil Marked document, or nil when the pass is skipped
 local function mark_cell_output(doc)
   local config = code_window.CONFIG()
-  if not config or (config.enabled and config.cell_output) then
+  if not config or not config.enabled or config.cell_output then
     return nil
   end
   doc.blocks = doc.blocks:walk({ Div = cell_output.Div })
   return doc
+end
+
+-- ============================================================================
+-- LANGUAGE
+-- ============================================================================
+
+--- Normalise a block's language only where something reads the result.
+--- The pass labels a block whose language Pandoc cannot highlight, and the
+--- derived filename is the only reader of that label. That reader never runs
+--- with the extension off, so the pass would rewrite a class for nobody and
+--- hand the author back a language they did not write.
+--- @param block pandoc.CodeBlock
+--- @return pandoc.CodeBlock|nil Relabelled block, or nil when the pass is skipped
+local function normalise_language(block)
+  local config = code_window.CONFIG()
+  if not config or not config.enabled then
+    return nil
+  end
+  return language.CodeBlock(block)
 end
 
 -- ============================================================================
@@ -88,7 +106,7 @@ end
 local filters = {
   { Meta = code_window.Meta },
   { Pandoc = mark_cell_output },
-  { CodeBlock = language.CodeBlock },
+  { CodeBlock = normalise_language },
   { Pandoc = code_window.Pandoc },
   { CodeBlock = code_window.CodeBlock },
 }
