@@ -4,9 +4,22 @@ filters:
   - code-window
 ---
 
-The block below turns the chrome off for itself, and writes every other
-attribute the extension reads. None of them belongs in the rendered document.
+Each block below turns the chrome off for itself and writes one of the other
+attributes the extension reads. None of them belongs in the rendered document.
+One attribute per block keeps every fence short enough to read.
 
-```{.python filename="a.py" code-window-enabled="false" code-window-style="windows" code-window-collapse="open" code-window-lines="1,2" code-window-no-auto-filename="true"}
+```{.python code-window-enabled="false" code-window-style="windows"}
 x = 1
+```
+
+```{.python code-window-enabled="false" code-window-collapse="open"}
+x = 2
+```
+
+```{.python code-window-enabled="false" code-window-lines="1,2"}
+x = 3
+```
+
+```{.python code-window-enabled="false" code-window-no-auto-filename="true"}
+x = 4
 ```
