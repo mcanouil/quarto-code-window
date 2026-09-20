@@ -44,7 +44,8 @@ code_window.set_checker(checker)
 --- Mark the code blocks that hold the output of an executed cell, so the later
 --- passes leave them as Quarto wrote them. Walks the document only when there
 --- is a pass to hold back, which means this render draws chrome and the output
---- has to stay unframed. Only the two window paths read the mark, so a render
+--- has to stay unframed. The readers of the mark are the language pass below
+--- and the two window paths, and all three ask draws_chrome first, so a render
 --- that draws no chrome would walk the whole document to set an attribute
 --- nothing goes on to read. draws_chrome answers false when there is no
 --- configuration yet, so the second test below always has one in hand.
@@ -62,11 +63,17 @@ end
 -- LANGUAGE
 -- ============================================================================
 
---- Normalise a block's language only where something reads the result.
+--- Normalise a block's language where the render draws chrome.
 --- The pass labels a block whose language Pandoc cannot highlight, and the
 --- derived filename is the only reader of that label. Nothing derives a
 --- filename in a render that draws no chrome, so the pass would rewrite a
 --- class for nobody and hand the author back a language they did not write.
+--- The question this asks is about the render, not about one block. A block
+--- can still draw no chrome inside a render that does, through
+--- "auto-filename: false", "code-window-no-auto-filename" or
+--- "code-window-enabled", and its class is rewritten with no reader either.
+--- Answering that per block means relabelling where the name is built, which
+--- is a change to the two window paths rather than to this gate.
 --- @param block pandoc.CodeBlock
 --- @return pandoc.CodeBlock|nil Relabelled block, or nil when the pass is skipped
 local function normalise_language(block)
