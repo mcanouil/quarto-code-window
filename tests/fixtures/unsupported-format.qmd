@@ -1,0 +1,13 @@
+---
+title: "A format the extension does not act on"
+filters:
+  - code-window
+---
+
+The filter draws no chrome outside HTML and Typst. The language module still
+labels the block below, and that label is the filter's own, so it does not
+reach the output.
+
+```foo
+x = 1
+```

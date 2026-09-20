@@ -1,0 +1,15 @@
+---
+title: "The chip turned off for the document"
+filters:
+  - code-window
+extensions:
+  code-window:
+    lines-label: false
+---
+
+The option removes the chip. The attribute the chip comes from still leaves
+the block.
+
+```{.python filename="a.py" code-window-lines="1,2"}
+x = 1
+```

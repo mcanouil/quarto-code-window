@@ -62,6 +62,15 @@ block_classes() {
 	grep -o '<pre class="[^"]*"' "$1" || true
 }
 
+# Answer the opening tag of every highlighted block's wrapper in a rendered
+# HTML file. Pandoc writes an attribute the filter left behind onto this tag,
+# as data-code-window-*. The injected script is left out for the same reason
+# as above.
+# $1 rendered file
+block_wrappers() {
+	grep -o '<div class="sourceCode"[^>]*>' "$1" || true
+}
+
 # ============================================================================
 # The output of an executed cell keeps the shape Quarto gave it
 # ============================================================================
@@ -99,6 +108,30 @@ if block_classes "${work_dir}/block-style-override.html" | grep -q 'cw-style-win
 else
 	report fail "block-style-override: the style marker survives an unreadable schema" \
 		"a cw-style-windows class on the highlighted block"
+fi
+
+# ============================================================================
+# The filter's own attributes stay out of the rendered document
+# ============================================================================
+
+for fixture in disabled-block lines-label-off; do
+	render "${fixture}" html
+	if block_wrappers "${work_dir}/${fixture}.html" | grep -q 'data-code-window-'; then
+		report fail "${fixture}: no code-window attribute reaches the output" \
+			"no data-code-window- attribute on the wrapper"
+	else
+		report pass "${fixture}: no code-window attribute reaches the output"
+	fi
+done
+
+# The label the language module writes is the filter's own, so a format that
+# draws no chrome drops it rather than printing it.
+render unsupported-format markdown
+if grep -q 'code-window-auto-label' "${work_dir}/unsupported-format.md"; then
+	report fail "unsupported-format: the internal label stays out of the output" \
+		"no code-window-auto-label in unsupported-format.md"
+else
+	report pass "unsupported-format: the internal label stays out of the output"
 fi
 
 # ============================================================================
