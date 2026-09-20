@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Render check for the code-window filter.
+#
+# Each test renders one fixture and reads one fact off the rendered file.
+# Quarto builds its extension registry before a pre-render script runs, and it
+# does not follow symbolic links, so the extension is copied next to the
+# fixtures rather than linked. docs/_scripts/sync-extension.sh solves the same
+# problem for the documentation site.
+#
+# Usage: tests/run.sh
+
+tests_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo_dir="$(dirname "${tests_dir}")"
+
+work_dir="$(mktemp -d)"
+trap 'rm -rf "${work_dir}"' EXIT
+
+cp -R "${repo_dir}/_extensions" "${work_dir}/_extensions"
+cp "${tests_dir}"/fixtures/*.qmd "${work_dir}/"
+
+passed=0
+failed=0
+
+# Report one test and count it.
+# $1 outcome, "pass" or "fail". $2 name. $3 what the test expected.
+report() {
+	if [ "$1" = "pass" ]; then
+		passed=$((passed + 1))
+		printf 'pass  %s\n' "$2"
+	else
+		failed=$((failed + 1))
+		printf 'FAIL  %s\n' "$2"
+		printf '      expected %s\n' "$3"
+	fi
+}
+
+# Render a fixture, and stop the run when the render itself fails.
+# $1 fixture base name. $2 target format.
+render() {
+	if ! quarto render "${work_dir}/$1.qmd" --to "$2" --quiet >"${work_dir}/$1.log" 2>&1; then
+		printf 'FAIL  %s: the render failed\n' "$1"
+		tail -n 20 "${work_dir}/$1.log"
+		exit 1
+	fi
+}
+
+# Count the code-window calls in a rendered Typst file. The wrapper's own
+# definition reads "#let code-window(", so a call is matched at the start of a
+# line and with its first argument.
+# $1 rendered file
+count_typst_windows() {
+	grep -c '^#code-window(filename' "$1" || true
+}
+
+# Answer the classes of every highlighted block in a rendered HTML file. The
+# injected script names its marker classes in a selector, never in a tag, so
+# reading the tags alone keeps the script out of the answer.
+# $1 rendered file
+block_classes() {
+	grep -o '<pre class="[^"]*"' "$1" || true
+}
+
+# ============================================================================
+# The output of an executed cell keeps the shape Quarto gave it
+# ============================================================================
+
+for fixture in cell-output-bare cell-output-classed; do
+	render "${fixture}" typst
+	if [ "$(count_typst_windows "${work_dir}/${fixture}.typ")" -eq 0 ]; then
+		report pass "${fixture}: the output of the cell is not framed"
+	else
+		report fail "${fixture}: the output of the cell is not framed" \
+			"no code-window call in ${fixture}.typ"
+	fi
+done
+
+# ============================================================================
+# A per-block style override reaches the output
+# ============================================================================
+
+render block-style-override html
+if block_classes "${work_dir}/block-style-override.html" | grep -q 'cw-style-windows'; then
+	report pass "block-style-override: the block carries the style marker"
+else
+	report fail "block-style-override: the block carries the style marker" \
+		"a cw-style-windows class on the highlighted block"
+fi
+
+# The extension reports a schema it cannot read and renders the document all
+# the same, so a per-block override has to survive that state too.
+mv "${work_dir}/_extensions/code-window/_schema.yml" "${work_dir}/schema.yml.aside"
+render block-style-override html
+mv "${work_dir}/schema.yml.aside" "${work_dir}/_extensions/code-window/_schema.yml"
+
+if block_classes "${work_dir}/block-style-override.html" | grep -q 'cw-style-windows'; then
+	report pass "block-style-override: the style marker survives an unreadable schema"
+else
+	report fail "block-style-override: the style marker survives an unreadable schema" \
+		"a cw-style-windows class on the highlighted block"
+fi
+
+# ============================================================================
+
+printf '\n%s passed, %s failed\n' "${passed}" "${failed}"
+[ "${failed}" -eq 0 ]

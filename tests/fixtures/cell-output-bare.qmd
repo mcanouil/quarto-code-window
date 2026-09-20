@@ -1,0 +1,19 @@
+---
+title: "Cell output, no language"
+filters:
+  - code-window
+format:
+  typst:
+    keep-typ: true
+---
+
+The div below has the shape an engine gives the output of an executed cell.
+The filter leaves the block inside it as Quarto wrote it.
+
+::: {.cell-output .cell-output-stdout}
+
+```
+[1] 1 4 9 16
+```
+
+:::
