@@ -155,6 +155,10 @@ local function build_raw_line_annotation_rule()
 ]==], circled, circled)
 end
 
+--- Shape of the box that holds inline code, after its fill.
+local _inline_box_style = 'inset: (x: 3pt, y: 0pt), outset: (y: 3pt), '
+    .. 'radius: 2pt, stroke: none)['
+
 --- Process inline Code for Typst format.
 --- Puts the Code element in a box that carries the theme background colour.
 --- The element itself stays in the document, so Pandoc highlights it and
@@ -167,14 +171,11 @@ local function process_typst_inline(el)
   local opening, closing
 
   if type(bg) == 'string' then
-    opening = string.format(
-      '#box(fill: rgb("%s"), inset: (x: 3pt, y: 0pt), outset: (y: 3pt), '
-      .. 'radius: 2pt, stroke: none)[', bg)
+    opening = string.format('#box(fill: rgb("%s"), ', bg) .. _inline_box_style
     closing = ']'
   else
     opening = '#context { let _bg = _cw-page-bg(); let _f = _cw-fg(_bg); '
-      .. 'box(fill: color.mix((_f, 10%), (_bg, 90%)), '
-      .. 'inset: (x: 3pt, y: 0pt), outset: (y: 3pt), radius: 2pt, stroke: none)['
+      .. 'box(fill: color.mix((_f, 10%), (_bg, 90%)), ' .. _inline_box_style
     closing = '] }'
   end
 
