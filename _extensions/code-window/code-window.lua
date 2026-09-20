@@ -1308,4 +1308,5 @@ return {
   Pandoc = Pandoc,
   CodeBlock = CodeBlock,
   CONFIG = function() return CONFIG end,
+  FORMAT = function() return CURRENT_FORMAT end,
 }

@@ -192,6 +192,14 @@ else
 		"a foo class on the block"
 fi
 
+# The same pass serves no reader on a format that gets no chrome either.
+if grep -q '^``` foo' "${work_dir}/unsupported-format.md"; then
+	report pass "unsupported-format: the block keeps its own language"
+else
+	report fail "unsupported-format: the block keeps its own language" \
+		"a fence reading \`\`\` foo in unsupported-format.md"
+fi
+
 # ============================================================================
 
 printf '\n%s passed, %s failed\n' "${passed}" "${failed}"

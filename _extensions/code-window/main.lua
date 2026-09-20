@@ -62,14 +62,20 @@ end
 
 --- Normalise a block's language only where something reads the result.
 --- The pass labels a block whose language Pandoc cannot highlight, and the
---- derived filename is the only reader of that label. That reader never runs
---- with the extension off, so the pass would rewrite a class for nobody and
---- hand the author back a language they did not write.
+--- derived filename is the only reader of that label. That reader runs for
+--- html and typst, and only while the extension is on, so anywhere else the
+--- pass would rewrite a class for nobody and hand the author back a language
+--- they did not write. A render to markdown printed the "default" class in
+--- place of the author's own language for exactly that reason.
 --- @param block pandoc.CodeBlock
 --- @return pandoc.CodeBlock|nil Relabelled block, or nil when the pass is skipped
 local function normalise_language(block)
   local config = code_window.CONFIG()
   if not config or not config.enabled then
+    return nil
+  end
+  local format = code_window.FORMAT()
+  if format ~= 'html' and format ~= 'typst' then
     return nil
   end
   return language.CodeBlock(block)
