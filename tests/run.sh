@@ -86,21 +86,19 @@ for fixture in cell-output-bare cell-output-classed; do
 done
 
 # ============================================================================
-# The token definitions reach a document the filter highlights
+# Inline code keeps the token definitions in a document with no code block
 # ============================================================================
 
-# The filter writes inline code as pre-rendered Typst tokens, so the token
-# definitions have to be in the document whether or not a code block put them
-# there. A document with no code block fails to compile without them.
-for fixture in inline-code-only inline-code-with-block; do
-	render "${fixture}" typst
-	if grep -q '^#let NormalTok(' "${work_dir}/${fixture}.typ"; then
-		report pass "${fixture}: the token definitions reach the document"
-	else
-		report fail "${fixture}: the token definitions reach the document" \
-			"a #let NormalTok( definition in ${fixture}.typ"
-	fi
-done
+# The filter boxes inline code and leaves the element itself in place, so
+# Pandoc highlights it and writes the token definitions. The render fails to
+# compile when they are missing, and the grep says why.
+render inline-code-only typst
+if grep -q '^#let NormalTok(' "${work_dir}/inline-code-only.typ"; then
+	report pass "inline-code-only: the token definitions reach the document"
+else
+	report fail "inline-code-only: the token definitions reach the document" \
+		"a #let NormalTok( definition in inline-code-only.typ"
+fi
 
 # ============================================================================
 # A per-block style override reaches the output

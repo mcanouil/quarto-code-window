@@ -155,77 +155,34 @@ local function build_raw_line_annotation_rule()
 ]==], circled, circled)
 end
 
---- Build the syntax highlighting token definitions for Typst.
---- The inline pass writes its tokens itself, so Pandoc sees nothing left to
---- highlight and writes no definitions for a document that has no code block.
---- Writing one throwaway block with the document's own highlight method gives
---- the definitions for the theme in use.
---- @return string|nil Typst #let definitions, or nil when there are none
-local function build_highlight_macros()
-  local hm = PANDOC_WRITER_OPTIONS and PANDOC_WRITER_OPTIONS.highlight_method
-  if not hm then return nil end
-
-  local ok, rendered = pcall(function()
-    return pandoc.write(
-      pandoc.Pandoc({ pandoc.CodeBlock('x', pandoc.Attr('', { 'python' })) }),
-      'typst',
-      pandoc.WriterOptions({
-        highlight_method = hm,
-        template = pandoc.template.compile(pandoc.template.default('typst')),
-      })
-    )
-  end)
-  if not ok or type(rendered) ~= 'string' then return nil end
-
-  local definitions = {}
-  for line in rendered:gmatch('[^\n]+') do
-    if line:match('^#let %a+Tok%(s%) =') then
-      table.insert(definitions, line)
-    end
-  end
-  if #definitions == 0 then return nil end
-
-  return '// code-window highlight macros\n' .. table.concat(definitions, '\n') .. '\n'
-end
-
 --- Process inline Code for Typst format.
---- Renders the Code element through Pandoc's Typst writer to get syntax-
---- highlighted output, then wraps it in a box with the theme background colour.
+--- Puts the Code element in a box that carries the theme background colour.
+--- The element itself stays in the document, so Pandoc highlights it and
+--- writes the token definitions for it.
 --- @param el pandoc.Code Inline code element
---- @return pandoc.RawInline|pandoc.Code Transformed or original element
+--- @return pandoc.Inlines The boxed code
 local function process_typst_inline(el)
   local hm = PANDOC_WRITER_OPTIONS and PANDOC_WRITER_OPTIONS.highlight_method
-  local bg_fill = nil
-  local write_opts = nil
+  local bg = hm and hm['background-color']
+  local opening, closing
 
-  if hm then
-    local bg = hm['background-color']
-    if bg and type(bg) == 'string' then
-      bg_fill = string.format('rgb("%s")', bg)
-    end
-    write_opts = pandoc.WriterOptions({
-      highlight_method = hm,
-    })
-  end
-
-  local rendered = pandoc.write(pandoc.Pandoc({ pandoc.Plain({ el }) }), 'typst', write_opts)
-  rendered = rendered:gsub('%s+$', '')
-  if rendered == '' then return el end
-
-  local typst_code
-  if bg_fill then
-    typst_code = string.format(
-      '#box(fill: %s, inset: (x: 3pt, y: 0pt), outset: (y: 3pt), radius: 2pt, stroke: none)[%s]',
-      bg_fill, rendered)
+  if type(bg) == 'string' then
+    opening = string.format(
+      '#box(fill: rgb("%s"), inset: (x: 3pt, y: 0pt), outset: (y: 3pt), '
+      .. 'radius: 2pt, stroke: none)[', bg)
+    closing = ']'
   else
-    typst_code = string.format(
-      '#context { let _bg = _cw-page-bg(); let _f = _cw-fg(_bg); '
-      .. 'box(fill: color.mix((_f, 10%%), (_bg, 90%%)), '
-      .. 'inset: (x: 3pt, y: 0pt), outset: (y: 3pt), radius: 2pt, stroke: none)[%s] }',
-      rendered)
+    opening = '#context { let _bg = _cw-page-bg(); let _f = _cw-fg(_bg); '
+      .. 'box(fill: color.mix((_f, 10%), (_bg, 90%)), '
+      .. 'inset: (x: 3pt, y: 0pt), outset: (y: 3pt), radius: 2pt, stroke: none)['
+    closing = '] }'
   end
 
-  return pandoc.RawInline('typst', typst_code)
+  return pandoc.Inlines({
+    pandoc.RawInline('typst', opening),
+    el,
+    pandoc.RawInline('typst', closing),
+  })
 end
 
 --- Inject Skylighting override at the start of the document.
@@ -289,16 +246,7 @@ local function process_inline_code(doc)
     return doc
   end
 
-  local wrote_tokens = false
-  local code_filter = {
-    Code = function(el)
-      local replaced = process_typst_inline(el)
-      if replaced.t == 'RawInline' and replaced.text:find('Tok(', 1, true) then
-        wrote_tokens = true
-      end
-      return replaced
-    end,
-  }
+  local code_filter = { Code = function(el) return process_typst_inline(el) end }
   local title_filter = {
     Code = function(el)
       return pandoc.RawInline('typst', '`' .. el.text .. '`')
@@ -323,17 +271,6 @@ local function process_inline_code(doc)
   end
 
   doc.blocks = walk_blocks(doc.blocks)
-
-  -- A code block makes Pandoc write the same definitions into the preamble.
-  -- Typst takes the later binding, and both sets hold the same values, so the
-  -- pair is harmless and the document compiles either way.
-  if wrote_tokens then
-    local macros = build_highlight_macros()
-    if macros then
-      table.insert(doc.blocks, 1, pandoc.RawBlock('typst', macros))
-    end
-  end
-
   return doc
 end
 
