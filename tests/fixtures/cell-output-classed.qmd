@@ -1,0 +1,19 @@
+---
+title: "Cell output with a language"
+filters:
+  - code-window
+format:
+  typst:
+    keep-typ: true
+---
+
+An engine can give the output of a cell a language of its own.
+The block still holds the output of an executed cell, so the filter leaves it alone.
+
+::: {.cell-output .cell-output-stdout}
+
+```{.r}
+[1] 1 4 9 16
+```
+
+:::

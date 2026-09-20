@@ -1,0 +1,12 @@
+---
+title: "Per-block style override"
+filters:
+  - code-window
+---
+
+The block below asks for the windows style, and the filter marks it so the
+script can promote that style onto the wrapper.
+
+```{.python filename="a.py" code-window-style="windows"}
+x = 1
+```
