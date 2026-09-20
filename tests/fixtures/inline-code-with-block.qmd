@@ -1,0 +1,19 @@
+---
+title: "Inline code and a block"
+filters:
+  - code-window
+format:
+  typst:
+    keep-typ: true
+---
+
+The document below has inline code and a code block.
+
+Pandoc writes the token definitions for the block, so the definitions the
+filter adds for the inline code are a second set of the same names.
+
+A paragraph with `inline code` in it.
+
+```python
+x = 1
+```

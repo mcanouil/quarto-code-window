@@ -86,6 +86,23 @@ for fixture in cell-output-bare cell-output-classed; do
 done
 
 # ============================================================================
+# The token definitions reach a document the filter highlights
+# ============================================================================
+
+# The filter writes inline code as pre-rendered Typst tokens, so the token
+# definitions have to be in the document whether or not a code block put them
+# there. A document with no code block fails to compile without them.
+for fixture in inline-code-only inline-code-with-block; do
+	render "${fixture}" typst
+	if grep -q '^#let NormalTok(' "${work_dir}/${fixture}.typ"; then
+		report pass "${fixture}: the token definitions reach the document"
+	else
+		report fail "${fixture}: the token definitions reach the document" \
+			"a #let NormalTok( definition in ${fixture}.typ"
+	fi
+done
+
+# ============================================================================
 # A per-block style override reaches the output
 # ============================================================================
 

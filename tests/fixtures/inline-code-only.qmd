@@ -1,0 +1,15 @@
+---
+title: "Inline code, no block"
+filters:
+  - code-window
+format:
+  typst:
+    keep-typ: true
+---
+
+The document below has inline code and no code block.
+
+The filter writes the inline code as highlighted Typst, so the token
+definitions have to reach the document on their own.
+
+A paragraph with `inline code` in it.
