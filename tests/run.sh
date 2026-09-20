@@ -108,6 +108,17 @@ else
 		"a box(fill: rgb( call in inline-code-only.typ"
 fi
 
+# A code block goes through the Skylighting override, and the inline code
+# keeps its own box in the same document.
+render inline-code-with-block typst
+if grep -q '^#Skylighting(' "${work_dir}/inline-code-with-block.typ" &&
+	grep -q 'box(fill: rgb(' "${work_dir}/inline-code-with-block.typ"; then
+	report pass "inline-code-with-block: the block and the inline code share the document"
+else
+	report fail "inline-code-with-block: the block and the inline code share the document" \
+		"a #Skylighting( call and a box(fill: rgb( call in inline-code-with-block.typ"
+fi
+
 # A theme that gives no background colour takes the other box, which mixes its
 # colour from the page. The render compiles that box.
 render inline-code-no-theme typst

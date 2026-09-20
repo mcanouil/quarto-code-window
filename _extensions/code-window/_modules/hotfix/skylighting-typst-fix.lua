@@ -236,6 +236,8 @@ local function is_title_scaffold(div)
 end
 
 --- Walk the document tree and box inline Code with background styling.
+--- The extension contributes the pass once, so it sees each Code element
+--- once and boxes it once.
 --- Code in title scaffolds is converted to plain
 --- Typst backtick code to avoid Skylighting tokens with inner quotes
 --- that would break the string parameter Quarto generates.
