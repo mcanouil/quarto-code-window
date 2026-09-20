@@ -72,6 +72,23 @@ local ANNOTATION_BLOCK_COUNTER = 0
 -- CELL OUTPUT
 -- ============================================================================
 
+--- Check whether the extension acts on the format being rendered. It draws
+--- chrome for html, which covers Reveal.js, and for typst, and leaves every
+--- other format as Quarto writes it.
+--- @return boolean
+local function acts_on_format()
+  return CURRENT_FORMAT == 'html' or CURRENT_FORMAT == 'typst'
+end
+
+--- Check whether this render draws chrome at all: the extension is on, and the
+--- format is one it acts on. Every pass that exists only to serve the chrome
+--- asks this before it does any work, so none of them has to carry its own
+--- copy of the two conditions.
+--- @return boolean
+local function draws_chrome()
+  return CONFIG ~= nil and CONFIG.enabled and acts_on_format()
+end
+
 --- Check whether a block holds the output of an executed cell that the engine
 --- did not name. Such a block keeps the shape Quarto gave it.
 --- @param block pandoc.CodeBlock Code block element
@@ -749,9 +766,9 @@ function Meta(meta)
   -- This is the pass that reads the configuration, so the check runs here,
   -- before the first option is read. An option the check rejects is still
   -- read below, because the report says what the extension cannot use and the
-  -- document renders either way. The extension only acts on html and typst,
-  -- so the check is gated on the same union those formats already use below.
-  if CURRENT_FORMAT == 'html' or CURRENT_FORMAT == 'typst' then
+  -- document renders either way. Only a format the extension acts on reports,
+  -- because nothing it could say applies anywhere else.
+  if acts_on_format() then
     checker:options(meta)
   end
 
@@ -1308,5 +1325,5 @@ return {
   Pandoc = Pandoc,
   CodeBlock = CodeBlock,
   CONFIG = function() return CONFIG end,
-  FORMAT = function() return CURRENT_FORMAT end,
+  draws_chrome = draws_chrome,
 }

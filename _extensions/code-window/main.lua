@@ -42,14 +42,16 @@ code_window.set_checker(checker)
 -- ============================================================================
 
 --- Mark the code blocks that hold the output of an executed cell, so the later
---- passes leave them as Quarto wrote them. Reads the configuration once and
---- walks the document only when there is a pass to hold back: the extension is
---- on, and the output has to stay unframed. The window passes remove the mark.
+--- passes leave them as Quarto wrote them. Walks the document only when there
+--- is a pass to hold back, which means this render draws chrome and the output
+--- has to stay unframed. Only the two window paths read the mark, so a render
+--- that draws no chrome would walk the whole document to set an attribute
+--- nothing goes on to read. draws_chrome answers false when there is no
+--- configuration yet, so the second test below always has one in hand.
 --- @param doc pandoc.Pandoc
 --- @return pandoc.Pandoc|nil Marked document, or nil when the pass is skipped
 local function mark_cell_output(doc)
-  local config = code_window.CONFIG()
-  if not config or not config.enabled or config.cell_output then
+  if not code_window.draws_chrome() or code_window.CONFIG().cell_output then
     return nil
   end
   doc.blocks = doc.blocks:walk({ Div = cell_output.Div })
@@ -62,20 +64,13 @@ end
 
 --- Normalise a block's language only where something reads the result.
 --- The pass labels a block whose language Pandoc cannot highlight, and the
---- derived filename is the only reader of that label. That reader runs for
---- html and typst, and only while the extension is on, so anywhere else the
---- pass would rewrite a class for nobody and hand the author back a language
---- they did not write. A render to markdown printed the "default" class in
---- place of the author's own language for exactly that reason.
+--- derived filename is the only reader of that label. Nothing derives a
+--- filename in a render that draws no chrome, so the pass would rewrite a
+--- class for nobody and hand the author back a language they did not write.
 --- @param block pandoc.CodeBlock
 --- @return pandoc.CodeBlock|nil Relabelled block, or nil when the pass is skipped
 local function normalise_language(block)
-  local config = code_window.CONFIG()
-  if not config or not config.enabled then
-    return nil
-  end
-  local format = code_window.FORMAT()
-  if format ~= 'html' and format ~= 'typst' then
+  if not code_window.draws_chrome() then
     return nil
   end
   return language.CodeBlock(block)
