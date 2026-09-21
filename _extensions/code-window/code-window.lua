@@ -267,6 +267,35 @@ local function read_block_lines_label(block, resolved)
   return cln
 end
 
+--- @class WindowOverrides
+--- @field enabled boolean Whether this block asks for chrome at all
+--- @field style string|nil Style this block asks for, in place of the document's
+--- @field lines_label string|nil Highlighted-lines spec for the title bar
+--- @field no_auto_filename boolean Whether this block refuses a derived name
+
+--- Read what a block asks of the chrome, in the order and the way both format
+--- paths ask for it. Collapse is left out, because it is the one override that
+--- is HTML only and the Typst path never reads.
+--- code-window-enabled declares default: true, and code-window-no-auto-filename
+--- declares default: false, each matching this file's own fallback. Neither
+--- layers over a document option, so the resolved value answers directly, and
+--- the stringified value decides the flag, which is what makes an explicit
+--- "false" behave like absence rather than like "true".
+--- Every read here is a read: the attributes came off the block earlier, in
+--- take_block_attributes, so the order of these four does not matter and
+--- neither does reading them before the opt-out below is tested.
+--- @param block pandoc.CodeBlock Code block element
+--- @param resolved table<string, any> This block's attributes, resolved against the schema
+--- @return WindowOverrides
+local function read_window_overrides(block, resolved)
+  return {
+    enabled = stringify_bool(resolved['code-window-enabled']) ~= 'false',
+    style = read_block_style(resolved),
+    lines_label = read_block_lines_label(block, resolved),
+    no_auto_filename = stringify_bool(resolved['code-window-no-auto-filename']) == 'true',
+  }
+end
+
 -- ============================================================================
 -- TYPST FUNCTION DEFINITION
 -- ============================================================================
@@ -612,63 +641,49 @@ end
 --- @param auto_label string|nil Label written by the language module, if any
 --- @return pandoc.Div|pandoc.CodeBlock Wrapped block or original
 local function process_html(block, resolved, auto_label)
-  -- code-window-enabled declares default: true, matching this file's own
-  -- fallback (chrome applies unless turned off), and it never layers over a
-  -- document option, so the resolved value is read directly.
-  local block_enabled = resolved['code-window-enabled']
+  local overrides = read_window_overrides(block, resolved)
 
   -- Per-block opt-out: code-window-enabled="false" skips window chrome.
-  if stringify_bool(block_enabled) == 'false' then
+  if not overrides.enabled then
     return block
   end
 
-  local block_style = read_block_style(resolved)
+  -- Collapse is read here rather than with the rest, because it is the one
+  -- override the Typst path never asks for.
   local effective_collapse = read_block_collapse(resolved) or CONFIG.collapse
-  local lines_label = read_block_lines_label(block, resolved)
-  -- code-window-no-auto-filename declares default: false, matching this
-  -- file's own fallback, and never layers over a document option either. The
-  -- stringified resolved value decides the flag, so an explicit "false"
-  -- behaves like absence rather than like "true".
-  local no_auto = stringify_bool(resolved['code-window-no-auto-filename']) == 'true'
   local explicit_filename = block.attributes['filename']
 
-  if explicit_filename and explicit_filename ~= '' then
-    -- Let Quarto create the .code-with-filename wrapper.
-    -- Add a marker class for block-level style override; the injected JS
-    -- reads it and promotes it to the wrapper div.
-    if block_style then
-      table.insert(block.classes, 'cw-style-' .. block_style)
+  --- Add the marker classes and the chip the injected script reads.
+  local function mark(target)
+    if overrides.style then
+      table.insert(target.classes, 'cw-style-' .. overrides.style)
     end
     if effective_collapse then
-      table.insert(block.classes, 'cw-collapse-' .. effective_collapse)
+      table.insert(target.classes, 'cw-collapse-' .. effective_collapse)
     end
-    if lines_label then
-      block.attributes['code-window-lines-label'] = lines_label
+    if overrides.lines_label then
+      target.attributes['code-window-lines-label'] = overrides.lines_label
     end
+  end
+
+  if explicit_filename and explicit_filename ~= '' then
+    -- Let Quarto create the .code-with-filename wrapper, and mark the block so
+    -- the injected script can promote a block-level override onto that wrapper.
+    mark(block)
     return block
   end
 
-  if not CONFIG.auto_filename or no_auto then
+  if not CONFIG.auto_filename or overrides.no_auto_filename then
     return block
   end
 
   -- Blocks with a language of their own are labelled with its class.
-  local filename = auto_label or block.classes[1]
-
   -- Set the filename attribute so Quarto creates its own .code-with-filename
   -- wrapper. This preserves the CodeBlock+OrderedList sibling structure
   -- needed by Quarto's code-annotations processor.
-  block.attributes['filename'] = filename
+  block.attributes['filename'] = auto_label or block.classes[1]
   table.insert(block.classes, 'cw-auto')
-  if block_style then
-    table.insert(block.classes, 'cw-style-' .. block_style)
-  end
-  if effective_collapse then
-    table.insert(block.classes, 'cw-collapse-' .. effective_collapse)
-  end
-  if lines_label then
-    block.attributes['code-window-lines-label'] = lines_label
-  end
+  mark(block)
 
   return block
 end
@@ -963,27 +978,17 @@ end
 --- @return string|nil block_style
 --- @return string|nil lines_label Highlighted-lines spec for the title bar
 local function resolve_window_params(block, resolved, auto_label)
-  -- code-window-enabled declares default: true, matching this file's own
-  -- fallback, and never layers over a document option, so the resolved value
-  -- is read directly.
-  local block_enabled = resolved['code-window-enabled']
+  local overrides = read_window_overrides(block, resolved)
 
   -- Per-block opt-out: code-window-enabled="false" skips window chrome.
-  if stringify_bool(block_enabled) == 'false' then
+  if not overrides.enabled then
     return nil, false, nil, nil
   end
 
-  local block_style = read_block_style(resolved)
-  local lines_label = read_block_lines_label(block, resolved)
-  -- code-window-no-auto-filename declares default: false, matching this
-  -- file's own fallback, and never layers over a document option either. The
-  -- stringified resolved value decides the flag, so an explicit "false"
-  -- behaves like absence rather than like "true".
-  local no_auto = stringify_bool(resolved['code-window-no-auto-filename']) == 'true'
   local filename = block.attributes['filename']
   local is_auto = false
 
-  if (not filename or filename == '') and not no_auto then
+  if (not filename or filename == '') and not overrides.no_auto_filename then
     if CONFIG.auto_filename and block.classes and #block.classes > 0 then
       -- Default/unknown/no-language blocks carry their label on
       -- code-window-auto-label; everything else uses its language class.
@@ -992,7 +997,7 @@ local function resolve_window_params(block, resolved, auto_label)
     end
   end
 
-  return filename, is_auto, block_style, lines_label
+  return filename, is_auto, overrides.style, overrides.lines_label
 end
 
 --- Process a single CodeBlock for Typst, returning replacement blocks.
