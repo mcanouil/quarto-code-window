@@ -1,0 +1,16 @@
+---
+title: "The Typst wrapper name"
+filters:
+  - code-window
+format:
+  typst:
+    keep-typ: true
+---
+
+The block below is framed, so the document calls the wrapper function by the
+name the configuration gives it. Nothing here sets that name, so the default
+decides, and the schema is where the default is written down.
+
+```{.python filename="a.py"}
+x = 1
+```
