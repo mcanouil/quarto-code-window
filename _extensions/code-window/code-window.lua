@@ -281,9 +281,9 @@ end
 --- layers over a document option, so the resolved value answers directly, and
 --- the stringified value decides the flag, which is what makes an explicit
 --- "false" behave like absence rather than like "true".
---- Every read here is a read: the attributes came off the block earlier, in
---- take_block_attributes, so the order of these four does not matter and
---- neither does reading them before the opt-out below is tested.
+--- All four are lookups on the resolved table and on the block, and take
+--- nothing off the block, which take_block_attributes already did. So a caller
+--- may read them all before it tests the opt-out, and their order is free.
 --- @param block pandoc.CodeBlock Code block element
 --- @param resolved table<string, any> This block's attributes, resolved against the schema
 --- @return WindowOverrides
@@ -648,8 +648,6 @@ local function process_html(block, resolved, auto_label)
     return block
   end
 
-  -- Collapse is read here rather than with the rest, because it is the one
-  -- override the Typst path never asks for.
   local effective_collapse = read_block_collapse(resolved) or CONFIG.collapse
   local explicit_filename = block.attributes['filename']
 
