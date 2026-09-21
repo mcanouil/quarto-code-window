@@ -653,23 +653,24 @@ local function process_html(block, resolved, auto_label)
   local effective_collapse = read_block_collapse(resolved) or CONFIG.collapse
   local explicit_filename = block.attributes['filename']
 
-  --- Add the marker classes and the chip the injected script reads.
-  local function mark(target)
+  -- Add the marker classes and the chip the injected script reads. Both
+  -- branches below end this way, on the same block this closure captures.
+  local function mark()
     if overrides.style then
-      table.insert(target.classes, 'cw-style-' .. overrides.style)
+      table.insert(block.classes, 'cw-style-' .. overrides.style)
     end
     if effective_collapse then
-      table.insert(target.classes, 'cw-collapse-' .. effective_collapse)
+      table.insert(block.classes, 'cw-collapse-' .. effective_collapse)
     end
     if overrides.lines_label then
-      target.attributes['code-window-lines-label'] = overrides.lines_label
+      block.attributes['code-window-lines-label'] = overrides.lines_label
     end
   end
 
   if explicit_filename and explicit_filename ~= '' then
     -- Let Quarto create the .code-with-filename wrapper, and mark the block so
     -- the injected script can promote a block-level override onto that wrapper.
-    mark(block)
+    mark()
     return block
   end
 
@@ -683,7 +684,7 @@ local function process_html(block, resolved, auto_label)
   -- needed by Quarto's code-annotations processor.
   block.attributes['filename'] = auto_label or block.classes[1]
   table.insert(block.classes, 'cw-auto')
-  mark(block)
+  mark()
 
   return block
 end
