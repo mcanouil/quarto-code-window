@@ -796,13 +796,20 @@ function Meta(meta)
     schema_defaults = checker:options(meta)
   end
 
+  -- The schema is read first and the fallback fills only what it leaves
+  -- unanswered, so an option added to _schema.yml and to the key list below
+  -- needs nothing here. Reading the fallback first would have made it the list
+  -- of options allowed to have a default at all, which is the coupling this
+  -- change exists to remove. The schema's answer also carries the nested
+  -- hotfix entry, which get_options never reads, since it reads the keys named
+  -- below and nothing else.
   local defaults = {}
+  for key, declared in pairs(schema_defaults) do
+    defaults[key] = stringify_bool(declared)
+  end
   for key, fallback in pairs(FALLBACK_DEFAULTS) do
-    local declared = schema_defaults[key]
-    if declared == nil then
+    if defaults[key] == nil then
       defaults[key] = fallback
-    else
-      defaults[key] = stringify_bool(declared)
     end
   end
 

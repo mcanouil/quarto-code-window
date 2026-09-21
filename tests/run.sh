@@ -257,11 +257,14 @@ render wrapper-default typst
 mv "${work_dir}/_extensions/code-window/_schema.yml.aside" \
 	"${work_dir}/_extensions/code-window/_schema.yml"
 
-if grep -q '^#my-window(' "${work_dir}/wrapper-default.typ"; then
+# The old name has to be gone as well as the new one present, because a rename
+# that missed a call site would leave both in the document.
+if grep -q '^#my-window(' "${work_dir}/wrapper-default.typ" &&
+	! grep -q '^#code-window(' "${work_dir}/wrapper-default.typ"; then
 	report pass "wrapper-default: a default changed in the schema alone is followed"
 else
 	report fail "wrapper-default: a default changed in the schema alone is followed" \
-		"a #my-window( call in wrapper-default.typ"
+		"a #my-window( call and no #code-window( call in wrapper-default.typ"
 fi
 
 # With no schema to read, the fallback in the Lua answers instead, and the
