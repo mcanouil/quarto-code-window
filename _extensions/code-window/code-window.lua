@@ -43,14 +43,19 @@ local ATTRIBUTE_PREFIX = 'code-window-'
 --- Defaults for the two cases where the schema cannot answer: a format the
 --- extension does not act on, where the check never runs, and a schema that
 --- could not be read, which is a state this extension renders through rather
---- than stopping for. Everywhere else _schema.yml decides, so these values
---- are a fallback and not a second place to change an option's default.
+--- than stopping for. Everywhere else _schema.yml decides these seven, so the
+--- values below are a fallback and not a second place to change one of them.
+--- The hotfix defaults are a different story, and are still kept by hand in
+--- HOTFIX_DEFAULTS: they are nested in the schema and read on their own path,
+--- so changing one in _schema.yml alone still changes nothing.
 --- All seven stay listed, because the second case has nothing else to read
---- from. Where the two disagree, the schema wins on html and typst, and a
---- format the extension does not act on reads "enabled" alone, which is the
---- one that chooses whether a block's attributes are checked at all. So keep
---- that one in step with the schema, and treat a difference in the other six
---- as a thing to correct rather than a thing that shows.
+--- from, and an option added to the schema needs an entry here as well or it
+--- has no default at all on a format the extension does not act on.
+--- Where the two disagree, the schema wins on html and typst, and a format
+--- the extension does not act on reads "enabled" alone, which is the one that
+--- chooses whether a block's attributes are checked. So keep that one in step
+--- with the schema, and treat a difference in the other six as a thing to
+--- correct rather than a thing that shows.
 local FALLBACK_DEFAULTS = {
   ['enabled'] = 'true',
   ['auto-filename'] = 'true',
@@ -803,12 +808,14 @@ function Meta(meta)
   end
 
   -- The schema is read first and the fallback fills only what it leaves
-  -- unanswered, so an option added to _schema.yml and to the key list below
-  -- needs nothing here. Reading the fallback first would have made it the list
-  -- of options allowed to have a default at all, which is the coupling this
-  -- change exists to remove. What arrives is one entry per option that
-  -- declares a default of its own, and get_options reads only the keys named
-  -- below.
+  -- unanswered, so on html and typst an option added to _schema.yml and to the
+  -- key list below needs nothing more. Anywhere else the check above never
+  -- runs, so the same option also needs an entry in FALLBACK_DEFAULTS or it
+  -- has no default there. Reading the fallback first would have made it the
+  -- list of options allowed to have a default at all, on every format, which
+  -- is the coupling this change exists to remove. What arrives is one entry
+  -- per option that declares a default of its own, and get_options reads only
+  -- the keys named below.
   local defaults = {}
   for key, declared in pairs(schema_defaults) do
     defaults[key] = stringify_bool(declared)
