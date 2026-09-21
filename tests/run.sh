@@ -168,14 +168,71 @@ for fixture in disabled-block lines-label-off; do
 	fi
 done
 
-# The label the language module writes is the filter's own, so a format that
-# draws no chrome drops it rather than printing it.
+# The label is the filter's own name for a block, and no reader of it exists on
+# a format that draws no chrome, so neither the label nor the pass that writes
+# it reaches the output.
 render unsupported-format markdown
 if grep -q 'code-window-auto-label' "${work_dir}/unsupported-format.md"; then
 	report fail "unsupported-format: the internal label stays out of the output" \
 		"no code-window-auto-label in unsupported-format.md"
 else
 	report pass "unsupported-format: the internal label stays out of the output"
+fi
+
+# ============================================================================
+# A filter that draws no chrome leaves a block's language alone
+# ============================================================================
+
+# The pass that relabels a language serves the derived filename, and nothing
+# derives a filename with the filter off.
+render filter-disabled html
+if block_classes "${work_dir}/filter-disabled.html" | grep -q 'foo'; then
+	report pass "filter-disabled: the block keeps its own language"
+else
+	report fail "filter-disabled: the block keeps its own language" \
+		"a foo class on the block"
+fi
+
+# The other branch of the same pass inserts a class where the block had none,
+# which turns a bare block into a highlighted one.
+render filter-disabled-no-language html
+if block_classes "${work_dir}/filter-disabled-no-language.html" | grep -q 'default'; then
+	report fail "filter-disabled-no-language: the block gains no class" \
+		"no default class on the block"
+else
+	report pass "filter-disabled-no-language: the block gains no class"
+fi
+
+# A render with no derived name to build reads no label either, whatever the
+# format, so the pass has no reader there.
+render auto-filename-off html
+if block_classes "${work_dir}/auto-filename-off.html" | grep -q 'foo'; then
+	report pass "auto-filename-off: the block keeps its own language"
+else
+	report fail "auto-filename-off: the block keeps its own language" \
+		"a foo class on the block"
+fi
+
+# The same pass serves no reader on a format that gets no chrome either.
+if grep -q '^``` foo' "${work_dir}/unsupported-format.md"; then
+	report pass "unsupported-format: the block keeps its own language"
+else
+	report fail "unsupported-format: the block keeps its own language" \
+		"a fence reading \`\`\` foo in unsupported-format.md"
+fi
+
+# Where the chrome is drawn, the pass has work to do: the class becomes the one
+# Pandoc has a theme for, the block is framed, and the title bar keeps the
+# language the author wrote. Without this, the two tests above would stay green
+# if the gate ever closed on a render it should let through.
+render language-relabelled html
+if block_classes "${work_dir}/language-relabelled.html" | grep -q 'default' &&
+	block_classes "${work_dir}/language-relabelled.html" | grep -q 'cw-auto' &&
+	block_wrappers "${work_dir}/language-relabelled.html" | grep -q 'data-filename="foo"'; then
+	report pass "language-relabelled: the block is relabelled and framed"
+else
+	report fail "language-relabelled: the block is relabelled and framed" \
+		"a default class, a cw-auto class, and data-filename=\"foo\" on the block"
 fi
 
 # ============================================================================

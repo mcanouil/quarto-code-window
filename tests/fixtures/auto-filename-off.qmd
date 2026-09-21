@@ -1,0 +1,16 @@
+---
+title: "No derived names anywhere"
+filters:
+  - code-window
+extensions:
+  code-window:
+    auto-filename: false
+---
+
+With no derived name to build, nothing reads the label, so the block below keeps
+the language its author wrote even though the filter is on and the format gets
+chrome.
+
+```foo
+x = 1
+```

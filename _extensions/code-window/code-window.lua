@@ -72,6 +72,23 @@ local ANNOTATION_BLOCK_COUNTER = 0
 -- CELL OUTPUT
 -- ============================================================================
 
+--- Check whether the extension acts on the format being rendered. It draws
+--- chrome for html, which covers Reveal.js, and for typst, and leaves every
+--- other format as Quarto writes it.
+--- @return boolean
+local function acts_on_format()
+  return CURRENT_FORMAT == 'html' or CURRENT_FORMAT == 'typst'
+end
+
+--- Check whether this render draws chrome at all: the extension is on, and the
+--- format is one it acts on. Every pass that exists only to serve the chrome
+--- asks this before it does any work, so none of them has to carry its own
+--- copy of the two conditions.
+--- @return boolean
+local function draws_chrome()
+  return CONFIG ~= nil and CONFIG.enabled and acts_on_format()
+end
+
 --- Check whether a block holds the output of an executed cell that the engine
 --- did not name. Such a block keeps the shape Quarto gave it.
 --- @param block pandoc.CodeBlock Code block element
@@ -749,9 +766,9 @@ function Meta(meta)
   -- This is the pass that reads the configuration, so the check runs here,
   -- before the first option is read. An option the check rejects is still
   -- read below, because the report says what the extension cannot use and the
-  -- document renders either way. The extension only acts on html and typst,
-  -- so the check is gated on the same union those formats already use below.
-  if CURRENT_FORMAT == 'html' or CURRENT_FORMAT == 'typst' then
+  -- document renders either way. Only a format the extension acts on reports,
+  -- because nothing it could say applies anywhere else.
+  if acts_on_format() then
     checker:options(meta)
   end
 
@@ -902,9 +919,12 @@ function CodeBlock(block)
   -- A filter that draws nothing changes nothing an author wrote. The
   -- attributes it would read stay on the block and reach the output, which is
   -- also what a document with this extension not installed produces. Only
-  -- code-window-auto-label goes, because the language module wrote it and no
-  -- author did. This holds for a filter switched off, below, and for a format
-  -- the extension does not act on, at the end of this function.
+  -- code-window-auto-label goes. The language module no longer writes it in
+  -- either of the two branches that clear it, since it asks the same question
+  -- before it runs, so what is left to clear is a document that wrote the
+  -- extension's own attribute name on a fence by hand. This holds for a filter
+  -- switched off, below, and for a format the extension does not act on, at
+  -- the end of this function.
   if not CURRENT_FORMAT or not CONFIG or not CONFIG.enabled then
     checker:attributes(block.attributes, 'CodeBlock')
     block.attributes['code-window-auto-label'] = nil
@@ -921,8 +941,9 @@ function CodeBlock(block)
 
   -- Typst is finished by the Pandoc filter ahead of this one, which takes the
   -- attributes off there. Every other format draws no chrome, so the block
-  -- keeps what its author wrote and loses only the language module's label,
-  -- which a writer that preserves attributes would otherwise print.
+  -- keeps what its author wrote and loses only the label, which a writer that
+  -- preserves attributes would otherwise print. Nothing writes that label here
+  -- any more, for the reason given above, so this guards a hand-written one.
   block.attributes['code-window-auto-label'] = nil
   return block
 end
@@ -1308,4 +1329,5 @@ return {
   Pandoc = Pandoc,
   CodeBlock = CodeBlock,
   CONFIG = function() return CONFIG end,
+  draws_chrome = draws_chrome,
 }
