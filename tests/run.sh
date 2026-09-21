@@ -236,6 +236,48 @@ else
 fi
 
 # ============================================================================
+# The schema is where an option's default is written down
+# ============================================================================
+
+# The schema declares a default for every option, and so did a table in the
+# Lua. Changing the schema alone has to change the render, or the two can
+# disagree with nothing to say so. The wrapper name is the option under test
+# because it reaches the Typst output word for word.
+render wrapper-default typst
+if grep -q '^#code-window(' "${work_dir}/wrapper-default.typ"; then
+	report pass "wrapper-default: the schema default names the wrapper"
+else
+	report fail "wrapper-default: the schema default names the wrapper" \
+		"a #code-window( call in wrapper-default.typ"
+fi
+
+sed -i.aside 's/default: "code-window"/default: "my-window"/' \
+	"${work_dir}/_extensions/code-window/_schema.yml"
+render wrapper-default typst
+mv "${work_dir}/_extensions/code-window/_schema.yml.aside" \
+	"${work_dir}/_extensions/code-window/_schema.yml"
+
+if grep -q '^#my-window(' "${work_dir}/wrapper-default.typ"; then
+	report pass "wrapper-default: a default changed in the schema alone is followed"
+else
+	report fail "wrapper-default: a default changed in the schema alone is followed" \
+		"a #my-window( call in wrapper-default.typ"
+fi
+
+# With no schema to read, the fallback in the Lua answers instead, and the
+# document still renders rather than stopping.
+mv "${work_dir}/_extensions/code-window/_schema.yml" "${work_dir}/schema.yml.aside"
+render wrapper-default typst
+mv "${work_dir}/schema.yml.aside" "${work_dir}/_extensions/code-window/_schema.yml"
+
+if grep -q '^#code-window(' "${work_dir}/wrapper-default.typ"; then
+	report pass "wrapper-default: the fallback answers when the schema cannot be read"
+else
+	report fail "wrapper-default: the fallback answers when the schema cannot be read" \
+		"a #code-window( call in wrapper-default.typ"
+fi
+
+# ============================================================================
 
 printf '\n%s passed, %s failed\n' "${passed}" "${failed}"
 [ "${failed}" -eq 0 ]

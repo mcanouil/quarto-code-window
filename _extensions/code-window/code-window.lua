@@ -40,7 +40,12 @@ local VALID_STYLES = { ['default'] = true, ['macos'] = true, ['windows'] = true 
 --- schema declares and the internal label the language module writes alike.
 local ATTRIBUTE_PREFIX = 'code-window-'
 
-local DEFAULTS = {
+--- Defaults for the two cases where the schema cannot answer: a format the
+--- extension does not act on, where the check never runs, and a schema that
+--- could not be read, which is a state this extension renders through rather
+--- than stopping for. Everywhere else _schema.yml decides, so these values
+--- are a fallback and not a second place to change an option's default.
+local FALLBACK_DEFAULTS = {
   ['enabled'] = 'true',
   ['auto-filename'] = 'true',
   ['style'] = 'macos',
@@ -782,8 +787,23 @@ function Meta(meta)
   -- read below, because the report says what the extension cannot use and the
   -- document renders either way. Only a format the extension acts on reports,
   -- because nothing it could say applies anywhere else.
+  -- The check also answers what the schema declares each option defaults to,
+  -- so those values are kept rather than dropped and rebuilt by hand here.
+  -- They arrive typed, and every comparison below reads a string, so each one
+  -- goes through stringify_bool on the way into the table.
+  local schema_defaults = {}
   if acts_on_format() then
-    checker:options(meta)
+    schema_defaults = checker:options(meta)
+  end
+
+  local defaults = {}
+  for key, fallback in pairs(FALLBACK_DEFAULTS) do
+    local declared = schema_defaults[key]
+    if declared == nil then
+      defaults[key] = fallback
+    else
+      defaults[key] = stringify_bool(declared)
+    end
   end
 
   local opts = meta_mod.get_options({
@@ -792,7 +812,7 @@ function Meta(meta)
       'enabled', 'auto-filename', 'style', 'cell-output', 'wrapper', 'collapse', 'lines-label',
     },
     meta = meta,
-    defaults = DEFAULTS,
+    defaults = defaults,
   })
 
   -- checker:options (above) already reports an unrecognised "style" value in
