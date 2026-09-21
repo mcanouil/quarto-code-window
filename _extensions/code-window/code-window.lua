@@ -45,6 +45,12 @@ local ATTRIBUTE_PREFIX = 'code-window-'
 --- could not be read, which is a state this extension renders through rather
 --- than stopping for. Everywhere else _schema.yml decides, so these values
 --- are a fallback and not a second place to change an option's default.
+--- All seven stay listed, because the second case has nothing else to read
+--- from. Where the two disagree, the schema wins on html and typst, and a
+--- format the extension does not act on reads "enabled" alone, which is the
+--- one that chooses whether a block's attributes are checked at all. So keep
+--- that one in step with the schema, and treat a difference in the other six
+--- as a thing to correct rather than a thing that shows.
 local FALLBACK_DEFAULTS = {
   ['enabled'] = 'true',
   ['auto-filename'] = 'true',
@@ -800,9 +806,9 @@ function Meta(meta)
   -- unanswered, so an option added to _schema.yml and to the key list below
   -- needs nothing here. Reading the fallback first would have made it the list
   -- of options allowed to have a default at all, which is the coupling this
-  -- change exists to remove. The schema's answer also carries the nested
-  -- hotfix entry, which get_options never reads, since it reads the keys named
-  -- below and nothing else.
+  -- change exists to remove. What arrives is one entry per option that
+  -- declares a default of its own, and get_options reads only the keys named
+  -- below.
   local defaults = {}
   for key, declared in pairs(schema_defaults) do
     defaults[key] = stringify_bool(declared)
