@@ -685,8 +685,13 @@ local function process_html(block, resolved, auto_label)
     if overrides.style then
       table.insert(block.classes, 'cw-style-' .. overrides.style)
     end
+    -- A block that turned collapsing off is marked as well. The script reads
+    -- the absence of a marker as "this block said nothing" and falls back to
+    -- the document setting, so an opt-out needs a marker of its own.
     if effective_collapse then
       table.insert(block.classes, 'cw-collapse-' .. effective_collapse)
+    elseif block_decided then
+      table.insert(block.classes, 'cw-collapse-none')
     end
     if overrides.lines_label then
       block.attributes['code-window-lines-label'] = overrides.lines_label
@@ -767,8 +772,8 @@ document.addEventListener("DOMContentLoaded",function(){
     }
     var collapse=null;
     if(marker){
-      var cm=marker.className.match(/cw-collapse-(open|closed)/);
-      if(cm){collapse=cm[1];marker.classList.remove(cm[0]);}
+      var cm=marker.className.match(/cw-collapse-(open|closed|none)/);
+      if(cm){collapse=cm[1]==='none'?false:cm[1];marker.classList.remove(cm[0]);}
     }
     if(collapse===null&&DEFAULT_COLLAPSE){collapse=DEFAULT_COLLAPSE;}
     if(marker&&marker.hasAttribute("data-code-window-lines-label")){

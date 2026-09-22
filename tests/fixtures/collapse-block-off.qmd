@@ -9,8 +9,12 @@ extensions:
 ---
 
 The document folds every block.
-This one opts out, so it carries no collapse class.
+The first block opts out, and the second takes the document setting.
 
 ```{.python filename="opted-out.py" code-window-collapse="false"}
 x = 1
+```
+
+```{.python filename="inherits.py"}
+y = 2
 ```

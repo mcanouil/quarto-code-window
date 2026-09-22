@@ -286,11 +286,26 @@ fi
 
 render collapse-block-off html
 
-if block_classes "${work_dir}/collapse-block-off.html" | grep -q 'cw-collapse'; then
-	report fail "collapse-block-off: the block opts out of collapsing" \
-		"no cw-collapse class in collapse-block-off.html"
+# The script folds a block that carries no marker, reading the absence as
+# "this block said nothing", so the opt-out is a marker of its own rather
+# than a missing one. The second block is here to show the two differ.
+collapse_markers="$(block_classes "${work_dir}/collapse-block-off.html" | grep -o 'cw-collapse-[a-z]*' | sort | tr '\n' ' ')"
+
+if [ "${collapse_markers}" = "cw-collapse-closed cw-collapse-none " ]; then
+	report pass "collapse-block-off: the block opts out and its neighbour does not"
 else
-	report pass "collapse-block-off: the block opts out of collapsing"
+	report fail "collapse-block-off: the block opts out and its neighbour does not" \
+		"cw-collapse-none on one block and cw-collapse-closed on the other, got: ${collapse_markers}"
+fi
+
+# The document setting still reaches the page, which is what the opt-out has
+# to override, and the script has to know the marker to honour it.
+if grep -q 'DEFAULT_COLLAPSE="closed"' "${work_dir}/collapse-block-off.html" &&
+	grep -q 'cw-collapse-(open|closed|none)' "${work_dir}/collapse-block-off.html"; then
+	report pass "collapse-block-off: the script reads the opt-out marker"
+else
+	report fail "collapse-block-off: the script reads the opt-out marker" \
+		'DEFAULT_COLLAPSE="closed" and a cw-collapse-(open|closed|none) match in the injected script'
 fi
 
 # ============================================================================
