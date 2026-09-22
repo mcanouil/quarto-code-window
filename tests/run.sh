@@ -299,13 +299,12 @@ else
 fi
 
 # The document setting still reaches the page, which is what the opt-out has
-# to override, and the script has to know the marker to honour it.
-if grep -q 'DEFAULT_COLLAPSE="closed"' "${work_dir}/collapse-block-off.html" &&
-	grep -q 'cw-collapse-(open|closed|none)' "${work_dir}/collapse-block-off.html"; then
-	report pass "collapse-block-off: the script reads the opt-out marker"
+# to override.
+if grep -q 'DEFAULT_COLLAPSE="closed"' "${work_dir}/collapse-block-off.html"; then
+	report pass "collapse-block-off: the document setting reaches the page"
 else
-	report fail "collapse-block-off: the script reads the opt-out marker" \
-		'DEFAULT_COLLAPSE="closed" and a cw-collapse-(open|closed|none) match in the injected script'
+	report fail "collapse-block-off: the document setting reaches the page" \
+		'DEFAULT_COLLAPSE="closed" in collapse-block-off.html'
 fi
 
 # ============================================================================

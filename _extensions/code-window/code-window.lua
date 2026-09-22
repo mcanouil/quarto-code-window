@@ -261,7 +261,7 @@ local function read_block_collapse(resolved)
     -- document option decides as though the block had written nothing.
     return nil, false
   end
-  return resolve_collapse(raw), true
+  return mode or nil, true
 end
 
 --- Read a highlight-lines spec from the block, looking at the
@@ -690,7 +690,7 @@ local function process_html(block, resolved, auto_label)
     -- the document setting, so an opt-out needs a marker of its own.
     if effective_collapse then
       table.insert(block.classes, 'cw-collapse-' .. effective_collapse)
-    elseif block_decided then
+    elseif block_decided and CONFIG.collapse then
       table.insert(block.classes, 'cw-collapse-none')
     end
     if overrides.lines_label then
