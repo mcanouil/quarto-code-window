@@ -1,0 +1,16 @@
+---
+title: "Collapse turned off for one block"
+format: html
+filters:
+  - code-window
+extensions:
+  code-window:
+    collapse: true
+---
+
+The document folds every block.
+This one opts out, so it carries no collapse class.
+
+```{.python filename="opted-out.py" code-window-collapse="false"}
+x = 1
+```

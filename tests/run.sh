@@ -281,6 +281,19 @@ else
 fi
 
 # ============================================================================
+# A block opts out of the document's collapse setting
+# ============================================================================
+
+render collapse-block-off html
+
+if block_classes "${work_dir}/collapse-block-off.html" | grep -q 'cw-collapse'; then
+	report fail "collapse-block-off: the block opts out of collapsing" \
+		"no cw-collapse class in collapse-block-off.html"
+else
+	report pass "collapse-block-off: the block opts out of collapsing"
+fi
+
+# ============================================================================
 
 printf '\n%s passed, %s failed\n' "${passed}" "${failed}"
 [ "${failed}" -eq 0 ]
