@@ -5,9 +5,15 @@ filters:
 extensions:
   code-window:
     enabled: false
+format:
+  typst:
+    keep-typ: true
 ---
 
 A block with no language gains none while the filter is off. The block below is
 indented rather than fenced, which gives the same code block with no language.
+
+The inline code in `x = 1` keeps the shape Quarto gives it too, because the
+hot-fix that boxes it stands down with the filter.
 
     x = 1

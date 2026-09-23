@@ -236,6 +236,44 @@ else
 fi
 
 # ============================================================================
+# The Typst hot-fix stands down with the filter
+# ============================================================================
+
+# The hot-fix contributes two passes, and both write Typst that only the
+# filter's own preamble declares. That preamble is not written with the filter
+# off, so both passes have to stand down there. The block pass is caught by the
+# "_cw-" prefix the colour helpers and the annotation state share. The inline
+# pass takes a different shape where the theme gives a background colour, and
+# names no helper at all, so the box itself is the thing to look for.
+for fixture in filter-disabled filter-disabled-no-language; do
+	render "${fixture}" typst
+
+	# Both assertions below are negative, and a missing file would answer them
+	# the same way a clean render does. So the file is checked for first.
+	if [ -f "${work_dir}/${fixture}.typ" ]; then
+		report pass "${fixture}: the render keeps its Typst source"
+	else
+		report fail "${fixture}: the render keeps its Typst source" \
+			"a ${fixture}.typ in the work directory"
+		continue
+	fi
+
+	if grep -q '_cw-' "${work_dir}/${fixture}.typ"; then
+		report fail "${fixture}: the block pass stands down with the filter" \
+			"no _cw- helper call in ${fixture}.typ"
+	else
+		report pass "${fixture}: the block pass stands down with the filter"
+	fi
+
+	if grep -q 'box(fill: rgb(' "${work_dir}/${fixture}.typ"; then
+		report fail "${fixture}: the inline pass stands down with the filter" \
+			"no box(fill: rgb( call in ${fixture}.typ"
+	else
+		report pass "${fixture}: the inline pass stands down with the filter"
+	fi
+done
+
+# ============================================================================
 # The schema is where an option's default is written down
 # ============================================================================
 
