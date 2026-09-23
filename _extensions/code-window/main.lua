@@ -134,11 +134,15 @@ for _, subfilter in ipairs(skylighting_mod.filters or {}) do
   local wrapped = {}
   for element_type, handler in pairs(subfilter) do
     wrapped[element_type] = function(...)
-      if not code_window.draws_chrome() or not code_window.CONFIG().hotfix_skylighting then
+      if not code_window.draws_chrome() then
+        return nil
+      end
+      local cfg = code_window.CONFIG()
+      if not cfg.hotfix_skylighting then
         return nil
       end
       if skylighting_mod.set_wrapper then
-        skylighting_mod.set_wrapper(code_window.CONFIG().typst_wrapper)
+        skylighting_mod.set_wrapper(cfg.typst_wrapper)
       end
       return handler(...)
     end

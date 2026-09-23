@@ -203,15 +203,17 @@ else
 	report pass "filter-disabled-no-language: the block gains no class"
 fi
 
-# The Skylighting override calls the colour helpers, and the pass that defines
-# them does not run with the filter off. So the hot-fix has to stand down there
-# too, or the Typst document names a variable nothing declared and the compile
-# fails.
+# Everything the hot-fix writes calls the colour helpers or the annotation
+# state, and the pass that declares those does not run with the filter off. So
+# the hot-fix has to stand down there too, or the Typst document names a
+# variable nothing declared and the compile fails. The test greps for the "_cw-"
+# prefix the helpers share, which covers the Skylighting override, the
+# annotation rule that replaces it, and the inline-code fallback alike.
 for fixture in filter-disabled filter-disabled-no-language; do
 	render "${fixture}" typst
-	if grep -q 'skylighting-typst-fix override' "${work_dir}/${fixture}.typ"; then
+	if grep -q '_cw-' "${work_dir}/${fixture}.typ"; then
 		report fail "${fixture}: the hot-fix stands down with the filter" \
-			"no skylighting-typst-fix override in ${fixture}.typ"
+			"no _cw- helper call in ${fixture}.typ"
 	else
 		report pass "${fixture}: the hot-fix stands down with the filter"
 	fi

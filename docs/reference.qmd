@@ -90,6 +90,7 @@ In Typst the chrome is a call to the `wrapper` function, emitted into the docume
 
 Typst output needs a few corrections that Quarto does not yet make itself.
 Each is on by default and each can be given a version at which it switches itself off, so an upgrade retires it without a code change.
+All of them follow `enabled`, so a document that turns the filter off takes no hot-fix at all.
 
 | Hot-fix | What it corrects |
 | --- | --- |

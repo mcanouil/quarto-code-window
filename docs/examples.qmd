@@ -261,7 +261,7 @@ Two pairs are linked.
 `code-annotations` and `skylighting` work together: the first resolves the annotations, and the second supplies the rule that draws the circled marker beside an annotated line.
 Turn `skylighting` off, and the numbered list stays under the block while every marker inside it goes, along with the block styling and the inline code backgrounds the same module supplies.
 
-`typst-title` follows `enabled`: with the filter off, theorem titles stay as Quarto writes them.
+Every hot-fix follows `enabled`: with the filter off, none of them acts, so the block styling, the inline code backgrounds and the theorem titles all stay as Quarto writes them.
 
 See [Hot-fixes](reference.qmd#hot-fixes) for what each one corrects.
 
