@@ -203,6 +203,26 @@ else
 	report pass "filter-disabled-no-language: the block gains no class"
 fi
 
+# The Skylighting override calls the colour helpers, and the pass that defines
+# them does not run with the filter off. So the hot-fix has to stand down there
+# too, or the Typst document names a variable nothing declared and the compile
+# fails.
+render filter-disabled typst
+if grep -q 'skylighting-typst-fix override' "${work_dir}/filter-disabled.typ"; then
+	report fail "filter-disabled: the hot-fix stands down with the filter" \
+		"no skylighting-typst-fix override in filter-disabled.typ"
+else
+	report pass "filter-disabled: the hot-fix stands down with the filter"
+fi
+
+render filter-disabled-no-language typst
+if grep -q 'skylighting-typst-fix override' "${work_dir}/filter-disabled-no-language.typ"; then
+	report fail "filter-disabled-no-language: the hot-fix stands down with the filter" \
+		"no skylighting-typst-fix override in filter-disabled-no-language.typ"
+else
+	report pass "filter-disabled-no-language: the hot-fix stands down with the filter"
+fi
+
 # A render with no derived name to build reads no label either, whatever the
 # format, so the pass has no reader there.
 render auto-filename-off html

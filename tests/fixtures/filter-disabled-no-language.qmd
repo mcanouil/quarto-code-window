@@ -5,6 +5,9 @@ filters:
 extensions:
   code-window:
     enabled: false
+format:
+  typst:
+    keep-typ: true
 ---
 
 A block with no language gains none while the filter is off. The block below is

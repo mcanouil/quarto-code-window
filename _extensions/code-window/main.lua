@@ -126,12 +126,21 @@ local filters = {
 
 local skylighting_mod = load_skylighting_hotfix_module()
 
+-- The hot-fix exists only to serve the chrome, so it asks draws_chrome like
+-- every other pass that does. Its Skylighting override and its inline box both
+-- call the colour helpers, and the pass that defines them is code_window.Pandoc,
+-- which returns before it writes anything with the filter off. Asking
+-- hotfix_skylighting alone left the override in a document that declared no
+-- helpers, and Typst stopped on the first name it could not resolve.
 for _, subfilter in ipairs(skylighting_mod.filters or {}) do
   local wrapped = {}
   for element_type, handler in pairs(subfilter) do
     wrapped[element_type] = function(...)
+      if not code_window.draws_chrome() then
+        return nil
+      end
       local cfg = code_window.CONFIG()
-      if not cfg or not cfg.hotfix_skylighting then
+      if not cfg.hotfix_skylighting then
         return nil
       end
       if skylighting_mod.set_wrapper then

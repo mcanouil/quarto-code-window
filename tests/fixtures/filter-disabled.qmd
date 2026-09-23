@@ -5,6 +5,9 @@ filters:
 extensions:
   code-window:
     enabled: false
+format:
+  typst:
+    keep-typ: true
 ---
 
 A filter that is off leaves every block as Quarto writes it. The block below
