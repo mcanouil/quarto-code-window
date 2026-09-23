@@ -14,6 +14,9 @@ A filter that is off leaves every block as Quarto writes it. The block below
 keeps the language its author gave it, even though Pandoc cannot highlight it
 and the filter would relabel it when it is on.
 
+The inline code in `x = 1` keeps the shape Quarto gives it too, because the
+hot-fix that boxes it stands down with the filter.
+
 ```foo
 x = 1
 ```

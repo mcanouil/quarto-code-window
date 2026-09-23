@@ -203,22 +203,6 @@ else
 	report pass "filter-disabled-no-language: the block gains no class"
 fi
 
-# Everything the hot-fix writes calls the colour helpers or the annotation
-# state, and the pass that declares those does not run with the filter off. So
-# the hot-fix has to stand down there too, or the Typst document names a
-# variable nothing declared and the compile fails. The test greps for the "_cw-"
-# prefix the helpers share, which covers the Skylighting override, the
-# annotation rule that replaces it, and the inline-code fallback alike.
-for fixture in filter-disabled filter-disabled-no-language; do
-	render "${fixture}" typst
-	if grep -q '_cw-' "${work_dir}/${fixture}.typ"; then
-		report fail "${fixture}: the hot-fix stands down with the filter" \
-			"no _cw- helper call in ${fixture}.typ"
-	else
-		report pass "${fixture}: the hot-fix stands down with the filter"
-	fi
-done
-
 # A render with no derived name to build reads no label either, whatever the
 # format, so the pass has no reader there.
 render auto-filename-off html
@@ -250,6 +234,33 @@ else
 	report fail "language-relabelled: the block is relabelled and framed" \
 		"a default class, a cw-auto class, and data-filename=\"foo\" on the block"
 fi
+
+# ============================================================================
+# The Typst hot-fix stands down with the filter
+# ============================================================================
+
+# The hot-fix contributes two passes, and both write Typst that only the
+# filter's own preamble declares. That preamble is not written with the filter
+# off, so both passes have to stand down there. The block pass is caught by the
+# "_cw-" prefix the colour helpers and the annotation state share. The inline
+# pass takes a different shape where the theme gives a background colour, and
+# names no helper at all, so the box itself is the thing to look for.
+for fixture in filter-disabled filter-disabled-no-language; do
+	render "${fixture}" typst
+	if grep -q '_cw-' "${work_dir}/${fixture}.typ"; then
+		report fail "${fixture}: the block pass stands down with the filter" \
+			"no _cw- helper call in ${fixture}.typ"
+	else
+		report pass "${fixture}: the block pass stands down with the filter"
+	fi
+
+	if grep -q 'box(fill: rgb(' "${work_dir}/${fixture}.typ"; then
+		report fail "${fixture}: the inline pass stands down with the filter" \
+			"no box(fill: rgb( call in ${fixture}.typ"
+	else
+		report pass "${fixture}: the inline pass stands down with the filter"
+	fi
+done
 
 # ============================================================================
 # The schema is where an option's default is written down
