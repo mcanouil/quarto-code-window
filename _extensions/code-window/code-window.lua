@@ -248,12 +248,20 @@ end
 --- test needed.
 --- @param resolved table<string, any> This block's attributes, resolved against the schema
 --- @return string|nil Resolved collapse mode ("open"/"closed") or nil when off
+--- @return boolean Whether this block decided, which is what separates an
+---   explicit "false" from an attribute the block never wrote
 local function read_block_collapse(resolved)
   local raw = resolved['code-window-collapse']
   if raw == nil then
-    return nil
+    return nil, false
   end
-  return resolve_collapse(raw)
+  local mode = VALID_COLLAPSE[raw]
+  if mode == nil then
+    -- A value the schema does not accept. The check reports it, and the
+    -- document option decides as though the block had written nothing.
+    return nil, false
+  end
+  return mode or nil, true
 end
 
 --- Read a highlight-lines spec from the block, looking at the
@@ -664,7 +672,11 @@ local function process_html(block, resolved, auto_label)
     return block
   end
 
-  local effective_collapse = read_block_collapse(resolved) or CONFIG.collapse
+  local block_collapse, block_decided = read_block_collapse(resolved)
+  local effective_collapse = block_collapse
+  if not block_decided then
+    effective_collapse = CONFIG.collapse
+  end
   local explicit_filename = block.attributes['filename']
 
   -- Add the marker classes and the chip the injected script reads. Both
@@ -673,8 +685,13 @@ local function process_html(block, resolved, auto_label)
     if overrides.style then
       table.insert(block.classes, 'cw-style-' .. overrides.style)
     end
+    -- A block that turned collapsing off is marked as well. The script reads
+    -- the absence of a marker as "this block said nothing" and falls back to
+    -- the document setting, so an opt-out needs a marker of its own.
     if effective_collapse then
       table.insert(block.classes, 'cw-collapse-' .. effective_collapse)
+    elseif block_decided and CONFIG.collapse then
+      table.insert(block.classes, 'cw-collapse-none')
     end
     if overrides.lines_label then
       block.attributes['code-window-lines-label'] = overrides.lines_label
@@ -755,8 +772,8 @@ document.addEventListener("DOMContentLoaded",function(){
     }
     var collapse=null;
     if(marker){
-      var cm=marker.className.match(/cw-collapse-(open|closed)/);
-      if(cm){collapse=cm[1];marker.classList.remove(cm[0]);}
+      var cm=marker.className.match(/cw-collapse-(open|closed|none)/);
+      if(cm){collapse=cm[1]==='none'?false:cm[1];marker.classList.remove(cm[0]);}
     }
     if(collapse===null&&DEFAULT_COLLAPSE){collapse=DEFAULT_COLLAPSE;}
     if(marker&&marker.hasAttribute("data-code-window-lines-label")){

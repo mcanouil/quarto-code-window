@@ -14,6 +14,7 @@
 - fix: Remove the extension's own label attribute when the output format gets no window chrome, so a writer that keeps attributes no longer prints it. (#63)
 - fix: Check every code block attribute in the code-window group against the schema, so a value nothing validated before, such as code-window-enabled, is now reported when it is wrong. The extension's own duplicate warnings for an invalid code-window-style or code-window-collapse are removed, since the schema already names the same mistake. (#60)
 - fix: Honour an explicit code-window-no-auto-filename="false", which previously suppressed auto-filename exactly like "true". (#60)
+- fix: Honour `code-window-collapse="false"` on a block, which could not turn off a document that sets `collapse`. The block fell back to the document setting and was folded anyway.
 - fix: Remove the extension's own duplicate collapse and style warnings at the document option level, now that the schema reports each mistake once. (#60)
 - fix: Match the code-window-collapse attribute schema to the string Pandoc always provides, so a documented "true" or "false" value no longer warns. (#60)
 - fix: Validate a code block's attributes on the HTML path the same way the Typst path already does, so an invalid attribute on a block holding executed-cell output is now reported on HTML too, instead of being silently accepted. (#60)
