@@ -247,6 +247,17 @@ fi
 # names no helper at all, so the box itself is the thing to look for.
 for fixture in filter-disabled filter-disabled-no-language; do
 	render "${fixture}" typst
+
+	# Both assertions below are negative, and a missing file would answer them
+	# the same way a clean render does. So the file is checked for first.
+	if [ -f "${work_dir}/${fixture}.typ" ]; then
+		report pass "${fixture}: the render keeps its Typst source"
+	else
+		report fail "${fixture}: the render keeps its Typst source" \
+			"a ${fixture}.typ in the work directory"
+		continue
+	fi
+
 	if grep -q '_cw-' "${work_dir}/${fixture}.typ"; then
 		report fail "${fixture}: the block pass stands down with the filter" \
 			"no _cw- helper call in ${fixture}.typ"
