@@ -8,7 +8,7 @@
 
 ### Bug Fixes
 
-- fix: Stand the Skylighting hot-fix down when the filter is off, so a Typst document that sets `enabled: false` compiles. It failed on an undeclared name before.
+- fix: Stand the Skylighting hot-fix down when the filter is off, so a Typst document that sets `enabled: false` compiles. It failed on an undeclared name before. (#71)
 - fix: Keep a block's own language where the filter derives no name for it, which means the filter is off, or `auto-filename` is off, or the output format is neither HTML nor Typst. The block was relabelled as `default` before, and the language the author wrote was lost. (#66)
 - fix: Keep inline code in a Typst document as a code element, so Pandoc writes the syntax highlighting definitions for it. A document with inline code and no code block failed to compile before. (#65)
 - fix: Remove the code-window attributes from a block that sets code-window-enabled="false", and from a block that sets code-window-lines when lines-label is off. They reached the HTML output as data-code-window-* attributes before. (#63)
