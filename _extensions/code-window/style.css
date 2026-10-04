@@ -71,6 +71,7 @@
 /* Highlighted-lines chip rendered next to the filename in the title bar */
 .code-with-filename .code-with-filename-file .code-with-filename-lines {
   flex: 0 0 auto;
+  max-width: 50%;
   font-size: 0.7em;
   font-weight: 500;
   font-family: var(--bs-font-monospace, monospace);
@@ -80,7 +81,7 @@
   border-radius: 3px;
   padding: 0.05em 0.4em;
   line-height: 1.4;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 /* Code block content area */
