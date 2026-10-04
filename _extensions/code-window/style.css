@@ -81,7 +81,7 @@
   border-radius: 3px;
   padding: 0.05em 0.4em;
   line-height: 1.4;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 /* Code block content area */

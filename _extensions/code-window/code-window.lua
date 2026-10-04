@@ -783,7 +783,7 @@ document.addEventListener("DOMContentLoaded",function(){
       if(titleBar&&!titleBar.querySelector(".code-with-filename-lines")){
         var chip=document.createElement("span");
         chip.className="code-with-filename-lines";
-        chip.textContent="L"+spec;
+        chip.textContent="L"+spec.replace(/,/g,",\u200B");
         titleBar.appendChild(chip);
       }
     }
