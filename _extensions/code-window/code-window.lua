@@ -326,7 +326,7 @@ end
 
 --- Typst colour helpers for adaptive theme support.
 --- Always injected so the code-window function can derive border, surface,
---- and muted colours from the page background at render time.
+--- muted, and label colours from the page background at render time.
 local TYPST_COLOUR_HELPERS = [==[
 // code-window: adaptive colour helpers (derive UI tones from page background)
 #let _cw-page-bg() = {
