@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.5.2 (2026-10-04)
+
 ### Bug Fixes
 
 - fix: Darken the filename and the highlighted-lines chip in the title bar for HTML and Typst, so both meet the WCAG AA contrast ratio with the usual dark-on-light and light-on-dark body text. The filename was as low as 2.5:1 on a light HTML theme and 3.2:1 on a dark Typst page before. (#74)
