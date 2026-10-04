@@ -4,7 +4,7 @@
 
 ### Bug Fixes
 
-- fix: Darken the filename and the highlighted-lines chip in the HTML title bar, so both meet the WCAG AA contrast ratio with the usual dark-on-light and light-on-dark body text. The filename was as low as 2.5:1 on a light theme before. (#74)
+- fix: Darken the filename and the highlighted-lines chip in the title bar for HTML and Typst, so both meet the WCAG AA contrast ratio with the usual dark-on-light and light-on-dark body text. The filename was as low as 2.5:1 on a light HTML theme and 3.2:1 on a dark Typst page before. (#74)
 - fix: Wrap a long filename in the title bar instead of scrolling it on a narrow screen, and wrap a long highlighted-lines chip between its ranges instead of cutting it off. The scrolling title bar had no keyboard access, which accessibility checks report. (#74)
 
 ## 1.5.1 (2026-09-23)
