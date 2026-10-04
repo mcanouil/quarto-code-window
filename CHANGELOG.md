@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Bug Fixes
+
+- fix: Darken the filename and the highlighted-lines chip in the title bar, so both meet the WCAG AA contrast ratio on light and dark themes. The filename was as low as 2.5:1 on a light theme before.
+- fix: Wrap a long filename in the title bar instead of scrolling it on a narrow screen. The scrolling title bar had no keyboard access, which accessibility checks report.
+
 ## 1.5.1 (2026-09-23)
 
 ### New Features
