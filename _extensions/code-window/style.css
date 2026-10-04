@@ -60,22 +60,28 @@
   border: none;
   font-size: 0.85em;
   font-weight: 500;
-  color: color-mix(in srgb, currentColor 50%, Canvas);
+  color: color-mix(in srgb, currentColor 80%, Canvas);
+  /* Wrap long filenames: a scrolling title bar has no keyboard access */
+  min-width: 0;
+  overflow: visible;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 /* Highlighted-lines chip rendered next to the filename in the title bar */
 .code-with-filename .code-with-filename-file .code-with-filename-lines {
   flex: 0 0 auto;
+  max-width: 50%;
   font-size: 0.7em;
   font-weight: 500;
   font-family: var(--bs-font-monospace, monospace);
-  color: color-mix(in srgb, currentColor 60%, Canvas);
+  color: color-mix(in srgb, currentColor 85%, Canvas);
   background-color: color-mix(in srgb, currentColor 10%, Canvas);
   border: 1px solid color-mix(in srgb, currentColor 15%, Canvas);
   border-radius: 3px;
   padding: 0.05em 0.4em;
   line-height: 1.4;
-  white-space: nowrap;
+  overflow-wrap: break-word;
 }
 
 /* Code block content area */
