@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.6.0 (2026-10-05)
+
 ### New Features
 
 - feat: Add the `--code-window-bg` and `--code-window-title-bg` variables, so a theme can set the window and title bar colours in light and dark modes. (#76)
