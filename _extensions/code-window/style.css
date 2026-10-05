@@ -20,10 +20,12 @@
  * ========================================================================= */
 
 .code-with-filename {
+  /* Theme background: Bootstrap, then Reveal.js, then the system colour */
+  --code-window-bg: var(--bs-body-bg, var(--r-background-color, Canvas));
   margin: 1.5em 0;
   border-radius: 8px;
-  border: 1px solid color-mix(in srgb, currentColor 15%, Canvas);
-  background-color: Canvas;
+  border: 1px solid color-mix(in srgb, currentColor 15%, var(--code-window-bg));
+  background-color: var(--code-window-bg);
   overflow: hidden;
   page-break-inside: avoid;
   break-inside: avoid;
@@ -34,15 +36,22 @@
   display: flex;
   align-items: center;
   gap: 0.75em;
-  background-color: color-mix(in srgb, currentColor 5%, Canvas);
+  background-color: color-mix(in srgb, currentColor 5%, var(--code-window-bg));
   border: none;
-  border-bottom: 1px solid color-mix(in srgb, currentColor 15%, Canvas);
+  border-bottom: 1px solid color-mix(in srgb, currentColor 15%, var(--code-window-bg));
   border-radius: 0;
   padding: 0.2em 1em;
   line-height: 1.2;
   margin: 0;
   page-break-after: avoid;
   break-after: avoid;
+}
+
+/* Outrank Quarto's fixed title bar colours, which Reveal.js loads after this
+ * file, so the tint follows the theme */
+body .code-with-filename .code-with-filename-file,
+body.quarto-dark .code-with-filename .code-with-filename-file {
+  background-color: color-mix(in srgb, currentColor 5%, var(--code-window-bg));
 }
 
 /* Shrink title bar ~35% on Reveal.js slides (scales padding, decorations, and filename text proportionally) */
@@ -60,7 +69,7 @@
   border: none;
   font-size: 0.85em;
   font-weight: 500;
-  color: color-mix(in srgb, currentColor 80%, Canvas);
+  color: color-mix(in srgb, currentColor 80%, var(--code-window-bg));
   /* Wrap long filenames: a scrolling title bar has no keyboard access */
   min-width: 0;
   overflow: visible;
@@ -75,9 +84,9 @@
   font-size: 0.7em;
   font-weight: 500;
   font-family: var(--bs-font-monospace, monospace);
-  color: color-mix(in srgb, currentColor 85%, Canvas);
-  background-color: color-mix(in srgb, currentColor 10%, Canvas);
-  border: 1px solid color-mix(in srgb, currentColor 15%, Canvas);
+  color: color-mix(in srgb, currentColor 85%, var(--code-window-bg));
+  background-color: color-mix(in srgb, currentColor 10%, var(--code-window-bg));
+  border: 1px solid color-mix(in srgb, currentColor 15%, var(--code-window-bg));
   border-radius: 3px;
   padding: 0.05em 0.4em;
   line-height: 1.4;

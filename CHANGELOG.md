@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Bug Fixes
+
+- fix: Take the code window's background from the theme, so the window and its highlighted-lines chip follow a dark Quarto or Reveal.js theme. The window used the system colour before, which stays white when the theme doesn't set `color-scheme: dark`, so the chip showed white on white.
+- fix: Keep the title bar's own tint on Quarto's dark themes and on Reveal.js, where Quarto's fixed grey replaced it before and left the filename at 4.2:1 on a dark slide.
+
 ## 1.5.2 (2026-10-04)
 
 ### Bug Fixes
