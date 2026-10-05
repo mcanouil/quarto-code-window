@@ -86,6 +86,29 @@ The script runs at page load and builds the title bar, the fold, and the line ch
 
 In Typst the chrome is a call to the `wrapper` function, emitted into the document, and needs nothing at read time.
 
+### Theming variables
+
+The HTML stylesheet reads these CSS variables.
+Each default has zero specificity, so a `:root` rule in your theme replaces it, in light mode and in dark mode.
+
+| Variable | Default | Sets |
+|---|---|---|
+| `--code-window-bg` | The theme background: `--bs-body-bg`, then `--r-background-color`, then `Canvas` | The window background. The border, the title bar, the filename, and the line chip mix their colours from it. |
+| `--code-window-title-bg` | 5% of the text colour mixed into `--code-window-bg` | The title bar background. |
+| `--code-window-macos-icon` | Three circles in red, yellow, and green | The window buttons of the `macos` style. |
+| `--code-window-windows-icon` | Grey minimise, maximise, and close lines | The window buttons of the `windows` style. |
+| `--code-window-macos-icon-width` | `3.4em` | The width of the `macos` buttons. |
+| `--code-window-windows-icon-width` | `3.6em` | The width of the `windows` buttons. |
+| `--code-window-icon-height` | `0.85em` | The height of the buttons in both styles. |
+
+To change the title bar colour, set the variable in the theme:
+
+```css
+:root {
+  --code-window-title-bg: #e8eef5;
+}
+```
+
 ## Hot-fixes
 
 Typst output needs a few corrections that Quarto does not yet make itself.
