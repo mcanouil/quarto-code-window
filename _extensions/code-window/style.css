@@ -36,7 +36,6 @@
   display: flex;
   align-items: center;
   gap: 0.75em;
-  background-color: color-mix(in srgb, currentColor 5%, var(--code-window-bg));
   border: none;
   border-bottom: 1px solid color-mix(in srgb, currentColor 15%, var(--code-window-bg));
   border-radius: 0;
