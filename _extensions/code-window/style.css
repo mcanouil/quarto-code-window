@@ -4,7 +4,7 @@
  */
 
 /* ============================================================================
- * Theming variables (override to customise window-button icons and chip)
+ * Theming variables (override to customise the window background, window-button icons and chip)
  * ========================================================================= */
 
 :root {
@@ -13,6 +13,8 @@
   --code-window-macos-icon-width: 3.4em;
   --code-window-windows-icon-width: 3.6em;
   --code-window-icon-height: 0.85em;
+  /* Window background: Bootstrap theme, then Reveal.js theme, then the system colour */
+  --code-window-bg: var(--bs-body-bg, var(--r-background-color, Canvas));
 }
 
 /* ============================================================================
@@ -20,8 +22,6 @@
  * ========================================================================= */
 
 .code-with-filename {
-  /* Theme background: Bootstrap, then Reveal.js, then the system colour */
-  --code-window-bg: var(--bs-body-bg, var(--r-background-color, Canvas));
   margin: 1.5em 0;
   border-radius: 8px;
   border: 1px solid color-mix(in srgb, currentColor 15%, var(--code-window-bg));
@@ -36,6 +36,7 @@
   display: flex;
   align-items: center;
   gap: 0.75em;
+  background-color: color-mix(in srgb, currentColor 5%, var(--code-window-bg));
   border: none;
   border-bottom: 1px solid color-mix(in srgb, currentColor 15%, var(--code-window-bg));
   border-radius: 0;
@@ -46,9 +47,10 @@
   break-after: avoid;
 }
 
-/* Outrank Quarto's fixed title bar colours, which Reveal.js loads after this
- * file, so the tint follows the theme */
-body .code-with-filename .code-with-filename-file,
+/* Outrank Quarto's own title bar colours: its dark-mode grey, and the light
+ * grey that Reveal.js loads after this file. A theme rule that targets
+ * div.code-with-filename still wins in light mode. */
+.reveal .code-with-filename .code-with-filename-file,
 body.quarto-dark .code-with-filename .code-with-filename-file {
   background-color: color-mix(in srgb, currentColor 5%, var(--code-window-bg));
 }
