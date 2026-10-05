@@ -7,7 +7,7 @@
  * Theming variables (override to customise the window background, window-button icons and chip)
  * ========================================================================= */
 
-:root {
+:where(:root) {
   --code-window-macos-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='10'%3E%3Ccircle cx='5' cy='5' r='5' fill='%23ff5f56'/%3E%3Ccircle cx='20' cy='5' r='5' fill='%23ffbd2e'/%3E%3Ccircle cx='35' cy='5' r='5' fill='%2327c93f'/%3E%3C/svg%3E");
   --code-window-windows-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='10' fill='none'%3E%3Cline x1='3' y1='5' x2='11' y2='5' stroke='%23888' stroke-width='1.5' stroke-linecap='round'/%3E%3Crect x='17' y='1' width='8' height='8' rx='1' stroke='%23888' stroke-width='1.5' fill='none'/%3E%3Cline x1='31' y1='1' x2='39' y2='9' stroke='%23888' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='39' y1='1' x2='31' y2='9' stroke='%23888' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
   --code-window-macos-icon-width: 3.4em;
@@ -15,6 +15,7 @@
   --code-window-icon-height: 0.85em;
   /* Window background: Bootstrap theme, then Reveal.js theme, then the system colour */
   --code-window-bg: var(--bs-body-bg, var(--r-background-color, Canvas));
+  --code-window-title-bg: color-mix(in srgb, currentColor 5%, var(--code-window-bg));
 }
 
 /* ============================================================================
@@ -36,7 +37,7 @@
   display: flex;
   align-items: center;
   gap: 0.75em;
-  background-color: color-mix(in srgb, currentColor 5%, var(--code-window-bg));
+  background-color: var(--code-window-title-bg);
   border: none;
   border-bottom: 1px solid color-mix(in srgb, currentColor 15%, var(--code-window-bg));
   border-radius: 0;
@@ -48,11 +49,11 @@
 }
 
 /* Outrank Quarto's own title bar colours: its dark-mode grey, and the light
- * grey that Reveal.js loads after this file. A theme rule that targets
- * div.code-with-filename still wins in light mode. */
+ * grey that Reveal.js loads after this file. A theme sets
+ * --code-window-title-bg to change the title bar in both modes. */
 .reveal .code-with-filename .code-with-filename-file,
 body.quarto-dark .code-with-filename .code-with-filename-file {
-  background-color: color-mix(in srgb, currentColor 5%, var(--code-window-bg));
+  background-color: var(--code-window-title-bg);
 }
 
 /* Shrink title bar ~35% on Reveal.js slides (scales padding, decorations, and filename text proportionally) */

@@ -2,10 +2,15 @@
 
 ## Unreleased
 
+### New Features
+
+- feat: Add the `--code-window-bg` and `--code-window-title-bg` variables, so a theme can set the window and title bar colours in light and dark modes.
+
 ### Bug Fixes
 
 - fix: Follow the theme's background in the code window, so the window and its highlighted-lines chip stay readable on a dark Quarto or Reveal.js theme.
 - fix: Keep the title bar's own tint on dark Quarto themes and on Reveal.js, where Quarto's fixed grey replaced it.
+- fix: Let a theme's own `:root` rule override the theming variables, which lost to the extension's defaults before.
 
 ## 1.5.2 (2026-10-04)
 
