@@ -1,0 +1,13 @@
+---
+title: "A `code` title"
+filters:
+  - code-window
+format:
+  typst:
+    keep-typ: true
+    highlight-style: none
+---
+
+The document title holds inline code, and the theme gives no background.
+The title is metadata, which the inline code pass leaves alone, so the render
+compiles.

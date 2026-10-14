@@ -346,6 +346,21 @@ else
 fi
 
 # ============================================================================
+# Inline code in the document title is left to Quarto
+# ============================================================================
+
+# The title is metadata, written into the template call before the
+# extension's own definitions, so the inline code pass must not box it. The
+# render compiling is the check; the grep says what reached the title.
+render title-inline-code typst
+if grep -q 'title: \[A #raw("code") title\]\|title: \[A `code` title\]' "${work_dir}/title-inline-code.typ"; then
+	report pass "title-inline-code: the title code is not boxed"
+else
+	report fail "title-inline-code: the title code is not boxed" \
+		"an unboxed code span in the title argument of title-inline-code.typ"
+fi
+
+# ============================================================================
 # A theorem title renders as Typst content without a hot-fix
 # ============================================================================
 
