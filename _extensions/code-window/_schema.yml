@@ -60,18 +60,6 @@ options:
           quarto-version:
             type: string
             description: "Quarto version at or above which this hot-fix is automatically disabled."
-      typst-title:
-        type: [boolean, object]
-        default: true
-        description: "Enable the Typst title hot-fix (evaluates theorem title strings as markup). Use a boolean or a map with 'enabled' and 'quarto-version' keys."
-        additionalProperties: false
-        properties:
-          enabled:
-            type: boolean
-            description: "Explicitly enable or disable this hot-fix."
-          quarto-version:
-            type: string
-            description: "Quarto version at or above which this hot-fix is automatically disabled."
 
 attributes:
   CodeBlock:

@@ -346,6 +346,51 @@ else
 fi
 
 # ============================================================================
+# Inline code in the document title is left to Quarto
+# ============================================================================
+
+# The title is metadata, written into the template call before the
+# extension's own definitions, so the inline code pass must not box it. The
+# render compiling is the check; the grep says what reached the title.
+render title-inline-code typst
+# shellcheck disable=SC2016 # the backticks are a literal Typst code span, not a command
+if grep -q 'title: \[A #raw("code") title\]\|title: \[A `code` title\]' "${work_dir}/title-inline-code.typ"; then
+	report pass "title-inline-code: the title code is not boxed"
+else
+	report fail "title-inline-code: the title code is not boxed" \
+		"an unboxed code span in the title argument of title-inline-code.typ"
+fi
+
+# ============================================================================
+# A theorem title renders as Typst content without a hot-fix
+# ============================================================================
+
+# Quarto writes the title as content since 1.10, so the markup survives and
+# the extension adds no wrapper of its own. Inline code in the title still has
+# to compile, which the render itself checks.
+render theorem-title typst
+if grep -qF '#theorem(title: [A title with #emph[emphasis]' "${work_dir}/theorem-title.typ"; then
+	report pass "theorem-title: the title keeps its markup"
+else
+	report fail "theorem-title: the title keeps its markup" \
+		"#theorem(title: [A title with #emph[emphasis] in theorem-title.typ"
+fi
+if grep -q 'hot-fix for Quarto rendering theorem titles' "${work_dir}/theorem-title.typ"; then
+	report fail "theorem-title: no title hot-fix is injected" \
+		"no 'hot-fix for Quarto rendering theorem titles' block in theorem-title.typ"
+else
+	report pass "theorem-title: no title hot-fix is injected"
+fi
+
+# Inline code in the title takes the same box as inline code anywhere else.
+if grep -F '#theorem(title: [A title with #emph[emphasis]' "${work_dir}/theorem-title.typ" | grep -q 'box(fill:'; then
+	report pass "theorem-title: inline code in the title is boxed"
+else
+	report fail "theorem-title: inline code in the title is boxed" \
+		"a box(fill: call inside the #theorem(title: [...]) line of theorem-title.typ"
+fi
+
+# ============================================================================
 
 printf '\n%s passed, %s failed\n' "${passed}" "${failed}"
 [ "${failed}" -eq 0 ]

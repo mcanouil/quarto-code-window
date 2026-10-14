@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Breaking Changes
+
+- refactor: Remove the `typst-title` hot-fix and its `hotfix.typst-title` option, as Quarto renders theorem titles as Typst markup since 1.10. (#78)
+- build: Require Quarto 1.10.19 or later. (#78)
+
+### Bug Fixes
+
+- fix: Style inline code in a Typst theorem title like inline code anywhere else. (#78)
+
 ## 1.6.0 (2026-10-05)
 
 ### New Features
