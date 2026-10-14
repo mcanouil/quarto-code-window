@@ -921,7 +921,6 @@ function Meta(meta)
     code_annotations = annotations_enabled,
   }
 
-
   -- Cache syntax highlighting background colour for Typst contrast-aware annotations.
   if CURRENT_FORMAT == 'typst' then
     local hm = PANDOC_WRITER_OPTIONS and PANDOC_WRITER_OPTIONS.highlight_method
