@@ -128,7 +128,7 @@ extensions:
     hotfix:
       skylighting:
         enabled: true
-        quarto-version: "1.9.0"
+        quarto-version: "1.11.0"
 ```
 
 They exist for [quarto-dev/quarto-cli#14170](https://github.com/quarto-dev/quarto-cli/issues/14170) and will be removed once Quarto covers the same ground.

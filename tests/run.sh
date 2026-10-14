@@ -366,6 +366,14 @@ else
 	report pass "theorem-title: no title hot-fix is injected"
 fi
 
+# Inline code in the title takes the same box as inline code anywhere else.
+if grep -F '#theorem(title: [A title with #emph[emphasis]' "${work_dir}/theorem-title.typ" | grep -q 'box(fill:'; then
+	report pass "theorem-title: inline code in the title is boxed"
+else
+	report fail "theorem-title: inline code in the title is boxed" \
+		"a box(fill: call inside the #theorem(title: [...]) line of theorem-title.typ"
+fi
+
 # ============================================================================
 
 printf '\n%s passed, %s failed\n' "${passed}" "${failed}"
