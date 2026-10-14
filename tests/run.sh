@@ -353,6 +353,7 @@ fi
 # extension's own definitions, so the inline code pass must not box it. The
 # render compiling is the check; the grep says what reached the title.
 render title-inline-code typst
+# shellcheck disable=SC2016 # the backticks are a literal Typst code span, not a command
 if grep -q 'title: \[A #raw("code") title\]\|title: \[A `code` title\]' "${work_dir}/title-inline-code.typ"; then
 	report pass "title-inline-code: the title code is not boxed"
 else
@@ -364,7 +365,7 @@ fi
 # A theorem title renders as Typst content without a hot-fix
 # ============================================================================
 
-# Quarto writes the title as content since 1.10.18, so the markup survives and
+# Quarto writes the title as content since 1.10, so the markup survives and
 # the extension adds no wrapper of its own. Inline code in the title still has
 # to compile, which the render itself checks.
 render theorem-title typst
