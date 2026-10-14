@@ -346,6 +346,27 @@ else
 fi
 
 # ============================================================================
+# A theorem title renders as Typst content without a hot-fix
+# ============================================================================
+
+# Quarto writes the title as content since 1.10.18, so the markup survives and
+# the extension adds no wrapper of its own. Inline code in the title still has
+# to compile, which the render itself checks.
+render theorem-title typst
+if grep -qF '#theorem(title: [A title with #emph[emphasis]' "${work_dir}/theorem-title.typ"; then
+	report pass "theorem-title: the title keeps its markup"
+else
+	report fail "theorem-title: the title keeps its markup" \
+		"#theorem(title: [A title with #emph[emphasis] in theorem-title.typ"
+fi
+if grep -q 'hot-fix for Quarto rendering theorem titles' "${work_dir}/theorem-title.typ"; then
+	report fail "theorem-title: no title hot-fix is injected" \
+		"no 'hot-fix for Quarto rendering theorem titles' block in theorem-title.typ"
+else
+	report pass "theorem-title: no title hot-fix is injected"
+fi
+
+# ============================================================================
 
 printf '\n%s passed, %s failed\n' "${passed}" "${failed}"
 [ "${failed}" -eq 0 ]

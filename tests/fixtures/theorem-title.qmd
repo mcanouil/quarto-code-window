@@ -1,0 +1,17 @@
+---
+title: "Theorem title"
+filters:
+  - code-window
+format:
+  typst:
+    keep-typ: true
+---
+
+A theorem title holds markup and inline code.
+Quarto renders the title as Typst content, so no hot-fix is needed.
+
+::: {#thm-markup}
+## A title with *emphasis* and `code`
+
+Body.
+:::

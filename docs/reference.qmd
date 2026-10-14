@@ -119,7 +119,6 @@ All of them follow `enabled`, so a document that turns the filter off takes no h
 | --- | --- |
 | `code-annotations` | Code annotations in Typst output. |
 | `skylighting` | Block styling and inline code backgrounds in Typst output. |
-| `typst-title` | Theorem title strings, evaluated as markup. |
 
 : The Typst hot-fixes. {.striped .hover tbl-colwidths="[26,74]"}
 

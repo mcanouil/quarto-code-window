@@ -275,7 +275,6 @@ extensions:
     hotfix:
       code-annotations: true
       skylighting: true
-      typst-title: true
 ```
 
 Each hotfix accepts either a boolean or a map with `enabled` and `quarto-version` keys for per-hotfix version thresholds:
@@ -287,8 +286,6 @@ extensions:
       code-annotations: true
       skylighting:
         enabled: false
-      typst-title:
-        quarto-version: "1.10.0"
 ```
 
 Override per block with the `code-window-style` attribute:

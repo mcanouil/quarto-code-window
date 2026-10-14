@@ -228,7 +228,7 @@ The option does nothing in HTML, which draws its chrome from the stylesheet and 
 
 ## The Typst hot-fixes
 
-The three hot-fixes act on Typst output only.
+The two hot-fixes act on Typst output only.
 Each one is on by default.
 A boolean turns one off:
 
@@ -238,7 +238,6 @@ extensions:
     hotfix:
       code-annotations: true
       skylighting: false
-      typst-title: true
 ```
 
 A map adds a version at which the hot-fix switches itself off:
