@@ -54,6 +54,15 @@ count_typst_windows() {
 	grep -c '^#code-window(filename' "$1" || true
 }
 
+# Succeed when one page of page-break-title.txt holds both strings. pdftotext
+# ends each page with a form feed, so awk reads one page per record.
+# $1 first string. $2 second string.
+same_page() {
+	awk -v RS='\f' -v first="$1" -v second="$2" \
+		'index($0, first) && index($0, second) { found = 1 } END { exit !found }' \
+		"${work_dir}/page-break-title.txt"
+}
+
 # Answer the classes of every highlighted block in a rendered HTML file. The
 # injected script names its marker classes in a selector, never in a tag, so
 # reading the tags alone keeps the script out of the answer.
@@ -398,22 +407,35 @@ fi
 # the first line of code does not. The title bar has to move to the next page
 # with its code. The plain window and the annotated window take different
 # content paths in the wrapper, so both are checked. The test reads the page
-# text of the PDF, so it needs pdftotext from poppler. pdftotext ends each
-# page with a form feed, so awk reads one page per record.
+# text of the PDF, so it needs pdftotext from poppler.
 if command -v pdftotext >/dev/null 2>&1; then
 	render page-break-title typst
 	pdftotext "${work_dir}/page-break-title.pdf" "${work_dir}/page-break-title.txt"
 
 	for window in plain annotated; do
-		if awk -v RS='\f' -v title="${window}.py" -v code="${window}_first = 1" \
-			'index($0, title) && index($0, code) { found = 1 } END { exit !found }' \
-			"${work_dir}/page-break-title.txt"; then
+		if same_page "${window}.py" "${window}_first = 1"; then
 			report pass "page-break-title: the ${window} title bar stays with its code"
 		else
 			report fail "page-break-title: the ${window} title bar stays with its code" \
 				"${window}.py and ${window}_first = 1 on the same page of page-break-title.pdf"
 		fi
 	done
+
+	# Without the sticky title bar, the same fixture has to leave the title bar
+	# alone on its page. This proves that the fixture still forces the break,
+	# so the checks above test the fix and not a layout that fits anyway.
+	lua_file="${work_dir}/_extensions/code-window/code-window.lua"
+	sed -i.aside '/sticky: true,/d' "${lua_file}"
+	render page-break-title typst
+	mv "${lua_file}.aside" "${lua_file}"
+	pdftotext "${work_dir}/page-break-title.pdf" "${work_dir}/page-break-title.txt"
+
+	if same_page "plain.py" "plain_first = 1"; then
+		report fail "page-break-title: the fixture orphans a title bar without the fix" \
+			"plain.py and plain_first = 1 on different pages without sticky: true"
+	else
+		report pass "page-break-title: the fixture orphans a title bar without the fix"
+	fi
 else
 	report fail "page-break-title: the page text can be read" \
 		"pdftotext on PATH (brew install poppler)"
