@@ -423,6 +423,16 @@ if command -v pdftotext >/dev/null 2>&1; then
 		fi
 	done
 
+	# A window taller than a page has to start on the page where it is placed
+	# and break across pages. The sticky title bar must not push it whole to
+	# the next page and leave a near-empty page behind.
+	if same_page "Text above the tall window." "tall_0 = 0"; then
+		report pass "page-break-title: a window taller than a page starts on the current page"
+	else
+		report fail "page-break-title: a window taller than a page starts on the current page" \
+			"the text above tall.py and tall_0 = 0 on the same page of page-break-title.pdf"
+	fi
+
 	# Without the sticky title bar, the same fixture has to leave the title bar
 	# alone on its page. This proves that the fixture still forces the break,
 	# so the checks above test the fix and not a layout that fits anyway.

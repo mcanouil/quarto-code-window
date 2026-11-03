@@ -10,7 +10,7 @@
 ### Bug Fixes
 
 - fix: Style inline code in a Typst theorem title like inline code anywhere else. (#78)
-- fix: Keep the title bar on the same page as the first lines of its code in Typst, so it never sits alone at the bottom of a page.
+- fix: Keep the title bar on the same page as the first lines of its code in Typst, so it never sits alone at the bottom of a page. The Typst bundled with Quarto 1.10.19 still breaks a window taller than a page from the current page, which 1.2.1 could not rely on.
 
 ## 1.6.0 (2026-10-05)
 
