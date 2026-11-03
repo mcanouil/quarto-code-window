@@ -1,0 +1,104 @@
+---
+title: "A title bar kept with its code across a page break"
+filters:
+  - code-window
+format:
+  typst:
+    keep-typ: true
+---
+
+The first two windows start 3em above the bottom of a page.
+That leaves room for the title bar but not for the first line of code.
+
+```{=typst}
+#set page(height: 10cm, margin: 1cm)
+#v(8cm - 3em)
+```
+
+```{.python filename="plain.py"}
+plain_first = 1
+plain_second = 2
+```
+
+```{=typst}
+#pagebreak()
+#v(8cm - 3em)
+```
+
+```{.python filename="annotated.py"}
+annotated_first = 1 # <1>
+annotated_second = 2
+```
+
+1. The first line.
+
+```{=typst}
+#pagebreak()
+```
+
+Text above the tall window.
+
+## Tall heading
+
+```{.python filename="tall.py"}
+tall_0 = 0
+tall_1 = 1
+tall_2 = 2
+tall_3 = 3
+tall_4 = 4
+tall_5 = 5
+tall_6 = 6
+tall_7 = 7
+tall_8 = 8
+tall_9 = 9
+tall_10 = 10
+tall_11 = 11
+tall_12 = 12
+tall_13 = 13
+tall_14 = 14
+tall_15 = 15
+tall_16 = 16
+tall_17 = 17
+tall_18 = 18
+tall_19 = 19
+tall_20 = 20
+tall_21 = 21
+tall_22 = 22
+tall_23 = 23
+tall_24 = 24
+tall_25 = 25
+tall_26 = 26
+tall_27 = 27
+tall_28 = 28
+tall_29 = 29
+tall_30 = 30
+tall_31 = 31
+tall_32 = 32
+tall_33 = 33
+tall_34 = 34
+tall_35 = 35
+tall_36 = 36
+tall_37 = 37
+tall_38 = 38
+tall_39 = 39
+tall_40 = 40
+tall_41 = 41
+tall_42 = 42
+tall_43 = 43
+tall_44 = 44
+tall_45 = 45
+tall_46 = 46
+tall_47 = 47
+tall_48 = 48
+tall_49 = 49
+tall_50 = 50
+tall_51 = 51
+tall_52 = 52
+tall_53 = 53
+tall_54 = 54
+tall_55 = 55
+tall_56 = 56
+tall_57 = 57
+tall_58 = 58
+tall_59 = 59
+```
