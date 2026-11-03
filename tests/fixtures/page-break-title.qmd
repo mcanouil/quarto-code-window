@@ -1,0 +1,33 @@
+---
+title: "A title bar kept with its code across a page break"
+filters:
+  - code-window
+format:
+  typst:
+    keep-typ: true
+---
+
+Each window below starts 3em above the bottom of a page.
+That leaves room for the title bar but not for the first line of code.
+
+```{=typst}
+#set page(height: 10cm, margin: 1cm)
+#v(8cm - 3em)
+```
+
+```{.python filename="plain.py"}
+plain_first = 1
+plain_second = 2
+```
+
+```{=typst}
+#pagebreak()
+#v(8cm - 3em)
+```
+
+```{.python filename="annotated.py"}
+annotated_first = 1 # <1>
+annotated_second = 2
+```
+
+1. The first line.

@@ -391,6 +391,46 @@ else
 fi
 
 # ============================================================================
+# A title bar never sits alone at the bottom of a page
+# ============================================================================
+
+# Each window in the fixture starts where the title bar fits on the page but
+# the first line of code does not. The title bar has to move to the next page
+# with its code. The plain window and the annotated window take different
+# content paths in the wrapper, so both are checked. The test reads the page
+# text of the PDF, so it needs pdftotext from poppler.
+if ! command -v pdftotext >/dev/null 2>&1; then
+	printf 'FAIL  page-break-title: pdftotext is not installed (brew install poppler)\n'
+	exit 1
+fi
+
+render page-break-title typst
+page_count="$(pdfinfo "${work_dir}/page-break-title.pdf" | awk '/^Pages:/ { print $2 }')"
+
+# Answer the text of the page that shows a filename.
+# $1 filename
+page_with_filename() {
+	local page
+	local text
+	for page in $(seq 1 "${page_count}"); do
+		text="$(pdftotext -f "${page}" -l "${page}" "${work_dir}/page-break-title.pdf" -)"
+		if printf '%s\n' "${text}" | grep -qF "$1"; then
+			printf '%s\n' "${text}"
+			return
+		fi
+	done
+}
+
+for window in plain annotated; do
+	if page_with_filename "${window}.py" | grep -qF "${window}_first = 1"; then
+		report pass "page-break-title: the ${window} title bar stays with its code"
+	else
+		report fail "page-break-title: the ${window} title bar stays with its code" \
+			"${window}.py and ${window}_first = 1 on the same page of page-break-title.pdf"
+	fi
+done
+
+# ============================================================================
 
 printf '\n%s passed, %s failed\n' "${passed}" "${failed}"
 [ "${failed}" -eq 0 ]
