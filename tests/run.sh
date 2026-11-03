@@ -398,37 +398,26 @@ fi
 # the first line of code does not. The title bar has to move to the next page
 # with its code. The plain window and the annotated window take different
 # content paths in the wrapper, so both are checked. The test reads the page
-# text of the PDF, so it needs pdftotext from poppler.
-if ! command -v pdftotext >/dev/null 2>&1; then
-	printf 'FAIL  page-break-title: pdftotext is not installed (brew install poppler)\n'
-	exit 1
-fi
+# text of the PDF, so it needs pdftotext from poppler. pdftotext ends each
+# page with a form feed, so awk reads one page per record.
+if command -v pdftotext >/dev/null 2>&1; then
+	render page-break-title typst
+	pdftotext "${work_dir}/page-break-title.pdf" "${work_dir}/page-break-title.txt"
 
-render page-break-title typst
-page_count="$(pdfinfo "${work_dir}/page-break-title.pdf" | awk '/^Pages:/ { print $2 }')"
-
-# Answer the text of the page that shows a filename.
-# $1 filename
-page_with_filename() {
-	local page
-	local text
-	for page in $(seq 1 "${page_count}"); do
-		text="$(pdftotext -f "${page}" -l "${page}" "${work_dir}/page-break-title.pdf" -)"
-		if printf '%s\n' "${text}" | grep -qF "$1"; then
-			printf '%s\n' "${text}"
-			return
+	for window in plain annotated; do
+		if awk -v RS='\f' -v title="${window}.py" -v code="${window}_first = 1" \
+			'index($0, title) && index($0, code) { found = 1 } END { exit !found }' \
+			"${work_dir}/page-break-title.txt"; then
+			report pass "page-break-title: the ${window} title bar stays with its code"
+		else
+			report fail "page-break-title: the ${window} title bar stays with its code" \
+				"${window}.py and ${window}_first = 1 on the same page of page-break-title.pdf"
 		fi
 	done
-}
-
-for window in plain annotated; do
-	if page_with_filename "${window}.py" | grep -qF "${window}_first = 1"; then
-		report pass "page-break-title: the ${window} title bar stays with its code"
-	else
-		report fail "page-break-title: the ${window} title bar stays with its code" \
-			"${window}.py and ${window}_first = 1 on the same page of page-break-title.pdf"
-	fi
-done
+else
+	report fail "page-break-title: the page text can be read" \
+		"pdftotext on PATH (brew install poppler)"
+fi
 
 # ============================================================================
 
