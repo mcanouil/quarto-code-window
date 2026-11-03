@@ -9,6 +9,8 @@ set -euo pipefail
 # fixtures rather than linked. docs/_scripts/sync-extension.sh solves the same
 # problem for the documentation site.
 #
+# Requires: quarto, and pdftotext from poppler for the page-break test.
+#
 # Usage: tests/run.sh
 
 tests_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -430,12 +432,14 @@ if command -v pdftotext >/dev/null 2>&1; then
 	mv "${lua_file}.aside" "${lua_file}"
 	pdftotext "${work_dir}/page-break-title.pdf" "${work_dir}/page-break-title.txt"
 
-	if same_page "plain.py" "plain_first = 1"; then
-		report fail "page-break-title: the fixture orphans a title bar without the fix" \
-			"plain.py and plain_first = 1 on different pages without sticky: true"
-	else
-		report pass "page-break-title: the fixture orphans a title bar without the fix"
-	fi
+	for window in plain annotated; do
+		if same_page "${window}.py" "${window}_first = 1"; then
+			report fail "page-break-title: the fixture orphans the ${window} title bar without the fix" \
+				"${window}.py and ${window}_first = 1 on different pages without sticky: true"
+		else
+			report pass "page-break-title: the fixture orphans the ${window} title bar without the fix"
+		fi
+	done
 else
 	report fail "page-break-title: the page text can be read" \
 		"pdftotext on PATH (brew install poppler)"
