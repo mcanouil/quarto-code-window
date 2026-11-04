@@ -45,6 +45,6 @@ because no window reads the label.
 x = 2
 ```
 
-```{.foo code-window-enabled="false" code-window-auto-label="Terminal"}
+```{.foo code-window-enabled="False" code-window-auto-label="Terminal"}
 x = 3
 ```

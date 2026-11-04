@@ -91,8 +91,9 @@ local function normalise_language(block)
     return nil
   end
   if not code_window.CONFIG().auto_filename then
-    local refuses_window = block.attributes['code-window-enabled'] == 'false'
-      or block.attributes['code-window-no-auto-filename'] == 'true'
+    local enabled = (block.attributes['code-window-enabled'] or ''):lower()
+    local no_auto_filename = (block.attributes['code-window-no-auto-filename'] or ''):lower()
+    local refuses_window = enabled == 'false' or no_auto_filename == 'true'
     if not language.auto_label(block) or refuses_window then
       return nil
     end
