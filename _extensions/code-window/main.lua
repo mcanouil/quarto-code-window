@@ -85,12 +85,8 @@ end
 --- @param block pandoc.CodeBlock
 --- @return pandoc.CodeBlock|nil Relabelled block, or nil when the pass is skipped
 local function normalise_language(block)
-  if not code_window.draws_chrome() then
-    return nil
-  end
-  local label = block.attributes['code-window-auto-label']
-  local has_label = label and label ~= ''
-  if not code_window.CONFIG().auto_filename and not has_label then
+  if not code_window.draws_chrome()
+      or (not code_window.CONFIG().auto_filename and not language.auto_label(block)) then
     return nil
   end
   return language.CodeBlock(block)

@@ -464,7 +464,7 @@ fi
 # derives no names, and an explicit filename or a per-block opt-out still wins.
 render auto-label-forced html
 forced_html="${work_dir}/auto-label-forced.html"
-forced_labels="$({ grep -o 'data-filename="Terminal"' "${forced_html}" || true; } | wc -l | tr -d ' ')"
+forced_labels="$(block_wrappers "${forced_html}" | grep -c 'data-filename="Terminal"' || true)"
 forced_auto="$(block_classes "${forced_html}" | grep -c 'cw-auto' || true)"
 if [ "${forced_labels}" -eq 1 ] && [ "${forced_auto}" -eq 2 ] &&
 	grep -q 'data-filename="run.sh"' "${forced_html}"; then
@@ -485,24 +485,13 @@ else
 		"three code-window calls, with one for Terminal with is-auto: true and one for run.sh"
 fi
 
-# A labelled block takes the language pass even where the document derives no
-# names, or Pandoc leaves it unhighlighted and the script has no wrapper to
-# frame.
+# The language pass runs for a labelled block and keeps its label, or the
+# label would read "foo".
 if block_wrappers "${forced_html}" | grep -q 'data-filename="Shell"'; then
 	report pass "auto-label-forced: a labelled block in an unknown language is framed"
 else
 	report fail "auto-label-forced: a labelled block in an unknown language is framed" \
 		"data-filename=\"Shell\" on a sourceCode wrapper in auto-label-forced.html"
-fi
-
-# The language pass labels a block it cannot highlight, and a label that is
-# already there is the one to keep.
-render auto-label-kept html
-if grep -q 'data-filename="Terminal"' "${work_dir}/auto-label-kept.html"; then
-	report pass "auto-label-kept: the language pass keeps a label set before it"
-else
-	report fail "auto-label-kept: the language pass keeps a label set before it" \
-		"data-filename=\"Terminal\" in auto-label-kept.html"
 fi
 
 # ============================================================================

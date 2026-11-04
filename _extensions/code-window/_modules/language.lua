@@ -6,6 +6,8 @@
 
 local cell_output = require(
   quarto.utils.resolve_path('_modules/cell-output.lua'):gsub('%.lua$', ''))
+local str = require(
+  quarto.utils.resolve_path('_vendor/quarto-lua-modules/string.lua'):gsub('%.lua$', ''))
 
 local M = {}
 
@@ -31,17 +33,24 @@ local function is_known_language(lang)
   return is_known
 end
 
---- Write the label on a block that has no name yet.
---- A filename or a label already on the block wins, because the author or
---- another filter set it to name the window.
+--- Read the label that names a block's window, set by this module, by the
+--- author, or by another filter. An empty value counts as no label.
 --- @param block pandoc.CodeBlock
---- @param label string Label to write when the block has no name yet
+--- @return string|nil label
+function M.auto_label(block)
+  local label = block.attributes['code-window-auto-label']
+  if str.is_empty(label) then
+    return nil
+  end
+  return label
+end
+
+--- Set the label unless the block already has a filename or a label.
+--- @param block pandoc.CodeBlock
+--- @param label string
 local function set_label(block, label)
-  local attributes = block.attributes
-  local has_filename = attributes['filename'] and attributes['filename'] ~= ''
-  local has_label = attributes['code-window-auto-label'] and attributes['code-window-auto-label'] ~= ''
-  if not has_filename and not has_label then
-    attributes['code-window-auto-label'] = label
+  if str.is_empty(block.attributes['filename']) and not M.auto_label(block) then
+    block.attributes['code-window-auto-label'] = label
   end
 end
 
