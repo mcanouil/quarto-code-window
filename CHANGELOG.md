@@ -4,7 +4,7 @@
 
 ### New Features
 
-- feat: Add the `code-window-auto-label` attribute, so another filter can ask for a window with its own label on a block that has no `filename`. The label works even when `auto-filename` is off.
+- feat: Add the `code-window-auto-label` attribute, so another filter can ask for a window with its own label on a block that has no `filename`. The label works even when `auto-filename` is off. (#82)
 
 ## 1.7.0 (2026-11-04)
 
