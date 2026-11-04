@@ -91,6 +91,8 @@ local function normalise_language(block)
     return nil
   end
   if not code_window.CONFIG().auto_filename then
+    -- Lowercased to match the schema's boolean coercion. Resolving through the
+    -- schema check here would report each of its warnings twice per block.
     local enabled = (block.attributes['code-window-enabled'] or ''):lower()
     local no_auto_filename = (block.attributes['code-window-no-auto-filename'] or ''):lower()
     local refuses_window = enabled == 'false' or no_auto_filename == 'true'
