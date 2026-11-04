@@ -147,6 +147,9 @@ end
 --- @return string|nil auto_label Label written by the language module, if any
 local function take_block_attributes(block)
   local auto_label = block.attributes['code-window-auto-label']
+  if auto_label == '' then
+    auto_label = nil
+  end
   local owned = {}
   for key, _ in pairs(block.attributes) do
     if key:sub(1, #ATTRIBUTE_PREFIX) == ATTRIBUTE_PREFIX and not cell_output.is_marker(key) then
@@ -706,7 +709,9 @@ local function process_html(block, resolved, auto_label)
     return block
   end
 
-  if not CONFIG.auto_filename or overrides.no_auto_filename then
+  -- A label on the block asks for a window by itself, so it does not wait on
+  -- the document's auto-filename setting.
+  if overrides.no_auto_filename or not (auto_label or CONFIG.auto_filename) then
     return block
   end
 
@@ -1036,10 +1041,15 @@ local function resolve_window_params(block, resolved, auto_label)
   local is_auto = false
 
   if (not filename or filename == '') and not overrides.no_auto_filename then
-    if CONFIG.auto_filename and block.classes and #block.classes > 0 then
-      -- Default/unknown/no-language blocks carry their label on
-      -- code-window-auto-label; everything else uses its language class.
-      filename = auto_label or block.classes[1]
+    -- A label on the block asks for a window by itself, whatever the
+    -- document's auto-filename setting. Default/unknown/no-language blocks
+    -- carry the label the language module wrote; everything else uses its
+    -- language class.
+    if auto_label then
+      filename = auto_label
+      is_auto = true
+    elseif CONFIG.auto_filename and block.classes and #block.classes > 0 then
+      filename = block.classes[1]
       is_auto = true
     end
   end

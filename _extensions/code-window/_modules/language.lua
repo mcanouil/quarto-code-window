@@ -31,6 +31,20 @@ local function is_known_language(lang)
   return is_known
 end
 
+--- Write the label on a block that has no name yet.
+--- A filename or a label already on the block wins, because the author or
+--- another filter set it to name the window.
+--- @param block pandoc.CodeBlock
+--- @param label string Label to write when the block has no name yet
+local function set_label(block, label)
+  local attributes = block.attributes
+  local has_filename = attributes['filename'] and attributes['filename'] ~= ''
+  local has_label = attributes['code-window-auto-label'] and attributes['code-window-auto-label'] ~= ''
+  if not has_filename and not has_label then
+    attributes['code-window-auto-label'] = label
+  end
+end
+
 --- Normalise code blocks with no or unknown language class to "default".
 --- Both are framed like a highlighted code cell rather than left as a bare
 --- block: a no-language block is labelled "default", and an unknown language
@@ -47,18 +61,14 @@ function M.CodeBlock(block)
 
   if not block.classes or #block.classes == 0 then
     block.classes:insert('default')
-    if not block.attributes['filename'] or block.attributes['filename'] == '' then
-      block.attributes['code-window-auto-label'] = 'default'
-    end
+    set_label(block, 'default')
     return block
   end
 
   local lang = block.classes[1]
   if not is_known_language(lang) then
     block.classes[1] = 'default'
-    if not block.attributes['filename'] or block.attributes['filename'] == '' then
-      block.attributes['code-window-auto-label'] = lang
-    end
+    set_label(block, lang)
   end
 
   return block

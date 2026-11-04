@@ -1,0 +1,39 @@
+---
+title: "A label that asks for its own window"
+filters:
+  - code-window
+format:
+  html: default
+  typst:
+    keep-typ: true
+extensions:
+  code-window:
+    auto-filename: false
+---
+
+The document derives no names, yet the first block names its own label, so it
+gets a window with that label. Each block after it writes something that wins
+over the label, so none of them gets the label in its title bar.
+
+```{.bash code-window-auto-label="Terminal"}
+echo forced
+```
+
+```{.bash filename="run.sh" code-window-auto-label="Terminal"}
+echo explicit
+```
+
+```{.bash code-window-enabled="false" code-window-auto-label="Terminal"}
+echo disabled
+```
+
+```{.bash code-window-no-auto-filename="true" code-window-auto-label="Terminal"}
+echo refused
+```
+
+A labelled block in a language Pandoc cannot highlight still goes through the
+language pass, so it is framed like any other labelled block.
+
+```{.foo code-window-auto-label="Shell"}
+x = 1
+```

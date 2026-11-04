@@ -9,6 +9,10 @@
 - refactor: Remove the `typst-title` hot-fix and its `hotfix.typst-title` option, as Quarto renders theorem titles as Typst markup since 1.10. (#78)
 - build: Require Quarto 1.10.19 or later. (#78)
 
+### New Features
+
+- feat: Add the `code-window-auto-label` attribute, so another filter can ask for a window with its own label on a block that has no `filename`. The label works even when `auto-filename` is off.
+
 ### Bug Fixes
 
 - fix: Style inline code in a Typst theorem title like inline code anywhere else. (#78)

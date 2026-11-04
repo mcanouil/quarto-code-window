@@ -71,6 +71,9 @@ attributes:
       type: boolean
       default: false
       description: "Suppress the auto-generated filename for this specific code block without changing the global setting."
+    code-window-auto-label:
+      type: string
+      description: "Frame this code block with this label, styled as an auto-generated filename, even when auto-filename is false. An explicit filename, code-window-enabled false, or code-window-no-auto-filename true wins over it."
     code-window-style:
       type: string
       enum: ["default", "macos", "windows"]

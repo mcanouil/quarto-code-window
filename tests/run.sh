@@ -456,6 +456,56 @@ else
 fi
 
 # ============================================================================
+# A label set on a block asks for a window of its own
+# ============================================================================
+
+# Another filter sets code-window-auto-label to get a window with a derived
+# style on a block that names no file. The label has to work when the document
+# derives no names, and an explicit filename or a per-block opt-out still wins.
+render auto-label-forced html
+forced_html="${work_dir}/auto-label-forced.html"
+forced_labels="$({ grep -o 'data-filename="Terminal"' "${forced_html}" || true; } | wc -l | tr -d ' ')"
+forced_auto="$(block_classes "${forced_html}" | grep -c 'cw-auto' || true)"
+if [ "${forced_labels}" -eq 1 ] && [ "${forced_auto}" -eq 2 ] &&
+	grep -q 'data-filename="run.sh"' "${forced_html}"; then
+	report pass "auto-label-forced: only the labelled block takes the label in HTML"
+else
+	report fail "auto-label-forced: only the labelled block takes the label in HTML" \
+		"one data-filename=\"Terminal\", two cw-auto blocks, and data-filename=\"run.sh\", got ${forced_labels} and ${forced_auto}"
+fi
+
+render auto-label-forced typst
+forced_typst="${work_dir}/auto-label-forced.typ"
+if [ "$(count_typst_windows "${forced_typst}")" -eq 3 ] &&
+	grep -q '^#code-window(filename: "Terminal", is-auto: true' "${forced_typst}" &&
+	grep -q '^#code-window(filename: "run.sh", is-auto: false' "${forced_typst}"; then
+	report pass "auto-label-forced: only the labelled block takes the label in Typst"
+else
+	report fail "auto-label-forced: only the labelled block takes the label in Typst" \
+		"three code-window calls, with one for Terminal with is-auto: true and one for run.sh"
+fi
+
+# A labelled block takes the language pass even where the document derives no
+# names, or Pandoc leaves it unhighlighted and the script has no wrapper to
+# frame.
+if block_wrappers "${forced_html}" | grep -q 'data-filename="Shell"'; then
+	report pass "auto-label-forced: a labelled block in an unknown language is framed"
+else
+	report fail "auto-label-forced: a labelled block in an unknown language is framed" \
+		"data-filename=\"Shell\" on a sourceCode wrapper in auto-label-forced.html"
+fi
+
+# The language pass labels a block it cannot highlight, and a label that is
+# already there is the one to keep.
+render auto-label-kept html
+if grep -q 'data-filename="Terminal"' "${work_dir}/auto-label-kept.html"; then
+	report pass "auto-label-kept: the language pass keeps a label set before it"
+else
+	report fail "auto-label-kept: the language pass keeps a label set before it" \
+		"data-filename=\"Terminal\" in auto-label-kept.html"
+fi
+
+# ============================================================================
 
 printf '\n%s passed, %s failed\n' "${passed}" "${failed}"
 [ "${failed}" -eq 0 ]

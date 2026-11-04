@@ -79,10 +79,18 @@ end
 --- rewritten with no reader either. Answering that per block means relabelling
 --- where the name is built, which is a change to the two window paths rather
 --- than to this gate.
+--- A block that carries "code-window-auto-label" asks for a window by itself,
+--- so it takes the pass whatever "auto-filename" says. Without it, a block in
+--- a language Pandoc cannot highlight would get no wrapper to frame.
 --- @param block pandoc.CodeBlock
 --- @return pandoc.CodeBlock|nil Relabelled block, or nil when the pass is skipped
 local function normalise_language(block)
-  if not code_window.draws_chrome() or not code_window.CONFIG().auto_filename then
+  if not code_window.draws_chrome() then
+    return nil
+  end
+  local label = block.attributes['code-window-auto-label']
+  local has_label = label and label ~= ''
+  if not code_window.CONFIG().auto_filename and not has_label then
     return nil
   end
   return language.CodeBlock(block)
