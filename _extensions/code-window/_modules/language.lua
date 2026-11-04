@@ -6,6 +6,8 @@
 
 local cell_output = require(
   quarto.utils.resolve_path('_modules/cell-output.lua'):gsub('%.lua$', ''))
+local str = require(
+  quarto.utils.resolve_path('_vendor/quarto-lua-modules/string.lua'):gsub('%.lua$', ''))
 
 local M = {}
 
@@ -31,6 +33,27 @@ local function is_known_language(lang)
   return is_known
 end
 
+--- Read the label that names a block's window, set by this module, by the
+--- author, or by another filter. An empty value counts as no label.
+--- @param block pandoc.CodeBlock
+--- @return string|nil label
+function M.auto_label(block)
+  local label = block.attributes['code-window-auto-label']
+  if str.is_empty(label) then
+    return nil
+  end
+  return label
+end
+
+--- Set the label unless the block already has a filename or a label.
+--- @param block pandoc.CodeBlock
+--- @param label string
+local function set_label(block, label)
+  if str.is_empty(block.attributes['filename']) and not M.auto_label(block) then
+    block.attributes['code-window-auto-label'] = label
+  end
+end
+
 --- Normalise code blocks with no or unknown language class to "default".
 --- Both are framed like a highlighted code cell rather than left as a bare
 --- block: a no-language block is labelled "default", and an unknown language
@@ -47,18 +70,14 @@ function M.CodeBlock(block)
 
   if not block.classes or #block.classes == 0 then
     block.classes:insert('default')
-    if not block.attributes['filename'] or block.attributes['filename'] == '' then
-      block.attributes['code-window-auto-label'] = 'default'
-    end
+    set_label(block, 'default')
     return block
   end
 
   local lang = block.classes[1]
   if not is_known_language(lang) then
     block.classes[1] = 'default'
-    if not block.attributes['filename'] or block.attributes['filename'] == '' then
-      block.attributes['code-window-auto-label'] = lang
-    end
+    set_label(block, lang)
   end
 
   return block

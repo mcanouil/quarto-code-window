@@ -47,6 +47,7 @@ extensions:
 | --- | --- | --- |
 | `code-window-enabled` | boolean | Whether this block gets chrome. Annotations still render when it does not. |
 | `code-window-no-auto-filename` | boolean | Suppress the derived filename for this block alone. |
+| `code-window-auto-label` | string | Frame this block with this label, styled as a derived filename. Works when `auto-filename` is `false`. |
 | `code-window-style` | string | Override the style for this block: `macos`, `windows`, `default`. |
 | `code-window-collapse` | boolean or string | Fold this block: `open`, `closed`, `true`, or `false`. HTML only. |
 | `code-window-lines` | string | The line spec shown in the chip, such as `1,3-5`. Defaults to Quarto's `code-line-numbers`. |
@@ -61,6 +62,23 @@ Quarto builds its own wrapper before this filter runs, so a block with no `filen
 The result is the same window; it needs JavaScript, as the rest of the HTML chrome does.
 Typst frames derived and author-set filenames alike, without a script.
 :::
+
+### Labels from another filter
+
+A filter that runs before Code Window can ask for a window on a block that has no `filename`.
+Set `code-window-auto-label` on the block to the label that the title bar must show.
+
+```lua
+block.attributes['code-window-auto-label'] = 'Terminal'
+```
+
+The label shows in the same style as a derived filename.
+The block gets the window also when the document sets `auto-filename` to `false`.
+These attributes win over the label:
+
+- A `filename` attribute names the window instead of the label.
+- `code-window-enabled="false"` removes the window.
+- `code-window-no-auto-filename="true"` removes the window.
 
 ## Executed cells
 
