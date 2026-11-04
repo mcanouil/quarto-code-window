@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.7.0 (2026-11-04)
+
 ### Breaking Changes
 
 - refactor: Remove the `typst-title` hot-fix and its `hotfix.typst-title` option, as Quarto renders theorem titles as Typst markup since 1.10. (#78)
