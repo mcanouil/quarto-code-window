@@ -10,4 +10,4 @@ repository-code: "https://github.com/mcanouil/quarto-code-window"
 url: "https://m.canouil.dev/quarto-code-window/"
 license: "MIT License"
 date-released: "2026-11-04"
-version: 1.7.0
+version: 1.8.0
