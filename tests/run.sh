@@ -494,6 +494,16 @@ else
 		"data-filename=\"Shell\" on a sourceCode wrapper in auto-label-forced.html"
 fi
 
+# A labelled block that refuses the window has no reader for the label, so the
+# language pass leaves its language alone.
+opted_out="$(block_classes "${forced_html}" | grep -c '"foo' || true)"
+if [ "${opted_out}" -eq 2 ]; then
+	report pass "auto-label-forced: a labelled block that refuses the window keeps its language"
+else
+	report fail "auto-label-forced: a labelled block that refuses the window keeps its language" \
+		"two blocks with a foo class in auto-label-forced.html, got ${opted_out}"
+fi
+
 # ============================================================================
 
 printf '\n%s passed, %s failed\n' "${passed}" "${failed}"

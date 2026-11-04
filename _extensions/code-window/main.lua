@@ -81,13 +81,21 @@ end
 --- than to this gate.
 --- A block that carries "code-window-auto-label" asks for a window by itself,
 --- so it takes the pass whatever "auto-filename" says. Without it, a block in
---- a language Pandoc cannot highlight would get no wrapper to frame.
+--- a language Pandoc cannot highlight would get no wrapper to frame. Such a
+--- block that also refuses the window has no reader for the label, so it is
+--- left alone here.
 --- @param block pandoc.CodeBlock
 --- @return pandoc.CodeBlock|nil Relabelled block, or nil when the pass is skipped
 local function normalise_language(block)
-  if not code_window.draws_chrome()
-      or (not code_window.CONFIG().auto_filename and not language.auto_label(block)) then
+  if not code_window.draws_chrome() then
     return nil
+  end
+  if not code_window.CONFIG().auto_filename then
+    local refuses_window = block.attributes['code-window-enabled'] == 'false'
+      or block.attributes['code-window-no-auto-filename'] == 'true'
+    if not language.auto_label(block) or refuses_window then
+      return nil
+    end
   end
   return language.CodeBlock(block)
 end

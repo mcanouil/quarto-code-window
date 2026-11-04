@@ -37,3 +37,14 @@ language pass, so it is framed like any other labelled block.
 ```{.foo code-window-auto-label="Shell"}
 x = 1
 ```
+
+A labelled block that turns the window off keeps the language its author wrote,
+because no window reads the label.
+
+```{.foo code-window-no-auto-filename="true" code-window-auto-label="Terminal"}
+x = 2
+```
+
+```{.foo code-window-enabled="false" code-window-auto-label="Terminal"}
+x = 3
+```
