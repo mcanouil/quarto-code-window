@@ -505,6 +505,39 @@ else
 fi
 
 # ============================================================================
+# The language is the first class Pandoc can highlight
+# ============================================================================
+
+render language-not-first html
+not_first_html="${work_dir}/language-not-first.html"
+named_bash="$(block_wrappers "${not_first_html}" | grep -c 'data-filename="bash"' || true)"
+if [ "${named_bash}" -eq 2 ] &&
+	! block_classes "${not_first_html}" | grep -q 'default bash'; then
+	report pass "language-not-first: a later language class names and highlights the block"
+else
+	report fail "language-not-first: a later language class names and highlights the block" \
+		"two wrappers with data-filename=\"bash\" and no default class before bash, got ${named_bash}"
+fi
+
+if block_wrappers "${not_first_html}" | grep -q 'data-filename="default"' &&
+	[ "$(block_classes "${not_first_html}" | grep -c 'numberLines')" -eq 2 ]; then
+	report pass "language-not-first: a numbered block with no language keeps its numbers"
+else
+	report fail "language-not-first: a numbered block with no language keeps its numbers" \
+		"a numberLines class on both numbered blocks, and data-filename=\"default\" on one"
+fi
+
+render language-not-first typst
+not_first_typ="${work_dir}/language-not-first.typ"
+if [ "$(grep -c '^#code-window(filename: "bash"' "${not_first_typ}" || true)" -eq 2 ] &&
+	[ "$(grep -c '^#code-window(filename: "default"' "${not_first_typ}" || true)" -eq 1 ]; then
+	report pass "language-not-first: the Typst windows are named after the language"
+else
+	report fail "language-not-first: the Typst windows are named after the language" \
+		"two windows named bash and one named default in language-not-first.typ"
+fi
+
+# ============================================================================
 
 printf '\n%s passed, %s failed\n' "${passed}" "${failed}"
 [ "${failed}" -eq 0 ]
