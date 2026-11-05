@@ -237,13 +237,13 @@ fi
 # language the author wrote. Without this, the two tests above would stay green
 # if the gate ever closed on a render it should let through.
 render language-relabelled html
-if block_classes "${work_dir}/language-relabelled.html" | grep -q 'default' &&
+if block_classes "${work_dir}/language-relabelled.html" | grep -q 'default foo' &&
 	block_classes "${work_dir}/language-relabelled.html" | grep -q 'cw-auto' &&
 	block_wrappers "${work_dir}/language-relabelled.html" | grep -q 'data-filename="foo"'; then
 	report pass "language-relabelled: the block is relabelled and framed"
 else
 	report fail "language-relabelled: the block is relabelled and framed" \
-		"a default class, a cw-auto class, and data-filename=\"foo\" on the block"
+		"a default class before the foo class, a cw-auto class, and data-filename=\"foo\" on the block"
 fi
 
 # ============================================================================
