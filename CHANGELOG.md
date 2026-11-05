@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Bug Fixes
+
+- fix: Centre the text of the highlighted-lines chip vertically in browsers that support `text-box`. (#86)
+
 ## 1.8.1 (2026-11-05)
 
 ### Bug Fixes
