@@ -13,18 +13,16 @@ local M = {}
 
 local known_language_cache = {}
 
---- Classes that turn on line numbers in Pandoc. They are not languages, and a
---- block that has only these classes has no language.
+--- Classes that turn on line numbers in Pandoc. They are not languages.
 local NUMBERING_CLASSES = { ['numberLines'] = true, ['number-lines'] = true, ['number'] = true }
 
 --- Check if a language is recognised by Pandoc's syntax highlighter.
 --- Renders a test CodeBlock to HTML and checks that Pandoc names a language
---- on the code element. The sourceCode class alone is not enough, because
---- Pandoc also writes it for a numbered block that it does not highlight.
+--- on the code element, not only the sourceCode class.
 --- @param lang string Language identifier
 --- @return boolean
 local function is_known_language(lang)
-  if not lang or lang == '' then
+  if not lang or lang == '' or NUMBERING_CLASSES[lang] then
     return false
   end
 
@@ -86,17 +84,11 @@ local function find_label(classes)
   return nil
 end
 
---- Put the language class first, or add "default" when the block has none.
---- The window is named after the first class, and Pandoc highlights with the
---- first class it knows, so the language class is moved to the front and both
---- read the same class. A block with no language is framed like a highlighted
---- code cell rather than left as a bare block: "default" is added in front of
---- its classes, so that the other classes, line numbers among them, still
---- apply. The block is labelled with its first class that is not a
---- line-numbering class, or with "default" when it has none. The label is
---- carried on the `code-window-auto-label` attribute (not `filename`, which is
---- reserved for author-set filenames) and consumed by the auto-filename
---- windowing path. The output of an executed cell is left as Quarto wrote it.
+--- Put the language class first, or add "default" in front when there is none.
+--- The window is named after the first class, so it then names the class that
+--- Pandoc highlights with. The label goes on `code-window-auto-label`, not on
+--- `filename`, which is for author-set names. The output of an executed cell
+--- is left as Quarto wrote it.
 --- @param block pandoc.CodeBlock
 --- @return pandoc.CodeBlock|nil
 function M.CodeBlock(block)
@@ -106,9 +98,7 @@ function M.CodeBlock(block)
 
   local index = find_language(block.classes)
   if index then
-    if index > 1 then
-      block.classes:insert(1, block.classes:remove(index))
-    end
+    block.classes:insert(1, block.classes:remove(index))
     return block
   end
 
