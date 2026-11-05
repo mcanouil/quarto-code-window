@@ -520,21 +520,22 @@ else
 fi
 
 if block_wrappers "${not_first_html}" | grep -q 'data-filename="default"' &&
-	[ "$(block_classes "${not_first_html}" | grep -c 'numberLines')" -eq 2 ]; then
+	block_wrappers "${not_first_html}" | grep -q 'data-filename="foo"' &&
+	[ "$(block_classes "${not_first_html}" | grep -c 'numberLines')" -eq 3 ]; then
 	report pass "language-not-first: a numbered block with no language keeps its numbers"
 else
 	report fail "language-not-first: a numbered block with no language keeps its numbers" \
-		"a numberLines class on both numbered blocks, and data-filename=\"default\" on one"
+		"a numberLines class on the three numbered blocks, data-filename=\"default\" on one and data-filename=\"foo\" on another"
 fi
 
 render language-not-first typst
 not_first_typ="${work_dir}/language-not-first.typ"
-if [ "$(count_typst_windows "${not_first_typ}")" -eq 3 ] &&
+if [ "$(count_typst_windows "${not_first_typ}")" -eq 4 ] &&
 	[ "$(grep -c '^#code-window(filename: "bash"' "${not_first_typ}" || true)" -eq 2 ]; then
 	report pass "language-not-first: the Typst windows are named after the language"
 else
 	report fail "language-not-first: the Typst windows are named after the language" \
-		"three windows, two of them named bash, in language-not-first.typ"
+		"four windows, two of them named bash, in language-not-first.typ"
 fi
 
 # ============================================================================

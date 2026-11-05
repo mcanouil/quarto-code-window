@@ -19,8 +19,13 @@ echo terminal
 echo numbered
 ```
 
-A block with line numbers and no language keeps its line numbers.
+A block with line numbers and no language keeps its line numbers. Its window is
+named after its first class that does not turn on line numbers.
 
 ```{.numberLines}
 x = 1
+```
+
+```{.numberLines .foo}
+x = 2
 ```

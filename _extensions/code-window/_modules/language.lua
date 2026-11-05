@@ -32,7 +32,7 @@ local function is_known_language(lang)
 
   local test_block = pandoc.CodeBlock('x', pandoc.Attr('', { lang }))
   local html = pandoc.write(pandoc.Pandoc({ test_block }), 'html')
-  local is_known = html:find('<code class="sourceCode ', 1, true) ~= nil
+  local is_known = html:find('<code%s+class="sourceCode%s+[^"]') ~= nil
   known_language_cache[lang] = is_known
   return is_known
 end
