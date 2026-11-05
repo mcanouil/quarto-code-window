@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Bug Fixes
+
+- fix: Centre the text of the highlighted-lines chip vertically in browsers that support `text-box`. The label no longer sits closer to the top border.
+
 ## 1.8.1 (2026-11-05)
 
 ### Bug Fixes
