@@ -512,7 +512,7 @@ render language-not-first html
 not_first_html="${work_dir}/language-not-first.html"
 named_bash="$(block_wrappers "${not_first_html}" | grep -c 'data-filename="bash"' || true)"
 if [ "${named_bash}" -eq 2 ] &&
-	! block_classes "${not_first_html}" | grep -q 'default bash'; then
+	! block_classes "${not_first_html}" | grep -q 'default.*bash'; then
 	report pass "language-not-first: a later language class names and highlights the block"
 else
 	report fail "language-not-first: a later language class names and highlights the block" \
@@ -521,11 +521,11 @@ fi
 
 if block_wrappers "${not_first_html}" | grep -q 'data-filename="default"' &&
 	block_wrappers "${not_first_html}" | grep -q 'data-filename="foo"' &&
-	[ "$(block_classes "${not_first_html}" | grep -c 'numberLines')" -eq 3 ]; then
+	[ "$(block_classes "${not_first_html}" | grep -c 'numberSource')" -eq 3 ]; then
 	report pass "language-not-first: a numbered block with no language keeps its numbers"
 else
 	report fail "language-not-first: a numbered block with no language keeps its numbers" \
-		"a numberLines class on the three numbered blocks, data-filename=\"default\" on one and data-filename=\"foo\" on another"
+		"a numberSource class, which Pandoc writes on a numbered block, on the three numbered blocks, data-filename=\"default\" on one and data-filename=\"foo\" on another"
 fi
 
 render language-not-first typst
