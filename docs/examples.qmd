@@ -46,6 +46,8 @@ print("hello")
 The title bar then reads `PYTHON`.
 A derived name is drawn smaller and in capitals, so a reader can tell it from a file that exists on disk.
 A block with no language at all is labelled `DEFAULT`, and a block whose language Pandoc cannot highlight keeps its own token as the label.
+The language is the first class that Pandoc can highlight, so `{.terminal .bash}` is labelled `BASH`, the same as `{.bash .terminal}`.
+Line-numbering classes such as `numberLines` are never the language.
 
 This section shows source only.
 The site sets `auto-filename: false`, so it frames no block that leaves `filename` out.

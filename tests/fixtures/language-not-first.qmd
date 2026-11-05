@@ -1,0 +1,31 @@
+---
+title: "A language class that is not the first class"
+filters:
+  - code-window
+format:
+  html: default
+  typst:
+    keep-typ: true
+---
+
+Pandoc highlights a block with the first class it knows as a language, which
+need not be the first class. The window is named after that same class.
+
+```{.terminal .bash}
+echo terminal
+```
+
+```{.numberLines .bash}
+echo numbered
+```
+
+A block with line numbers and no language keeps its line numbers. Its window is
+named after its first class that does not turn on line numbers.
+
+```{.numberLines}
+x = 1
+```
+
+```{.numberLines .foo}
+x = 2
+```

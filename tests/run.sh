@@ -237,13 +237,13 @@ fi
 # language the author wrote. Without this, the two tests above would stay green
 # if the gate ever closed on a render it should let through.
 render language-relabelled html
-if block_classes "${work_dir}/language-relabelled.html" | grep -q 'default' &&
+if block_classes "${work_dir}/language-relabelled.html" | grep -q 'default foo' &&
 	block_classes "${work_dir}/language-relabelled.html" | grep -q 'cw-auto' &&
 	block_wrappers "${work_dir}/language-relabelled.html" | grep -q 'data-filename="foo"'; then
 	report pass "language-relabelled: the block is relabelled and framed"
 else
 	report fail "language-relabelled: the block is relabelled and framed" \
-		"a default class, a cw-auto class, and data-filename=\"foo\" on the block"
+		"a default class before the foo class, a cw-auto class, and data-filename=\"foo\" on the block"
 fi
 
 # ============================================================================
@@ -502,6 +502,40 @@ if [ "${opted_out}" -eq 2 ]; then
 else
 	report fail "auto-label-forced: a labelled block that refuses the window keeps its language" \
 		"two blocks with a foo class in auto-label-forced.html, got ${opted_out}"
+fi
+
+# ============================================================================
+# The language is the first class Pandoc can highlight
+# ============================================================================
+
+render language-not-first html
+not_first_html="${work_dir}/language-not-first.html"
+named_bash="$(block_wrappers "${not_first_html}" | grep -c 'data-filename="bash"' || true)"
+if [ "${named_bash}" -eq 2 ] &&
+	! block_classes "${not_first_html}" | grep -q 'default.*bash'; then
+	report pass "language-not-first: a later language class names and highlights the block"
+else
+	report fail "language-not-first: a later language class names and highlights the block" \
+		"two wrappers with data-filename=\"bash\" and no default class before bash, got ${named_bash}"
+fi
+
+if block_wrappers "${not_first_html}" | grep -q 'data-filename="default"' &&
+	block_wrappers "${not_first_html}" | grep -q 'data-filename="foo"' &&
+	[ "$(block_classes "${not_first_html}" | grep -c 'numberSource')" -eq 3 ]; then
+	report pass "language-not-first: a numbered block with no language keeps its numbers"
+else
+	report fail "language-not-first: a numbered block with no language keeps its numbers" \
+		"a numberSource class, which Pandoc writes on a numbered block, on the three numbered blocks, data-filename=\"default\" on one and data-filename=\"foo\" on another"
+fi
+
+render language-not-first typst
+not_first_typ="${work_dir}/language-not-first.typ"
+if [ "$(count_typst_windows "${not_first_typ}")" -eq 4 ] &&
+	[ "$(grep -c '^#code-window(filename: "bash"' "${not_first_typ}" || true)" -eq 2 ]; then
+	report pass "language-not-first: the Typst windows are named after the language"
+else
+	report fail "language-not-first: the Typst windows are named after the language" \
+		"four windows, two of them named bash, in language-not-first.typ"
 fi
 
 # ============================================================================

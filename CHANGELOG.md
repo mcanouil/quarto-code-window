@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Bug Fixes
+
+- fix: Use the first class that Pandoc can highlight as the language of a block, so `{.terminal .bash}` is labelled and highlighted as `bash`. Line-numbering classes such as `numberLines` are no longer taken for a language. (#84)
+
 ## 1.8.0 (2026-11-04)
 
 ### New Features
