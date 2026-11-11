@@ -937,12 +937,10 @@ function Meta(meta)
   if CURRENT_FORMAT == 'html' and CONFIG.enabled then
     html_mod.ensure_html_dependency({
       name = EXTENSION_NAME,
-      version = '0.1.0',
       stylesheets = { 'style.css' },
     })
     html_mod.ensure_html_dependency({
       name = EXTENSION_NAME .. '-style-init',
-      version = '0.1.0',
       head = '<script>' .. make_style_js(CONFIG.style, CONFIG.collapse) .. '</script>',
     })
   end
