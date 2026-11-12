@@ -216,7 +216,7 @@ See [Executed cells](reference.qmd#executed-cells) for the option itself.
 ## Renaming the Typst function
 
 Under Typst the chrome is a call to a function the extension writes into the document.
-`wrapper` renames that function and the helper functions beside it:
+`wrapper` renames that function:
 
 ```{.yaml filename="_quarto.yml"}
 extensions:
@@ -224,47 +224,9 @@ extensions:
     wrapper: "my-window"
 ```
 
-Each block then emits `#my-window(...)` in place of `#code-window(...)`, and the annotation helpers become `my-window-annotation-item` and `my-window-circled-number`.
+The document then defines `#let my-window(...)` in place of `#let code-window(...)`, and the filename helper of Quarto calls `my-window`.
 Rename it when the document already defines a function called `code-window`.
 The option does nothing in HTML, which draws its chrome from the stylesheet and the script instead.
-
-## The Typst hot-fixes
-
-The two hot-fixes act on Typst output only.
-Each one is on by default.
-A boolean turns one off:
-
-```{.yaml filename="_quarto.yml"}
-extensions:
-  code-window:
-    hotfix:
-      code-annotations: true
-      skylighting: false
-```
-
-A map adds a version at which the hot-fix switches itself off:
-
-```{.yaml filename="_quarto.yml"}
-extensions:
-  code-window:
-    hotfix:
-      skylighting:
-        enabled: true
-        quarto-version: "1.11.0"
-```
-
-The extension compares that string with the running Quarto.
-At or above the named version the hot-fix stays out, whatever `enabled` says.
-An upgrade thus retires the hot-fix with no further edit.
-
-`code-annotations` and `skylighting` are linked.
-
-`code-annotations` and `skylighting` work together: the first resolves the annotations, and the second supplies the rule that draws the circled marker beside an annotated line.
-Turn `skylighting` off, and the numbered list stays under the block while every marker inside it goes, along with the block styling and the inline code backgrounds the same module supplies.
-
-Every hot-fix follows `enabled`: with the filter off, none of them acts, and the Typst document comes out as Quarto writes it.
-
-See [Hot-fixes](reference.qmd#hot-fixes) for what each one corrects.
 
 ## Source
 

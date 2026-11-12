@@ -13,7 +13,7 @@ If you're using version control, you will want to check in this directory.
 
 ## Documentation
 
-The full documentation lives at <https://m.canouil.dev/quarto-code-window/>: every option and per-block attribute, the three window styles, the folding, and the Typst hot-fixes.
+The full documentation lives at <https://m.canouil.dev/quarto-code-window/>: every option and per-block attribute, the three window styles, and the folding.
 
 [`example.qmd`](example.qmd) is a short, standalone starting point you can copy.
 

@@ -62,7 +62,9 @@ See the [Reference](reference.qmd) for every option, and the [Examples](examples
 HTML formats, and Typst.
 
 In HTML the chrome is assembled at page load by a script the extension injects, so the frame needs JavaScript.
-Under Typst the chrome is drawn by a wrapper function, and the extension carries hot-fixes for a few Quarto behaviours that Typst output still needs; the [Reference](reference.qmd#hot-fixes) lists them and when they switch themselves off.
+In Typst, a wrapper function draws the chrome around the code block that Quarto writes.
+Quarto draws the code annotations, and the window frames them.
+The [Reference](reference.qmd#how-the-chrome-is-applied) tells how.
 
 ## Links
 
