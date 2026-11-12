@@ -2,11 +2,11 @@
 
 ## Unreleased
 
-- refactor: Remove the Typst code-annotations and Skylighting hot-fixes and the `hotfix` option, as Quarto 1.12 draws code annotations and filenames in Typst itself.
-- feat: Draw the Typst window around Quarto's own filename helper, so the annotation circles, their links and their text alternatives come from Quarto.
-- feat: Show Quarto's filename bar on a Typst block with a `filename` that sets `code-window-enabled` to `false`. Before, such a block showed no filename at all.
-- refactor: The Typst wrapper function no longer takes `annotations`, `bg-colour` or `block-id`.
-- build: The extension now needs Quarto 1.12 or newer.
+- refactor: Remove the Typst code-annotations and Skylighting hot-fixes and the `hotfix` option, as Quarto 1.12 draws code annotations and filenames in Typst itself. (#91)
+- feat: Draw the Typst window around Quarto's own filename helper, so the annotation circles, their links and their text alternatives come from Quarto. (#91)
+- feat: Show Quarto's filename bar on a Typst block with a `filename` that sets `code-window-enabled` to `false`. Before, such a block showed no filename at all. (#91)
+- refactor: The Typst wrapper function no longer takes `annotations`, `bg-colour` or `block-id`. (#91)
+- build: The extension now needs Quarto 1.12 or newer. (#91)
 
 ## 1.8.3 (2026-11-12)
 
