@@ -1,0 +1,66 @@
+---
+title: "Annotations on blocks with a derived name"
+filters:
+  - code-window
+format:
+  typst:
+    keep-typ: true
+extensions:
+  code-window:
+    style: macos
+---
+
+The block below is named after its language.
+
+```{.python}
+x = 1 # <1>
+```
+
+1. A value.
+
+The block below names its own label.
+
+```{.bash code-window-auto-label="Terminal"}
+echo labelled
+```
+
+The first block below sets its own style, and the second block does not.
+
+```{.python code-window-style="windows"}
+styled = True
+```
+
+```{.python}
+plain = True
+```
+
+The block below highlights one line.
+
+```{.python code-line-numbers="2"}
+first = 1
+second = 2
+```
+
+::: {.callout-note}
+
+## A callout
+
+```{.python}
+a = 1 # <1>
+```
+
+1. A value in a callout.
+
+:::
+
+The div below has the shape an engine gives an executed cell.
+
+::: {.cell}
+
+```{.python .cell-code}
+b = 1 # <1>
+```
+
+:::
+
+1. A value in a cell.

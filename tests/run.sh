@@ -492,12 +492,12 @@ fi
 render auto-label-forced typst
 forced_typst="${work_dir}/auto-label-forced.typ"
 if [ "$(count_typst_windows "${forced_typst}")" -eq 3 ] &&
-	grep -q '^#code-window(filename: "Terminal", is-auto: true' "${forced_typst}" &&
-	grep -q '^#code-window(filename: "run.sh", is-auto: false' "${forced_typst}"; then
+	grep -q '^#quarto-code-filename("Terminal")\[' "${forced_typst}" &&
+	grep -q '^#quarto-code-filename("run.sh")\[' "${forced_typst}"; then
 	report pass "auto-label-forced: only the labelled block takes the label in Typst"
 else
 	report fail "auto-label-forced: only the labelled block takes the label in Typst" \
-		"three code-window calls, with one for Terminal with is-auto: true and one for run.sh"
+		"three windows, with one for Terminal and one for run.sh"
 fi
 
 # The language pass runs for a labelled block and keeps its label, or the
@@ -546,7 +546,7 @@ fi
 render language-not-first typst
 not_first_typ="${work_dir}/language-not-first.typ"
 if [ "$(count_typst_windows "${not_first_typ}")" -eq 4 ] &&
-	[ "$(grep -c '^#code-window(filename: "bash"' "${not_first_typ}" || true)" -eq 2 ]; then
+	[ "$(grep -c '^#quarto-code-filename("bash")\[' "${not_first_typ}" || true)" -eq 2 ]; then
 	report pass "language-not-first: the Typst windows are named after the language"
 else
 	report fail "language-not-first: the Typst windows are named after the language" \
@@ -608,6 +608,55 @@ if grep -q '#quarto-code-annotation(' "${work_dir}/annotations-idiomatic.typ"; t
 else
 	report fail "annotations-idiomatic: Quarto draws the circles on a native block" \
 		"a #quarto-code-annotation( call in annotations-idiomatic.typ"
+fi
+
+# ============================================================================
+# A block with a derived name goes through Quarto's filename node
+# ============================================================================
+
+# The filter builds Quarto's filename node for a block named after its
+# language or its label, so Quarto still pairs the block with its annotation
+# list, in a callout and in an executed cell as well.
+render annotations-derived typst
+derived_typ="${work_dir}/annotations-derived.typ"
+if grep -q '^#quarto-code-filename("python")\[' "${derived_typ}" &&
+	grep -q '^#quarto-code-filename("Terminal")\[' "${derived_typ}"; then
+	report pass "annotations-derived: a derived name reaches Quarto's filename helper"
+else
+	report fail "annotations-derived: a derived name reaches Quarto's filename helper" \
+		"#quarto-code-filename(\"python\")[ and #quarto-code-filename(\"Terminal\")[ calls"
+fi
+
+if [ "$(count_typst_windows "${derived_typ}")" -eq 7 ]; then
+	report pass "annotations-derived: every block is framed"
+else
+	report fail "annotations-derived: every block is framed" \
+		"seven framed blocks in annotations-derived.typ"
+fi
+
+if [ "$(grep -c '#Skylighting(cell-id:' "${derived_typ}" || true)" -eq 3 ]; then
+	report pass "annotations-derived: Quarto draws the circles, in a callout and a cell too"
+else
+	report fail "annotations-derived: Quarto draws the circles, in a callout and a cell too" \
+		"three #Skylighting(cell-id: calls in annotations-derived.typ"
+fi
+
+# A block with no style of its own takes the document style, not the style of
+# the block before it.
+if grep '^#_cw-window.update' "${derived_typ}" | grep -q 'is-auto: true, style: "windows"' &&
+	grep '^#_cw-window.update' "${derived_typ}" | grep -A1 'style: "windows"' |
+	tail -n 1 | grep -q 'style: "macos"'; then
+	report pass "annotations-derived: a style override stays on its own block"
+else
+	report fail "annotations-derived: a style override stays on its own block" \
+		"a windows state followed by a macos state"
+fi
+
+if grep -q 'lines-label: "2"' "${derived_typ}"; then
+	report pass "annotations-derived: the highlighted lines reach the window"
+else
+	report fail "annotations-derived: the highlighted lines reach the window" \
+		"lines-label: \"2\" in the window state"
 fi
 
 # ============================================================================

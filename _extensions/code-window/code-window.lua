@@ -949,6 +949,38 @@ local function decorated_window_state(div)
   })
 end
 
+--- Frame a code block that has no filename of its own. A block with a derived
+--- name is put in Quarto's filename node, which Quarto built for the blocks
+--- with a filename before this filter ran, and the window state goes before it.
+--- Every other block is returned as it is, its own attributes taken off.
+--- @param block pandoc.CodeBlock
+--- @return pandoc.Block[] Blocks to put in place of the code block
+local function frame_typst_codeblock(block)
+  if is_quarto_block(block) then
+    return { block }
+  end
+  -- Check this block's own attributes against the CodeBlock group of the
+  -- schema before anything below reads them.
+  local resolved, auto_label = resolve_and_take(block)
+  if is_unnamed_cell_output(block) then
+    return { block }
+  end
+  local filename, is_auto, block_style, lines_label =
+    resolve_window_params(block, resolved, auto_label)
+  if not is_auto or str.is_empty(filename) then
+    return { block }
+  end
+  return {
+    typst_window_state({
+      enabled = true,
+      is_auto = true,
+      style = block_style or CONFIG.style,
+      lines_label = lines_label,
+    }),
+    quarto.DecoratedCodeBlock({ filename = filename, code_block = block }),
+  }
+end
+
 --- Walk a list of blocks for Typst and set the window state before each block
 --- that Quarto draws through its filename helper. The state block goes before
 --- Quarto's node, at the same level, and nothing goes between a block and the
@@ -961,7 +993,14 @@ end
 local function frame_typst_blocks(blocks, in_layout)
   local result = pandoc.Blocks({})
   for _, blk in ipairs(blocks) do
-    if blk.t == 'Div' and is_decorated_codeblock(blk) then
+    if blk.t == 'CodeBlock' then
+      local framed = frame_typst_codeblock(blk)
+      if in_layout and #framed > 1 then
+        result:insert(pandoc.Div(framed))
+      else
+        result:extend(framed)
+      end
+    elseif blk.t == 'Div' and is_decorated_codeblock(blk) then
       local state = decorated_window_state(blk)
       if state and in_layout then
         result:insert(pandoc.Div({ state, blk }))
@@ -976,6 +1015,14 @@ local function frame_typst_blocks(blocks, in_layout)
         or blk.attributes['layout-nrow']
         or blk.attributes['layout']
       blk.content = frame_typst_blocks(blk.content, is_layout)
+      -- Quarto reads the code of an executed cell as the first block of the
+      -- cell, so the window state of that code goes before the cell instead.
+      local first = blk.content[1]
+      if blk.classes:includes('cell') and first
+          and first.t == 'RawBlock' and first.text:find('#_cw-window.update', 1, true) then
+        result:insert(first)
+        blk.content:remove(1)
+      end
       result:insert(blk)
     elseif blk.t == 'BlockQuote' then
       blk.content = frame_typst_blocks(blk.content)
