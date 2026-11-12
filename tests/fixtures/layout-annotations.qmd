@@ -1,0 +1,24 @@
+---
+title: "Annotations in a layout"
+filters:
+  - code-window
+format:
+  typst:
+    keep-typ: true
+---
+
+The layout below holds an annotated block and its list, then a second block.
+
+::: {layout-ncol="2"}
+
+```{.python}
+c = 1 # <1>
+```
+
+1. In the layout.
+
+```{.r}
+d <- 2
+```
+
+:::

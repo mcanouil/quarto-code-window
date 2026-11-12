@@ -743,6 +743,57 @@ else
 fi
 
 # ============================================================================
+# Layouts, notes, and a window function of the document's own
+# ============================================================================
+
+# The code of an executed cell with a layout stays in its window, and the
+# window is not left empty in a cell of the layout.
+render layout-cell typst
+layout_cell_typ="${work_dir}/layout-cell.typ"
+if [ "$(count_typst_windows "${layout_cell_typ}")" -eq 1 ] &&
+	! grep -A1 '^#quarto-code-filename("python")\[' "${layout_cell_typ}" | grep -qx '\]'; then
+	report pass "layout-cell: the code of the cell stays in its window"
+else
+	report fail "layout-cell: the code of the cell stays in its window" \
+		"one framed block, and no empty #quarto-code-filename(\"python\")[ ] call"
+fi
+
+# In a layout, Quarto still pairs an annotated block with its list.
+render layout-annotations typst
+if [ "$(grep -c '^#quarto-annotation-item("' "${work_dir}/layout-annotations.typ" || true)" -eq 1 ]; then
+	report pass "layout-annotations: Quarto pairs the block with its list"
+else
+	report fail "layout-annotations: Quarto pairs the block with its list" \
+		"one #quarto-annotation-item( call in layout-annotations.typ"
+fi
+
+# The filter does not visit notes, so a block in a note must not take the
+# window state of the block before it, here its line chip.
+render state-reset typst
+if command -v pdftotext >/dev/null 2>&1; then
+	pdftotext -layout "${work_dir}/state-reset.pdf" "${work_dir}/state-reset.txt"
+	if grep -Eq 'first\.py +2' "${work_dir}/state-reset.txt" &&
+		grep -q 'note\.py' "${work_dir}/state-reset.txt" &&
+		! grep -Eq 'note\.py +2' "${work_dir}/state-reset.txt"; then
+		report pass "state-reset: a block the filter does not visit takes no window state"
+	else
+		report fail "state-reset: a block the filter does not visit takes no window state" \
+			"a 2 chip beside first.py and none beside note.py"
+	fi
+fi
+
+# A document that defines the window function keeps its own, and still
+# compiles, which the render checks.
+render own-wrapper typst
+if [ "$(grep -c '^#let code-window(' "${work_dir}/own-wrapper.typ" || true)" -eq 1 ] &&
+	grep -q '^#let code-window(content, ..args) = content' "${work_dir}/own-wrapper.typ"; then
+	report pass "own-wrapper: the document keeps its own window function"
+else
+	report fail "own-wrapper: the document keeps its own window function" \
+		"one #let code-window( definition, the one the document wrote"
+fi
+
+# ============================================================================
 
 printf '\n%s passed, %s failed\n' "${passed}" "${failed}"
 [ "${failed}" -eq 0 ]

@@ -345,7 +345,9 @@ local TYPST_COLOUR_HELPERS = [==[
 --- filter keeps Quarto's own helper under another name, then replaces it with
 --- one that reads the window state the filter sets before each block. A block
 --- that refuses the window, or one the filter never visited, goes to Quarto's
---- helper. "code-window" is renamed with the wrapper option.
+--- helper. Each call clears the state it read, so a block the filter never
+--- visited does not take the state of the block before it. "code-window" is
+--- renamed with the wrapper option.
 local TYPST_FILENAME_HELPER = [==[
 #let _cw-window = state("cw-window", none)
 
@@ -353,6 +355,7 @@ local TYPST_FILENAME_HELPER = [==[
 
 #let quarto-code-filename(filename, body) = context {
   let s = _cw-window.get()
+  _cw-window.update(none)
   if s == none or not s.enabled {
     _cw-native-filename(filename, body)
   } else {
@@ -370,8 +373,10 @@ local TYPST_FILENAME_HELPER = [==[
 --- Build the complete Typst code-window function definition: the colour
 --- helpers, the window function, and the replacement for Quarto's filename
 --- helper, in that order.
+--- @param with_window boolean Whether to define the window function, which a
+--- document that defines its own does not need
 --- @return string Typst function definition(s)
-local function build_typst_function_def()
+local function build_typst_function_def(with_window)
   local fn_def = string.format([==[
 #let code-window(
   content,
@@ -503,6 +508,9 @@ local function build_typst_function_def()
 }
 ]==])
 
+  if not with_window then
+    fn_def = ''
+  end
   return TYPST_COLOUR_HELPERS .. fn_def .. TYPST_FILENAME_HELPER
 end
 
@@ -985,28 +993,36 @@ end
 --- @return pandoc.Blocks
 local function frame_typst_blocks(blocks, in_layout)
   local result = pandoc.Blocks({})
-  for _, blk in ipairs(blocks) do
-    if blk.t == 'CodeBlock' then
-      local framed = frame_typst_codeblock(blk)
-      if in_layout and #framed > 1 then
-        result:insert(pandoc.Div(framed))
-      else
-        result:extend(framed)
+  local i = 1
+  -- Insert the framed blocks of one code block. In a layout, they share one
+  -- Div with the annotation list after them, so the layout keeps one cell for
+  -- them and Quarto still pairs the block with its list.
+  local function insert_framed(framed)
+    if in_layout and #framed > 1 then
+      local next_blk = blocks[i + 1]
+      if next_blk and next_blk.t == 'OrderedList' then
+        table.insert(framed, next_blk)
+        i = i + 1
       end
+      result:insert(pandoc.Div(framed))
+    else
+      result:extend(framed)
+    end
+  end
+  while i <= #blocks do
+    local blk = blocks[i]
+    if blk.t == 'CodeBlock' then
+      insert_framed(frame_typst_codeblock(blk))
     elseif blk.t == 'Div' and is_decorated_codeblock(blk) then
       local state = decorated_window_state(blk)
-      if state and in_layout then
-        result:insert(pandoc.Div({ state, blk }))
-      else
-        if state then
-          result:insert(state)
-        end
-        result:insert(blk)
-      end
+      insert_framed(state and { state, blk } or { blk })
     elseif blk.t == 'Div' then
-      local is_layout = blk.attributes['layout-ncol']
+      -- The layout of an executed cell places its outputs. Its code is the
+      -- first block of the cell, and its window state goes before the cell.
+      local is_layout = not blk.classes:includes('cell') and (
+        blk.attributes['layout-ncol']
         or blk.attributes['layout-nrow']
-        or blk.attributes['layout']
+        or blk.attributes['layout'])
       blk.content = frame_typst_blocks(blk.content, is_layout)
       -- Quarto reads the code of an executed cell as the first block of the
       -- cell, so the window state of that code goes before the cell instead.
@@ -1035,6 +1051,7 @@ local function frame_typst_blocks(blocks, in_layout)
     else
       result:insert(blk)
     end
+    i = i + 1
   end
   return result
 end
@@ -1083,20 +1100,25 @@ function Pandoc(doc)
   -- Set the window state before every block Quarto draws with a filename.
   doc.blocks = frame_typst_blocks(doc.blocks)
 
-  -- Guard: check if the function definition is already present.
-  local fn_pattern = '#let ' .. CONFIG.typst_wrapper
-  for _, blk in ipairs(doc.blocks) do
+  -- A document that defines the window function keeps its own. The state and
+  -- the filename helper are still needed, as every framed block uses them,
+  -- and they go after that definition, because Typst only sees the names
+  -- defined before.
+  local fn_pattern = '#let ' .. CONFIG.typst_wrapper .. '('
+  local insert_at = 1
+  for idx, blk in ipairs(doc.blocks) do
     if blk.t == 'RawBlock' and blk.format == 'typst'
         and blk.text:find(fn_pattern, 1, true) then
-      return doc
+      insert_at = idx + 1
+      break
     end
   end
 
-  local fn_def = build_typst_function_def()
+  local fn_def = build_typst_function_def(insert_at == 1)
   if CONFIG.typst_wrapper ~= 'code-window' then
     fn_def = fn_def:gsub('code%-window%(', CONFIG.typst_wrapper .. '(')
   end
-  table.insert(doc.blocks, 1, pandoc.RawBlock('typst', fn_def))
+  table.insert(doc.blocks, insert_at, pandoc.RawBlock('typst', fn_def))
 
   return doc
 end

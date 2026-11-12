@@ -1,0 +1,24 @@
+---
+title: "The window state of a block the filter does not visit"
+filters:
+  - code-window
+format:
+  typst:
+    keep-typ: true
+---
+
+The first block highlights a line. The block in the note comes after it, and
+the filter does not visit notes, so the note block keeps Quarto's own bar.
+
+```{.python filename="first.py" code-line-numbers="2"}
+first = 1
+second = 2
+```
+
+Text with a note.[^1]
+
+[^1]: A note.
+
+    ```{.python filename="note.py"}
+    n = 1
+    ```

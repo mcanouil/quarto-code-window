@@ -1,0 +1,18 @@
+---
+title: "A document that defines its own window function"
+filters:
+  - code-window
+format:
+  typst:
+    keep-typ: true
+---
+
+The document defines the window function itself, so the filter keeps it.
+
+```{=typst}
+#let code-window(content, ..args) = content
+```
+
+```{.python filename="x.py"}
+x = 1
+```
