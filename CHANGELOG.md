@@ -3,7 +3,7 @@
 ## Unreleased
 
 - fix: The HTML dependency folder now uses the extension version, so browsers load the new files after an upgrade. (#88)
-- fix: Leave alone the code block that Quarto adds for a chapter's front matter in a book rendered to one file, so no empty `quarto-title-block` window shows at the start of the chapter.
+- fix: Leave alone the code block that Quarto adds for a chapter's front matter in a book rendered to one file, so no empty `quarto-title-block` window shows at the start of the chapter. (#89)
 
 ## 1.8.2 (2026-11-05)
 
