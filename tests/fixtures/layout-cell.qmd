@@ -1,0 +1,31 @@
+---
+title: "An executed cell with a layout"
+filters:
+  - code-window
+format:
+  typst:
+    keep-typ: true
+---
+
+The div below has the shape an engine gives an executed cell whose outputs
+sit side by side. The code stays in its window, above the outputs.
+
+::: {.cell layout-ncol="2"}
+
+```{.python .cell-code}
+b = 1
+```
+
+::: {.cell-output .cell-output-stdout}
+
+    out1
+
+:::
+
+::: {.cell-output .cell-output-stdout}
+
+    out2
+
+:::
+
+:::

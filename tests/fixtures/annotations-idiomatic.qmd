@@ -1,0 +1,19 @@
+---
+title: "Annotations with idiomatic highlighting"
+filters:
+  - code-window
+format:
+  typst:
+    syntax-highlighting: idiomatic
+    keep-typ: true
+---
+
+Quarto draws the annotations, and the window frames the block.
+
+```{.python filename="a.py"}
+x = 1 # <1>
+y = 2 # <2>
+```
+
+1. The first value.
+2. The second value.

@@ -1,0 +1,8 @@
+title: Fake
+author: Test
+version: 1.0.0
+contributes:
+  formats:
+    typst:
+      template-partials:
+        - definitions.typ

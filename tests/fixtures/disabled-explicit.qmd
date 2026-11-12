@@ -1,0 +1,21 @@
+---
+title: "A block with a filename that refuses the window"
+filters:
+  - code-window
+format:
+  typst:
+    keep-typ: true
+---
+
+The first block refuses the window, so Quarto draws its own filename bar.
+The second block gets the window.
+
+```{.python filename="off.py" code-window-enabled="false"}
+x = 1 # <1>
+```
+
+1. A value.
+
+```{.python filename="on.py"}
+y = 2
+```

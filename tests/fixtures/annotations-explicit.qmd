@@ -1,0 +1,18 @@
+---
+title: "Annotations on a block with a filename"
+filters:
+  - code-window
+format:
+  typst:
+    keep-typ: true
+---
+
+Quarto draws the annotations, and the window frames the block.
+
+```{.python filename="a.py"}
+x = 1 # <1>
+y = 2 # <2>
+```
+
+1. The first value.
+2. The second value.

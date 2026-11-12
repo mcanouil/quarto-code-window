@@ -1,7 +1,7 @@
 ---
 title: "Reference"
 subtitle: "Every option the code-window extension accepts."
-description: "The complete code-window configuration: the document options, the per-block attributes, the window styles, and the Typst hot-fixes."
+description: "The complete code-window configuration: the document options, the per-block attributes, and the window styles."
 ---
 
 ## Enabling the filter
@@ -32,7 +32,6 @@ extensions:
 | `collapse` | boolean or string | `false` | Wrap every block in a `<details>`. `open` renders it expanded, `closed` or `true` collapsed. HTML only. |
 | `lines-label` | boolean | `true` | Show a chip beside the filename with the highlighted-line spec. |
 | `wrapper` | string | `code-window` | The Typst function used to draw the chrome. |
-| `hotfix` | object | all on | The Typst hot-fixes below. |
 
 : Document and project options. {.striped .hover tbl-colwidths="[18,16,12,54]"}
 
@@ -45,7 +44,7 @@ extensions:
 
 | Attribute | Type | Description |
 | --- | --- | --- |
-| `code-window-enabled` | boolean | Whether this block gets chrome. Annotations still render when it does not. |
+| `code-window-enabled` | boolean | Whether this block gets chrome. Annotations still render when it does not. In Typst, a block with a `filename` then shows the filename bar of Quarto. |
 | `code-window-no-auto-filename` | boolean | Suppress the derived filename for this block alone. |
 | `code-window-auto-label` | string | Frame this block with this label, styled as a derived filename. Works when `auto-filename` is `false`. |
 | `code-window-style` | string | Override the style for this block: `macos`, `windows`, `default`. |
@@ -102,7 +101,14 @@ Output named that way is always framed, whatever this option says.
 In HTML the extension marks blocks and injects a stylesheet and a script.
 The script runs at page load and builds the title bar, the fold, and the line chip from those marks, so all three need JavaScript.
 
-In Typst the chrome is a call to the `wrapper` function, emitted into the document, and needs nothing at read time.
+In Typst, Quarto writes each block that has a filename as a call to its `quarto-code-filename` helper.
+The extension replaces this helper with one that calls the `wrapper` function.
+A block that gets its name from its language or from `code-window-auto-label` gets the same call, because the extension gives it the filename node of Quarto.
+Before each block, the extension sets the style and the line chip of the window in a Typst state.
+Quarto draws the code annotations, and the window frames them.
+Inside the window, the code block has no outline of its own, so the window border is the only one.
+The chrome needs nothing at read time.
+This needs Quarto 1.12 or newer.
 
 ### Theming variables
 
@@ -126,30 +132,6 @@ To change the title bar colour, set the variable in the theme:
   --code-window-title-bg: #e8eef5;
 }
 ```
-
-## Hot-fixes
-
-Typst output needs a few corrections that Quarto does not yet make itself.
-Each is on by default and each can be given a version at which it switches itself off, so an upgrade retires it without a code change.
-All of them follow `enabled`, so a document that turns the filter off takes no hot-fix at all.
-
-| Hot-fix | What it corrects |
-| --- | --- |
-| `code-annotations` | Code annotations in Typst output. |
-| `skylighting` | Block styling and inline code backgrounds in Typst output. |
-
-: The Typst hot-fixes. {.striped .hover tbl-colwidths="[26,74]"}
-
-```yaml
-extensions:
-  code-window:
-    hotfix:
-      skylighting:
-        enabled: true
-        quarto-version: "1.11.0"
-```
-
-They exist for [quarto-dev/quarto-cli#14170](https://github.com/quarto-dev/quarto-cli/issues/14170) and will be removed once Quarto covers the same ground.
 
 ## Interactions
 
