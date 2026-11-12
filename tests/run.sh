@@ -272,13 +272,13 @@ else
 fi
 
 # ============================================================================
-# The Typst hot-fix stands down with the filter
+# The Typst passes stand down with the filter
 # ============================================================================
 
-# The hot-fix contributes two passes, and both write Typst that only the
+# The framing pass and the inline-code pass both write Typst that only the
 # filter's own preamble declares. That preamble is not written with the filter
-# off, so both passes have to stand down there. The block pass is caught by the
-# "_cw-" prefix the colour helpers and the annotation state share. The inline
+# off, so both passes have to stand down there. The framing pass is caught by
+# the "_cw-" prefix the colour helpers and the window state share. The inline
 # pass takes a different shape where the theme gives a background colour, and
 # names no helper at all, so the box itself is the thing to look for.
 for fixture in filter-disabled filter-disabled-no-language; do
@@ -295,10 +295,10 @@ for fixture in filter-disabled filter-disabled-no-language; do
 	fi
 
 	if grep -q '_cw-' "${work_dir}/${fixture}.typ"; then
-		report fail "${fixture}: the block pass stands down with the filter" \
+		report fail "${fixture}: the framing pass stands down with the filter" \
 			"no _cw- helper call in ${fixture}.typ"
 	else
-		report pass "${fixture}: the block pass stands down with the filter"
+		report pass "${fixture}: the framing pass stands down with the filter"
 	fi
 
 	if grep -q 'box(fill: rgb(' "${work_dir}/${fixture}.typ"; then
@@ -762,6 +762,19 @@ if [ "$(count_typst_windows "${layout_cell_typ}")" -eq 1 ] &&
 else
 	report fail "layout-cell: the code of the cell stays in its window" \
 		"one framed block, and no empty #quarto-code-filename(\"python\")[ ] call"
+fi
+
+# In a layout of executed cells, each cell keeps one column of the layout, so
+# the two windows share a line of the page.
+if command -v pdftotext >/dev/null 2>&1; then
+	render layout-cells typst
+	pdftotext -layout "${work_dir}/layout-cells.pdf" "${work_dir}/layout-cells.txt"
+	if grep -Eq 'PYTHON.*BASH' "${work_dir}/layout-cells.txt"; then
+		report pass "layout-cells: each executed cell takes one column"
+	else
+		report fail "layout-cells: each executed cell takes one column" \
+			"the PYTHON and BASH title bars on the same line of the page"
+	fi
 fi
 
 # In a layout, Quarto still pairs an annotated block with its list.

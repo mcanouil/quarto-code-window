@@ -6,6 +6,7 @@
 - feat: Draw the Typst window around Quarto's own filename helper, so the annotation circles, their links and their text alternatives come from Quarto.
 - feat: Show Quarto's filename bar on a Typst block with a `filename` that sets `code-window-enabled` to `false`. Before, such a block showed no filename at all.
 - refactor: The Typst wrapper function no longer takes `annotations`, `bg-colour` or `block-id`.
+- build: The extension now needs Quarto 1.12 or newer.
 
 ## 1.8.3 (2026-11-12)
 

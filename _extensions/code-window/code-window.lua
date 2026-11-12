@@ -1026,19 +1026,25 @@ local function frame_typst_blocks(blocks, in_layout)
       -- Quarto reads the code of an executed cell as the first block of the
       -- cell, so the window state of that code goes before the cell. The
       -- layout of a cell places its outputs, so the cell is not a layout here.
+      -- In a layout, the state and the cell share one Div, so the cell keeps
+      -- one cell of the layout.
       local first_state, first_node = frame_typst_code(blk.content[1])
       if first_node then
         local rest = blk.content:clone()
         rest:remove(1)
         blk.content = frame_typst_blocks(rest)
         blk.content:insert(1, first_node)
-        if first_state then
-          result:insert(first_state)
-        end
       else
         blk.content = frame_typst_blocks(blk.content)
       end
-      result:insert(blk)
+      if first_state and in_layout then
+        result:insert(pandoc.Div({ first_state, blk }))
+      else
+        if first_state then
+          result:insert(first_state)
+        end
+        result:insert(blk)
+      end
     elseif blk.t == 'Div' then
       local is_layout = blk.attributes['layout-ncol']
         or blk.attributes['layout-nrow']
