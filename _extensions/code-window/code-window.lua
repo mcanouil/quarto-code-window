@@ -489,11 +489,11 @@ local function build_typst_function_def()
       // so set block() only removes the spacing around it. A wider rule would
       // also reach the blocks inside Quarto's annotation circles.
       // show raw overrides the document-level raw block styling (fill, radius).
+      // It sets no width, which would also reach the blocks in the circles.
       {
         set block(above: 0pt, below: 0pt)
         show raw.where(block: true): set block(
           fill: none,
-          width: 100%%,
           radius: 0pt,
           stroke: none,
           above: 0pt,

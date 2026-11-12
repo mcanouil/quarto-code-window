@@ -624,6 +624,17 @@ else
 		"a #quarto-code-annotation( call in annotations-idiomatic.typ"
 fi
 
+if command -v pdftotext >/dev/null 2>&1; then
+	pdftotext -layout "${work_dir}/annotations-idiomatic.pdf" "${work_dir}/annotations-idiomatic.txt"
+	if grep -Eq 'x = 1 +1$' "${work_dir}/annotations-idiomatic.txt" &&
+		grep -Eq 'y = 2 +2$' "${work_dir}/annotations-idiomatic.txt"; then
+		report pass "annotations-idiomatic: each circle sits on its line of code"
+	else
+		report fail "annotations-idiomatic: each circle sits on its line of code" \
+			"x = 1 and y = 2 each followed by their circle number on the same line"
+	fi
+fi
+
 # ============================================================================
 # A block with a derived name goes through Quarto's filename node
 # ============================================================================
