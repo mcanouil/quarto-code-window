@@ -107,23 +107,22 @@ end
 
 -- Meta runs first because the cell-output pass needs the configuration, and
 -- that pass runs before the language pass so a marked block is never relabelled.
+-- The inline-code box uses the colour helpers that code_window.Pandoc
+-- declares, so it runs only where that pass draws chrome.
 local filters = {
   { Meta = code_window.Meta },
   { Pandoc = mark_cell_output },
   { CodeBlock = normalise_language },
   { Pandoc = code_window.Pandoc },
   { CodeBlock = code_window.CodeBlock },
+  {
+    Pandoc = function(doc)
+      if not code_window.draws_chrome() then
+        return nil
+      end
+      return inline_code.Pandoc(doc)
+    end,
+  },
 }
-
--- The inline-code box uses the colour helpers that code_window.Pandoc
--- declares, so it runs only where that pass draws chrome.
-table.insert(filters, {
-  Pandoc = function(doc)
-    if not code_window.draws_chrome() then
-      return nil
-    end
-    return inline_code.Pandoc(doc)
-  end,
-})
 
 return filters

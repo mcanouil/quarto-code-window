@@ -347,9 +347,11 @@ local TYPST_COLOUR_HELPERS = [==[
 --- helper. Each call clears the state it read, so a block the filter never
 --- visited does not take the state of the block before it. "code-window" is
 --- renamed with the wrapper option.
-local TYPST_FILENAME_HELPER = [==[
+local TYPST_WINDOW_STATE = [==[
 #let _cw-window = state("cw-window", none)
+]==]
 
+local TYPST_FILENAME_HELPER = [==[
 #let _cw-native-filename = quarto-code-filename
 
 #let quarto-code-filename(filename, body) = context {
@@ -371,15 +373,18 @@ local TYPST_FILENAME_HELPER = [==[
 }
 ]==]
 
---- Build the complete Typst code-window function definition: the colour
---- helpers, the window function, and the replacement for Quarto's filename
---- helper, in that order.
+--- Build the Typst definitions in two parts. The preamble holds the colour
+--- helpers and the window state, which inline code and the state blocks use
+--- anywhere in the document. The window part holds the window function and
+--- the replacement for Quarto's filename helper, which calls it.
 --- @param with_window boolean Whether to define the window function, which a
 --- document that defines its own does not need
---- @return string Typst function definition(s)
+--- @return string preamble Definitions for the top of the document
+--- @return string window Definitions that follow the window function
 local function build_typst_function_def(with_window)
+  local preamble = TYPST_COLOUR_HELPERS .. TYPST_WINDOW_STATE
   if not with_window then
-    return TYPST_COLOUR_HELPERS .. TYPST_FILENAME_HELPER
+    return preamble, TYPST_FILENAME_HELPER
   end
   local fn_def = string.format([==[
 #let code-window(
@@ -512,7 +517,7 @@ local function build_typst_function_def(with_window)
 }
 ]==])
 
-  return TYPST_COLOUR_HELPERS .. fn_def .. TYPST_FILENAME_HELPER
+  return preamble, fn_def .. TYPST_FILENAME_HELPER
 end
 
 -- ============================================================================
@@ -991,8 +996,9 @@ local function frame_typst_code(blk)
   return nil, nil
 end
 
---- Whether a code block carries an annotation marker: a line that ends with
---- "<n>", which Quarto reads as a code annotation whatever the comment syntax.
+--- Whether a code block carries an annotation marker: a line that ends with a
+--- space and "<n>", the shape Quarto reads after a comment opener in any
+--- language. Code such as "std::vector<1>" has no space before the marker.
 --- @param block pandoc.Block|nil A code block, or Quarto's filename node
 --- @return boolean
 local function has_annotation_marker(block)
@@ -1001,7 +1007,7 @@ local function has_annotation_marker(block)
     return false
   end
   for line in (code.text .. '\n'):gmatch('([^\n]*)\n') do
-    if line:match('<%d+>%s*$') then
+    if line:match('%s<%d+>%s*$') then
       return true
     end
   end
@@ -1136,10 +1142,10 @@ function Pandoc(doc)
   -- Set the window state before every block Quarto draws with a filename.
   doc.blocks = frame_typst_blocks(doc.blocks)
 
-  -- A document that defines the window function keeps its own. The state and
-  -- the filename helper are still needed, as every framed block uses them,
-  -- and they go after that definition, because Typst only sees the names
-  -- defined before.
+  -- A document that defines the window function keeps its own. The filename
+  -- helper calls it, so the helper goes after that definition, because Typst
+  -- only sees the names defined before. The colour helpers and the state go at
+  -- the top, as inline code and every framed block use them.
   local fn_pattern = '#let ' .. CONFIG.typst_wrapper .. '('
   local insert_at = 1
   for idx, blk in ipairs(doc.blocks) do
@@ -1150,11 +1156,12 @@ function Pandoc(doc)
     end
   end
 
-  local fn_def = build_typst_function_def(insert_at == 1)
+  local preamble, window_def = build_typst_function_def(insert_at == 1)
   if CONFIG.typst_wrapper ~= 'code-window' then
-    fn_def = fn_def:gsub('code%-window%(', CONFIG.typst_wrapper .. '(')
+    window_def = window_def:gsub('code%-window%(', CONFIG.typst_wrapper .. '(')
   end
-  table.insert(doc.blocks, insert_at, pandoc.RawBlock('typst', fn_def))
+  table.insert(doc.blocks, insert_at, pandoc.RawBlock('typst', window_def))
+  table.insert(doc.blocks, 1, pandoc.RawBlock('typst', preamble))
 
   return doc
 end

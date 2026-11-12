@@ -19,3 +19,16 @@ a = 1
 1. A list item.
 
 :::
+
+The layout below holds a block whose code ends with `<1>` outside a comment.
+Its list takes the second column too.
+
+::: {layout-ncol="2"}
+
+```{.cpp}
+std::vector<1>
+```
+
+1. Another item.
+
+:::

@@ -783,11 +783,12 @@ fi
 render layout-list typst
 if command -v pdftotext >/dev/null 2>&1; then
 	pdftotext -layout "${work_dir}/layout-list.pdf" "${work_dir}/layout-list.txt"
-	if grep -Eq '^ {20,}1\. A list item' "${work_dir}/layout-list.txt"; then
+	if grep -Eq '^ {20,}1\. A list item' "${work_dir}/layout-list.txt" &&
+		grep -Eq '^ {20,}1\. Another item' "${work_dir}/layout-list.txt"; then
 		report pass "layout-list: a list with no annotations keeps its own column"
 	else
 		report fail "layout-list: a list with no annotations keeps its own column" \
-			"the list item in the second column of the page"
+			"both list items in the second column of the page"
 	fi
 fi
 

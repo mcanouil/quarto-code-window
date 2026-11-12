@@ -8,6 +8,11 @@ format:
 ---
 
 The document defines the window function itself, so the filter keeps it.
+The first block and the `inline code` come before that definition.
+
+```{.python filename="before.py"}
+w = 0
+```
 
 ```{=typst}
 #let code-window(content, ..args) = content
