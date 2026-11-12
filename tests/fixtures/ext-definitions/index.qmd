@@ -1,0 +1,22 @@
+---
+title: "A format that replaces Quarto's definitions"
+filters:
+  - code-window
+format:
+  fake-typst:
+    keep-typ: true
+---
+
+The format below replaces the definitions partial with a copy that has no
+filename helper. The first block gets the window, and the second block
+refuses it.
+
+```{.python filename="a.py"}
+x = 1 # <1>
+```
+
+1. A value.
+
+```{.python filename="off.py" code-window-enabled="false"}
+y = 2
+```

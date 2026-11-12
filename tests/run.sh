@@ -714,6 +714,25 @@ if command -v pdftotext >/dev/null 2>&1; then
 fi
 
 # ============================================================================
+# A format that replaces Quarto's definitions still compiles
+# ============================================================================
+
+# Quarto adds its own helpers to a format that lacks them, unless the
+# document defines one of the same name. The filter defines the filename
+# helper, so the document has to compile without Quarto's copy of it.
+ext_dir="${work_dir}/ext-definitions"
+cp -R "${tests_dir}/fixtures/ext-definitions" "${ext_dir}"
+cp -R "${work_dir}/_extensions/code-window" "${ext_dir}/_extensions/code-window"
+render ext-definitions fake-typst
+if grep -q '#Skylighting(cell-id:' "${ext_dir}/index.typ" &&
+	[ "$(count_typst_windows "${ext_dir}/index.typ")" -eq 1 ]; then
+	report pass "ext-definitions: the document compiles with the window and the circles"
+else
+	report fail "ext-definitions: the document compiles with the window and the circles" \
+		"one framed block and a #Skylighting(cell-id: call in index.typ"
+fi
+
+# ============================================================================
 
 printf '\n%s passed, %s failed\n' "${passed}" "${failed}"
 [ "${failed}" -eq 0 ]
