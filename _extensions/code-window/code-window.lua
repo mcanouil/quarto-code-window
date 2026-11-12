@@ -13,7 +13,6 @@
 
 local EXTENSION_NAME = 'code-window'
 local str = require(quarto.utils.resolve_path('_vendor/quarto-lua-modules/string.lua'):gsub('%.lua$', ''))
-local log = require(quarto.utils.resolve_path('_vendor/quarto-lua-modules/logging.lua'):gsub('%.lua$', ''))
 local meta_mod = require(quarto.utils.resolve_path('_vendor/quarto-lua-modules/metadata.lua'):gsub('%.lua$', ''))
 local pdoc = require(quarto.utils.resolve_path('_vendor/quarto-lua-modules/pandoc-helpers.lua'):gsub('%.lua$', ''))
 local html_mod = require(quarto.utils.resolve_path('_vendor/quarto-lua-modules/html.lua'):gsub('%.lua$', ''))
@@ -355,7 +354,9 @@ local TYPST_FILENAME_HELPER = [==[
 
 #let quarto-code-filename(filename, body) = context {
   let s = _cw-window.get()
-  _cw-window.update(none)
+  if s != none {
+    _cw-window.update(none)
+  }
   if s == none or not s.enabled {
     _cw-native-filename(filename, body)
   } else {
@@ -377,6 +378,9 @@ local TYPST_FILENAME_HELPER = [==[
 --- document that defines its own does not need
 --- @return string Typst function definition(s)
 local function build_typst_function_def(with_window)
+  if not with_window then
+    return TYPST_COLOUR_HELPERS .. TYPST_FILENAME_HELPER
+  end
   local fn_def = string.format([==[
 #let code-window(
   content,
@@ -508,22 +512,12 @@ local function build_typst_function_def(with_window)
 }
 ]==])
 
-  if not with_window then
-    fn_def = ''
-  end
   return TYPST_COLOUR_HELPERS .. fn_def .. TYPST_FILENAME_HELPER
 end
 
 -- ============================================================================
 -- TYPST PROCESSING
 -- ============================================================================
-
---- Escape a string for embedding in a Typst double-quoted string literal.
---- @param s string
---- @return string
-local function typst_escape_string(s)
-  return (s:gsub('\\', '\\\\'):gsub('"', '\\"'))
-end
 
 --- @class WindowState
 --- @field enabled boolean Whether the block gets the window
@@ -539,7 +533,7 @@ end
 local function typst_window_state(params)
   local lines_label = 'none'
   if params.lines_label and params.lines_label ~= '' then
-    lines_label = '"' .. typst_escape_string(params.lines_label) .. '"'
+    lines_label = '"' .. str.escape_typst_string(params.lines_label) .. '"'
   end
   return pandoc.RawBlock('typst', string.format(
     '#_cw-window.update((enabled: %s, is-auto: %s, style: "%s", lines-label: %s))',
@@ -953,33 +947,48 @@ end
 --- with a filename before this filter ran, and the window state goes before it.
 --- Every other block is returned as it is, its own attributes taken off.
 --- @param block pandoc.CodeBlock
---- @return pandoc.Block[] Blocks to put in place of the code block
+--- @return pandoc.RawBlock|nil state Window state to put before the node
+--- @return pandoc.Block node Block to put in place of the code block
 local function frame_typst_codeblock(block)
   if is_quarto_block(block) then
-    return { block }
+    return nil, block
   end
   -- Check this block's own attributes against the CodeBlock group of the
   -- schema before anything below reads them.
   local resolved, auto_label = resolve_and_take(block)
   if is_unnamed_cell_output(block) then
-    return { block }
+    return nil, block
   end
   local filename, is_auto, block_style, lines_label =
     resolve_window_params(block, resolved, auto_label)
   if not is_auto or str.is_empty(filename) then
-    return { block }
+    return nil, block
   end
-  return {
-    typst_window_state({
-      enabled = true,
-      is_auto = true,
-      style = block_style or CONFIG.style,
-      lines_label = lines_label,
-    }),
-    -- The constructor returns more than the node, and a call at the end of a
-    -- table takes every value it returns. The parentheses keep the node only.
-    (quarto.DecoratedCodeBlock({ filename = filename, code_block = block })),
-  }
+  local state = typst_window_state({
+    enabled = true,
+    is_auto = true,
+    style = block_style or CONFIG.style,
+    lines_label = lines_label,
+  })
+  -- The constructor returns more than the node. The parentheses keep the node.
+  return state, (quarto.DecoratedCodeBlock({ filename = filename, code_block = block }))
+end
+
+--- Frame one block when it is a code block, or Quarto's filename node.
+--- @param blk pandoc.Block|nil
+--- @return pandoc.RawBlock|nil state Window state to put before the node
+--- @return pandoc.Block|nil node Block to put in place, or nil when blk holds no code
+local function frame_typst_code(blk)
+  if not blk then
+    return nil, nil
+  end
+  if blk.t == 'CodeBlock' then
+    return frame_typst_codeblock(blk)
+  end
+  if blk.t == 'Div' and is_decorated_codeblock(blk) then
+    return decorated_window_state(blk), blk
+  end
+  return nil, nil
 end
 
 --- Walk a list of blocks for Typst and set the window state before each block
@@ -994,44 +1003,47 @@ end
 local function frame_typst_blocks(blocks, in_layout)
   local result = pandoc.Blocks({})
   local i = 1
-  -- Insert the framed blocks of one code block. In a layout, they share one
-  -- Div with the annotation list after them, so the layout keeps one cell for
-  -- them and Quarto still pairs the block with its list.
-  local function insert_framed(framed)
-    if in_layout and #framed > 1 then
-      local next_blk = blocks[i + 1]
-      if next_blk and next_blk.t == 'OrderedList' then
-        table.insert(framed, next_blk)
-        i = i + 1
-      end
-      result:insert(pandoc.Div(framed))
-    else
-      result:extend(framed)
-    end
-  end
   while i <= #blocks do
     local blk = blocks[i]
-    if blk.t == 'CodeBlock' then
-      insert_framed(frame_typst_codeblock(blk))
-    elseif blk.t == 'Div' and is_decorated_codeblock(blk) then
-      local state = decorated_window_state(blk)
-      insert_framed(state and { state, blk } or { blk })
-    elseif blk.t == 'Div' then
-      -- The layout of an executed cell places its outputs. Its code is the
-      -- first block of the cell, and its window state goes before the cell.
-      local is_layout = not blk.classes:includes('cell') and (
-        blk.attributes['layout-ncol']
-        or blk.attributes['layout-nrow']
-        or blk.attributes['layout'])
-      blk.content = frame_typst_blocks(blk.content, is_layout)
-      -- Quarto reads the code of an executed cell as the first block of the
-      -- cell, so the window state of that code goes before the cell instead.
-      local first = blk.content[1]
-      if blk.classes:includes('cell') and first
-          and first.t == 'RawBlock' and first.text:find('#_cw-window.update', 1, true) then
-        result:insert(first)
-        blk.content:remove(1)
+    local state, node = frame_typst_code(blk)
+    if node and state and in_layout then
+      -- In a layout, the state, the node and the annotation list after them
+      -- share one Div, so the layout keeps one cell for them and Quarto still
+      -- pairs the block with its list.
+      local cell = { state, node }
+      local next_blk = blocks[i + 1]
+      if next_blk and next_blk.t == 'OrderedList' then
+        table.insert(cell, next_blk)
+        i = i + 1
       end
+      result:insert(pandoc.Div(cell))
+    elseif node then
+      if state then
+        result:insert(state)
+      end
+      result:insert(node)
+    elseif blk.t == 'Div' and blk.classes:includes('cell') then
+      -- Quarto reads the code of an executed cell as the first block of the
+      -- cell, so the window state of that code goes before the cell. The
+      -- layout of a cell places its outputs, so the cell is not a layout here.
+      local first_state, first_node = frame_typst_code(blk.content[1])
+      if first_node then
+        local rest = blk.content:clone()
+        rest:remove(1)
+        blk.content = frame_typst_blocks(rest)
+        blk.content:insert(1, first_node)
+        if first_state then
+          result:insert(first_state)
+        end
+      else
+        blk.content = frame_typst_blocks(blk.content)
+      end
+      result:insert(blk)
+    elseif blk.t == 'Div' then
+      local is_layout = blk.attributes['layout-ncol']
+        or blk.attributes['layout-nrow']
+        or blk.attributes['layout']
+      blk.content = frame_typst_blocks(blk.content, is_layout)
       result:insert(blk)
     elseif blk.t == 'BlockQuote' then
       blk.content = frame_typst_blocks(blk.content)

@@ -61,6 +61,16 @@ count_typst_windows() {
 	grep -c '^#_cw-window.update((enabled: true' "$1" || true
 }
 
+# Succeed when the page text of a rendered fixture ends the lines "x = 1" and
+# "y = 2" with the numbers of their annotation circles, which is where Quarto
+# draws them. Needs pdftotext from poppler.
+# $1 fixture base name
+circles_on_lines() {
+	pdftotext -layout "${work_dir}/$1.pdf" "${work_dir}/$1.txt"
+	grep -Eq 'x = 1 +1$' "${work_dir}/$1.txt" &&
+		grep -Eq 'y = 2 +2$' "${work_dir}/$1.txt"
+}
+
 # Succeed when the first line that matches one pattern comes before the first
 # line that matches another.
 # $1 rendered file. $2 earlier pattern. $3 later pattern.
@@ -604,9 +614,7 @@ fi
 # and wraps below its line. In the page text, the number of the circle then
 # ends the line of code it annotates.
 if command -v pdftotext >/dev/null 2>&1; then
-	pdftotext -layout "${work_dir}/annotations-explicit.pdf" "${work_dir}/annotations-explicit.txt"
-	if grep -Eq 'x = 1 +1$' "${work_dir}/annotations-explicit.txt" &&
-		grep -Eq 'y = 2 +2$' "${work_dir}/annotations-explicit.txt"; then
+	if circles_on_lines annotations-explicit; then
 		report pass "annotations-explicit: each circle sits on its line of code"
 	else
 		report fail "annotations-explicit: each circle sits on its line of code" \
@@ -635,9 +643,7 @@ else
 fi
 
 if command -v pdftotext >/dev/null 2>&1; then
-	pdftotext -layout "${work_dir}/annotations-idiomatic.pdf" "${work_dir}/annotations-idiomatic.txt"
-	if grep -Eq 'x = 1 +1$' "${work_dir}/annotations-idiomatic.txt" &&
-		grep -Eq 'y = 2 +2$' "${work_dir}/annotations-idiomatic.txt"; then
+	if circles_on_lines annotations-idiomatic; then
 		report pass "annotations-idiomatic: each circle sits on its line of code"
 	else
 		report fail "annotations-idiomatic: each circle sits on its line of code" \
@@ -769,8 +775,8 @@ fi
 
 # The filter does not visit notes, so a block in a note must not take the
 # window state of the block before it, here its line chip.
-render state-reset typst
 if command -v pdftotext >/dev/null 2>&1; then
+	render state-reset typst
 	pdftotext -layout "${work_dir}/state-reset.pdf" "${work_dir}/state-reset.txt"
 	if grep -Eq 'first\.py +2' "${work_dir}/state-reset.txt" &&
 		grep -q 'note\.py' "${work_dir}/state-reset.txt" &&

@@ -117,17 +117,13 @@ local filters = {
 
 -- The inline-code box uses the colour helpers that code_window.Pandoc
 -- declares, so it runs only where that pass draws chrome.
-for _, subfilter in ipairs(inline_code.filters) do
-  local wrapped = {}
-  for element_type, handler in pairs(subfilter) do
-    wrapped[element_type] = function(...)
-      if not code_window.draws_chrome() then
-        return nil
-      end
-      return handler(...)
+table.insert(filters, {
+  Pandoc = function(doc)
+    if not code_window.draws_chrome() then
+      return nil
     end
-  end
-  table.insert(filters, wrapped)
-end
+    return inline_code.Pandoc(doc)
+  end,
+})
 
 return filters

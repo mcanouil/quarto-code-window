@@ -195,9 +195,7 @@ print("Default style window")
 ## Code Annotations
 
 ::: {.callout-note}
-Typst code-annotations support and `filename` attribute handling are temporary hot-fixes.
-They will be removed once Quarto natively supports these features (see [quarto-dev/quarto-cli#14170](https://github.com/quarto-dev/quarto-cli/pull/14170)).
-The extension will then focus on **auto-filename** and **code-window-style** features.
+In Typst, Quarto 1.12 draws the code annotations and the window frames them (see [quarto-dev/quarto-cli#14170](https://github.com/quarto-dev/quarto-cli/pull/14170)).
 :::
 
 Code annotations work standalone and together with code-window styling.
@@ -272,21 +270,6 @@ extensions:
     auto-filename: true
     style: "macos"
     wrapper: "code-window"
-    hotfix:
-      code-annotations: true
-      skylighting: true
-```
-
-Each hotfix accepts either a boolean or a map with `enabled` and `quarto-version` keys for per-hotfix version thresholds:
-
-```yaml
-extensions:
-  code-window:
-    hotfix:
-      code-annotations:
-        quarto-version: "1.11.0"
-      skylighting:
-        enabled: false
 ```
 
 Override per block with the `code-window-style` attribute:

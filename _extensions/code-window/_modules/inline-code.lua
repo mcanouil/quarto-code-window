@@ -53,7 +53,5 @@ local function process_inline_code(doc)
 end
 
 return {
-  filters = {
-    { Pandoc = process_inline_code },
-  },
+  Pandoc = process_inline_code,
 }
