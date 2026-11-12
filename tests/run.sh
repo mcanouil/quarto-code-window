@@ -660,6 +660,34 @@ else
 fi
 
 # ============================================================================
+# A block that refuses the window keeps Quarto's filename bar
+# ============================================================================
+
+# The state tells the helper to hand the block to Quarto's own helper, which
+# still shows the filename and the circles.
+render disabled-explicit typst
+disabled_typ="${work_dir}/disabled-explicit.typ"
+if grep -q '^#_cw-window.update((enabled: false' "${disabled_typ}" &&
+	grep -q '#Skylighting(cell-id:' "${disabled_typ}" &&
+	[ "$(count_typst_windows "${disabled_typ}")" -eq 1 ]; then
+	report pass "disabled-explicit: the block goes to Quarto's filename helper"
+else
+	report fail "disabled-explicit: the block goes to Quarto's filename helper" \
+		"an enabled: false state, one framed block, and a #Skylighting(cell-id: call"
+fi
+
+if command -v pdftotext >/dev/null 2>&1; then
+	pdftotext "${work_dir}/disabled-explicit.pdf" "${work_dir}/disabled-explicit.txt"
+	if grep -q 'off.py' "${work_dir}/disabled-explicit.txt" &&
+		grep -q 'on.py' "${work_dir}/disabled-explicit.txt"; then
+		report pass "disabled-explicit: both filenames show in the PDF"
+	else
+		report fail "disabled-explicit: both filenames show in the PDF" \
+			"off.py and on.py in the page text of disabled-explicit.pdf"
+	fi
+fi
+
+# ============================================================================
 
 printf '\n%s passed, %s failed\n' "${passed}" "${failed}"
 [ "${failed}" -eq 0 ]
