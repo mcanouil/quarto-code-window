@@ -485,17 +485,12 @@ local function build_typst_function_def()
         title-bar,
       )
       // Strip code block chrome so content fills flush against the window body.
-      // set block() provides defaults for Skylighting blocks (explicit fill preserved).
+      // Quarto's Skylighting block sets its own width, inset, radius and stroke,
+      // so set block() only removes the spacing around it. A wider rule would
+      // also reach the blocks inside Quarto's annotation circles.
       // show raw overrides the document-level raw block styling (fill, radius).
       {
-        set block(
-          width: 100%%,
-          inset: 8pt,
-          radius: 0pt,
-          stroke: none,
-          above: 0pt,
-          below: 0pt,
-        )
+        set block(above: 0pt, below: 0pt)
         show raw.where(block: true): set block(
           fill: none,
           width: 100%%,
@@ -977,7 +972,9 @@ local function frame_typst_codeblock(block)
       style = block_style or CONFIG.style,
       lines_label = lines_label,
     }),
-    quarto.DecoratedCodeBlock({ filename = filename, code_block = block }),
+    -- The constructor returns more than the node, and a call at the end of a
+    -- table takes every value it returns. The parentheses keep the node only.
+    (quarto.DecoratedCodeBlock({ filename = filename, code_block = block })),
   }
 end
 

@@ -600,6 +600,20 @@ else
 		"a #Skylighting(cell-id: call and no circled-number helper of the filter"
 fi
 
+# The window's own block rules must not reach the circle, or the circle grows
+# and wraps below its line. In the page text, the number of the circle then
+# ends the line of code it annotates.
+if command -v pdftotext >/dev/null 2>&1; then
+	pdftotext -layout "${work_dir}/annotations-explicit.pdf" "${work_dir}/annotations-explicit.txt"
+	if grep -Eq 'x = 1 +1$' "${work_dir}/annotations-explicit.txt" &&
+		grep -Eq 'y = 2 +2$' "${work_dir}/annotations-explicit.txt"; then
+		report pass "annotations-explicit: each circle sits on its line of code"
+	else
+		report fail "annotations-explicit: each circle sits on its line of code" \
+			"x = 1 and y = 2 each followed by their circle number on the same line"
+	fi
+fi
+
 # With idiomatic highlighting, Quarto writes a native block and wraps it in
 # its own annotation helper, inside the window.
 render annotations-idiomatic typst
@@ -634,11 +648,12 @@ else
 		"seven framed blocks in annotations-derived.typ"
 fi
 
-if [ "$(grep -c '#Skylighting(cell-id:' "${derived_typ}" || true)" -eq 3 ]; then
+if [ "$(grep -c '#Skylighting(cell-id:' "${derived_typ}" || true)" -eq 3 ] &&
+	[ "$(grep -c '^#quarto-annotation-item("' "${derived_typ}" || true)" -eq 3 ]; then
 	report pass "annotations-derived: Quarto draws the circles, in a callout and a cell too"
 else
 	report fail "annotations-derived: Quarto draws the circles, in a callout and a cell too" \
-		"three #Skylighting(cell-id: calls in annotations-derived.typ"
+		"three #Skylighting(cell-id: calls and three #quarto-annotation-item( calls in annotations-derived.typ"
 fi
 
 # A block with no style of its own takes the document style, not the style of
