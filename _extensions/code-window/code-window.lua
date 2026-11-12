@@ -113,6 +113,17 @@ local function is_unnamed_cell_output(block)
   return cell_output.is_marked(block) and str.is_empty(block.attributes['filename'])
 end
 
+--- Check whether a block is one that Quarto writes for itself and replaces
+--- later. A book rendered to one file puts the front matter of each chapter
+--- into a code block with the class "quarto-title-block". A filter of Quarto
+--- finds that block by its class and puts the chapter's title block in its
+--- place, so every pass of this extension leaves it alone.
+--- @param block pandoc.CodeBlock Code block element
+--- @return boolean
+local function is_quarto_block(block)
+  return block.classes:includes('quarto-title-block')
+end
+
 -- ============================================================================
 -- BLOCK-LEVEL STYLE OVERRIDE
 -- ============================================================================
@@ -970,6 +981,10 @@ end
 --- that rather than skipping validation for the same kind of block, so the
 --- same document reports the same finding in both formats.
 function CodeBlock(block)
+  if is_quarto_block(block) then
+    return nil
+  end
+
   -- The Typst path reads the marker in the Pandoc filter, which runs first, so
   -- this pass is where it is removed for every format.
   local is_plain_output = is_unnamed_cell_output(block)
@@ -1056,6 +1071,10 @@ end
 --- @return boolean consumed_next Whether the next block was consumed
 --- @return integer|nil annotation_block_id Block ID if annotations were found (for parent propagation)
 local function process_typst_block(block, next_block)
+  if is_quarto_block(block) then
+    return { block }, false, nil
+  end
+
   -- Check this block's own attributes against the CodeBlock group of the
   -- schema before anything below reads or rewrites them, in either branch.
   local resolved, auto_label = resolve_and_take(block)
@@ -1383,4 +1402,5 @@ return {
   CodeBlock = CodeBlock,
   CONFIG = function() return CONFIG end,
   draws_chrome = draws_chrome,
+  is_quarto_block = is_quarto_block,
 }

@@ -539,6 +539,30 @@ else
 fi
 
 # ============================================================================
+# Quarto's own code blocks are left alone
+# ============================================================================
+
+# A book rendered to one file puts the front matter of each chapter into a
+# code block with the class quarto-title-block. Quarto replaces that block with
+# the chapter's title block later, so it gets no window.
+book_dir="${work_dir}/book"
+cp -R "${tests_dir}/fixtures/book" "${book_dir}"
+cp -R "${repo_dir}/_extensions" "${book_dir}/_extensions"
+if ! quarto render "${book_dir}" --to typst --quiet >"${work_dir}/book.log" 2>&1; then
+	printf 'FAIL  book: the render failed\n'
+	tail -n 20 "${work_dir}/book.log"
+	exit 1
+fi
+book_typ="${book_dir}/index.typ"
+if [ "$(count_typst_windows "${book_typ}")" -eq 1 ] &&
+	! grep -q 'quarto-title-block' "${book_typ}"; then
+	report pass "book: the chapter title block gets no window"
+else
+	report fail "book: the chapter title block gets no window" \
+		"one window, for the r block, and no quarto-title-block in index.typ"
+fi
+
+# ============================================================================
 
 printf '\n%s passed, %s failed\n' "${passed}" "${failed}"
 [ "${failed}" -eq 0 ]

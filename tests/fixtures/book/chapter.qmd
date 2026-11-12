@@ -1,0 +1,9 @@
+---
+title: "Chapter with front matter"
+---
+
+Quarto puts this front matter into a code block of its own, which code-window must leave alone.
+
+```r
+x <- 1
+```
