@@ -19,7 +19,6 @@ local pdoc = require(quarto.utils.resolve_path('_vendor/quarto-lua-modules/pando
 local html_mod = require(quarto.utils.resolve_path('_vendor/quarto-lua-modules/html.lua'):gsub('%.lua$', ''))
 local cell_output = require(quarto.utils.resolve_path('_modules/cell-output.lua'):gsub('%.lua$', ''))
 local language = require(quarto.utils.resolve_path('_modules/language.lua'):gsub('%.lua$', ''))
-local code_annotations = nil
 local checker = nil
 
 -- ============================================================================
@@ -32,8 +31,6 @@ local checker = nil
 --- @field style string Window decoration style ('macos', 'windows', 'default')
 --- @field cell_output boolean Whether the output of an executed cell is framed
 --- @field typst_wrapper string Typst wrapper function name
---- @field hotfix_code_annotations boolean Whether to apply the code-annotations hot-fix for Typst
---- @field hotfix_skylighting boolean Whether to apply the Skylighting hot-fix for Typst
 
 local VALID_STYLES = { ['default'] = true, ['macos'] = true, ['windows'] = true }
 
@@ -46,9 +43,6 @@ local ATTRIBUTE_PREFIX = 'code-window-'
 --- could not be read, which is a state this extension renders through rather
 --- than stopping for. Everywhere else _schema.yml decides these seven, so the
 --- values below are a fallback and not a second place to change one of them.
---- The hotfix defaults are a different story, and are still kept by hand in
---- HOTFIX_DEFAULTS: they are nested in the schema and read on their own path,
---- so changing one in _schema.yml alone still changes nothing.
 --- All seven stay listed, because the second case has nothing else to read
 --- from, and an option added to the schema needs an entry here as well or it
 --- has no default at all on a format the extension does not act on.
@@ -74,15 +68,8 @@ local VALID_COLLAPSE = {
   ['open'] = 'open',
 }
 
-local HOTFIX_DEFAULTS = {
-  ['code-annotations'] = true,
-  ['skylighting'] = true,
-}
-
 local CURRENT_FORMAT = nil
 local CONFIG = nil
-local TYPST_BG_COLOUR = nil
-local ANNOTATION_BLOCK_COUNTER = 0
 
 -- ============================================================================
 -- CELL OUTPUT
@@ -353,97 +340,44 @@ local TYPST_COLOUR_HELPERS = [==[
 }
 ]==]
 
---- Typst annotation helper functions (state, colour, circled numbers, annotation items).
---- Only injected when at least one hot-fix is active.
-local TYPST_ANNOTATION_DEF = [==[
-// code-window: annotation state passed to Skylighting via Typst state
-#let _cw-annotations = state("cw-annotations", none)
+--- Typst window state and the replacement for Quarto's filename helper.
+--- Quarto draws a block with a filename through quarto-code-filename. The
+--- filter keeps Quarto's own helper under another name, then replaces it with
+--- one that reads the window state the filter sets before each block. A block
+--- that refuses the window, or one the filter never visited, goes to Quarto's
+--- helper. "code-window" is renamed with the wrapper option.
+local TYPST_FILENAME_HELPER = [==[
+#let _cw-window = state("cw-window", none)
 
-// Derive a contrasting annotation colour from a background fill.
-// Light backgrounds get dark circles; dark backgrounds get light circles.
-// Uses ITU-R BT.709 luminance coefficients, matching quarto-cli PR #14170.
-#let code-window-annote-colour(bg) = {
-  if type(bg) == color {
-    let comps = bg.components(alpha: false)
-    let lum = if comps.len() == 1 {
-      comps.at(0) / 100%
-    } else {
-      0.2126 * comps.at(0) / 100% + 0.7152 * comps.at(1) / 100% + 0.0722 * comps.at(2) / 100%
-    }
-    if lum < 0.5 { luma(200) } else { luma(60) }
+#let _cw-native-filename = quarto-code-filename
+
+#let quarto-code-filename(filename, body) = context {
+  let s = _cw-window.get()
+  if s == none or not s.enabled {
+    _cw-native-filename(filename, body)
   } else {
-    luma(60)
-  }
-}
-
-#let code-window-circled-number(n, bg-colour: none) = {
-  let c = if bg-colour != none { code-window-annote-colour(bg-colour) } else { luma(120) }
-  box(baseline: 20%, circle(
-    radius: 4.5pt,
-    stroke: 0.5pt + c,
-  )[#set text(size: 5.5pt, fill: c); #align(center + horizon, str(n))])
-}
-
-#let code-window-annotation-item(block-id, n, content) = {
-  let lbl-prefix = "cw-" + str(block-id) + "-"
-  context {
-    let target = label(lbl-prefix + "line-" + str(n))
-    let has-target = query(target).len() > 0
-    [#block(above: 0.4em, below: 0.4em)[
-      #if has-target {
-        link(target)[#code-window-circled-number(n)]
-      } else {
-        code-window-circled-number(n)
-      }
-      #h(0.4em)
-      #content
-    ] #label(lbl-prefix + "item-" + str(n))]
-  }
-}
-
-#let code-window-annotated-content(content, annotations: (:), bg-colour: none, block-id: 0) = {
-  if annotations.len() > 0 {
-    _cw-annotations.update((annotations: annotations, bg-colour: bg-colour, block-id: block-id))
-    content
-    _cw-annotations.update(none)
-  } else {
-    content
+    code-window(
+      body,
+      filename: filename,
+      is-auto: s.is-auto,
+      style: s.style,
+      lines-label: s.lines-label,
+    )
   }
 }
 ]==]
 
---- Typst code-window body content template.
---- Uses annotation wrapper when hot-fixes are active, plain content otherwise.
-local TYPST_CONTENT_WITH_ANNOTATIONS = [==[
-        code-window-annotated-content(
-          content,
-          annotations: annotations,
-          bg-colour: bg-colour,
-          block-id: block-id,
-        )
-]==]
-
-local TYPST_CONTENT_PLAIN = [==[
-        content
-]==]
-
---- Build the complete Typst code-window function definition.
---- @param has_hotfixes boolean Whether at least one hot-fix is active
+--- Build the complete Typst code-window function definition: the colour
+--- helpers, the window function, and the replacement for Quarto's filename
+--- helper, in that order.
 --- @return string Typst function definition(s)
-local function build_typst_function_def(has_hotfixes)
-  local content_block = has_hotfixes
-      and TYPST_CONTENT_WITH_ANNOTATIONS
-      or TYPST_CONTENT_PLAIN
-
+local function build_typst_function_def()
   local fn_def = string.format([==[
 #let code-window(
   content,
   filename: none,
   is-auto: false,
   style: "macos",
-  annotations: (:),
-  bg-colour: none,
-  block-id: 0,
   lines-label: none,
 ) = {
   context {
@@ -570,39 +504,20 @@ local function build_typst_function_def(has_hotfixes)
           above: 0pt,
           below: 0pt,
         )
-%s      }
+        content
+      }
     },
   )
   }
 }
-]==], content_block)
+]==])
 
-  local result = TYPST_COLOUR_HELPERS
-  if has_hotfixes then
-    result = result .. TYPST_ANNOTATION_DEF
-  end
-  return result .. fn_def
+  return TYPST_COLOUR_HELPERS .. fn_def .. TYPST_FILENAME_HELPER
 end
 
 -- ============================================================================
 -- TYPST PROCESSING
 -- ============================================================================
-
---- Get the next unique block ID for annotation linking.
---- @return integer
-local function next_block_id()
-  ANNOTATION_BLOCK_COUNTER = ANNOTATION_BLOCK_COUNTER + 1
-  return ANNOTATION_BLOCK_COUNTER
-end
-
---- Build the Typst bg-colour parameter string.
---- @return string Empty string or ', bg-colour: rgb("...")'
-local function typst_bg_colour_param()
-  if not TYPST_BG_COLOUR then
-    return ''
-  end
-  return string.format(', bg-colour: rgb("%s")', TYPST_BG_COLOUR)
-end
 
 --- Escape a string for embedding in a Typst double-quoted string literal.
 --- @param s string
@@ -611,52 +526,29 @@ local function typst_escape_string(s)
   return (s:gsub('\\', '\\\\'):gsub('"', '\\"'))
 end
 
---- Build a code-window opening RawBlock for Typst.
---- @param filename string
---- @param is_auto boolean
---- @param style string
---- @param annotations table|nil
---- @param block_id integer
---- @param lines_label string|nil Highlighted-lines spec to display in the title bar
+--- @class WindowState
+--- @field enabled boolean Whether the block gets the window
+--- @field is_auto boolean Whether the name was derived rather than written
+--- @field style string Window decoration style
+--- @field lines_label string|nil Highlighted-lines spec for the title bar
+
+--- Build the raw Typst block that sets the window state for the block after
+--- it. Every block the filter visits sets every field, so a block never
+--- inherits a value from the block before it.
+--- @param params WindowState
 --- @return pandoc.RawBlock
-local function typst_code_window_open(filename, is_auto, style, annotations, block_id, lines_label)
-  local annot_param = ''
-  if annotations and next(annotations) then
-    annot_param = string.format(', annotations: %s, block-id: %d',
-      code_annotations.annotations_to_typst_dict(annotations), block_id)
+local function typst_window_state(params)
+  local lines_label = 'none'
+  if params.lines_label and params.lines_label ~= '' then
+    lines_label = '"' .. typst_escape_string(params.lines_label) .. '"'
   end
-
-  local lines_param = ''
-  if lines_label and lines_label ~= '' then
-    lines_param = string.format(', lines-label: "%s"', typst_escape_string(lines_label))
-  end
-
   return pandoc.RawBlock('typst', string.format(
-    '#%s(filename: "%s", is-auto: %s, style: "%s"%s%s%s)[',
-    CONFIG.typst_wrapper,
-    typst_escape_string(filename),
-    is_auto and 'true' or 'false',
-    style,
-    annot_param,
-    typst_bg_colour_param(),
-    lines_param
+    '#_cw-window.update((enabled: %s, is-auto: %s, style: "%s", lines-label: %s))',
+    tostring(params.enabled),
+    tostring(params.is_auto),
+    params.style,
+    lines_label
   ))
-end
-
---- Build a standalone annotation wrapper for non-windowed blocks.
---- @param annotations table
---- @param block_id integer
---- @return pandoc.RawBlock opening, pandoc.RawBlock closing
-local function typst_annotation_wrapper(annotations, block_id)
-  local open = pandoc.RawBlock('typst', string.format(
-    '#%s-annotated-content(annotations: %s, block-id: %d%s)[',
-    CONFIG.typst_wrapper,
-    code_annotations.annotations_to_typst_dict(annotations),
-    block_id,
-    typst_bg_colour_param()
-  ))
-  local close = pandoc.RawBlock('typst', ']')
-  return open, close
 end
 
 -- ============================================================================
@@ -871,53 +763,6 @@ function Meta(meta)
 
   local global_collapse = resolve_collapse(opts['collapse'])
 
-  -- Read code-annotations metadata (Quarto standard option).
-  local annot_meta = meta['code-annotations']
-  local annot_value = annot_meta and pandoc.utils.stringify(annot_meta) or ''
-  local annotations_enabled = annot_value ~= 'none' and annot_value ~= 'false'
-
-  -- Read hotfix sub-table from extensions.code-window.hotfix.
-  local ext_config = meta_mod.get_extension_config(meta, EXTENSION_NAME)
-  local hotfix_meta = ext_config and ext_config['hotfix'] or nil
-
-  -- Deprecation check for old flat skylighting-fix key.
-  if ext_config and ext_config['skylighting-fix'] ~= nil then
-    log.log_warning(EXTENSION_NAME,
-      '"skylighting-fix" is deprecated. Use "hotfix: { skylighting: true/false }" instead.')
-  end
-
-  -- Parse hotfix options with per-hotfix version-based auto-disable.
-  -- Each hotfix value can be:
-  --   boolean/string: true/false to enable/disable
-  --   map: { enabled: true/false, quarto-version: "x.y.z" }
-  local hotfix = {}
-  for key, default in pairs(HOTFIX_DEFAULTS) do
-    local entry = hotfix_meta and hotfix_meta[key]
-    if entry ~= nil and pandoc.utils.type(entry) == 'table' then
-      -- Map form: { enabled: bool, quarto-version: "x.y.z" }
-      local enabled = true
-      if entry['enabled'] ~= nil then
-        enabled = pandoc.utils.stringify(entry['enabled']) == 'true'
-      end
-      local ver = entry['quarto-version']
-      if ver then
-        ver = pandoc.utils.stringify(ver)
-        if ver ~= '' then
-          local ok, threshold = pcall(pandoc.types.Version, ver)
-          if ok and quarto.version >= threshold then
-            enabled = false
-          end
-        end
-      end
-      hotfix[key] = enabled
-    elseif entry ~= nil then
-      -- Simple boolean/string form
-      hotfix[key] = pandoc.utils.stringify(entry) == 'true'
-    else
-      hotfix[key] = default
-    end
-  end
-
   CONFIG = {
     enabled = opts['enabled'] == 'true',
     auto_filename = opts['auto-filename'] == 'true',
@@ -926,21 +771,7 @@ function Meta(meta)
     typst_wrapper = opts['wrapper'],
     collapse = global_collapse,
     lines_label = opts['lines-label'] == 'true',
-    hotfix_code_annotations = hotfix['code-annotations'],
-    hotfix_skylighting = hotfix['skylighting'],
-    code_annotations = annotations_enabled,
   }
-
-  -- Cache syntax highlighting background colour for Typst contrast-aware annotations.
-  if CURRENT_FORMAT == 'typst' then
-    local hm = PANDOC_WRITER_OPTIONS and PANDOC_WRITER_OPTIONS.highlight_method
-    if hm then
-      local bg = hm['background-color']
-      if bg and type(bg) == 'string' then
-        TYPST_BG_COLOUR = bg
-      end
-    end
-  end
 
   if CURRENT_FORMAT == 'html' and CONFIG.enabled then
     html_mod.ensure_html_dependency({
@@ -1060,92 +891,6 @@ local function resolve_window_params(block, resolved, auto_label)
   return filename, is_auto, overrides.style, overrides.lines_label
 end
 
---- Process a single CodeBlock for Typst, returning replacement blocks.
---- Handles both code-window wrapping and standalone annotation rendering.
---- @param block pandoc.CodeBlock
---- @param next_block pandoc.Block|nil The block following this CodeBlock
---- @return pandoc.List replacement_blocks Blocks to splice in
---- @return boolean consumed_next Whether the next block was consumed
---- @return integer|nil annotation_block_id Block ID if annotations were found (for parent propagation)
-local function process_typst_block(block, next_block)
-  if is_quarto_block(block) then
-    return { block }, false, nil
-  end
-
-  -- Check this block's own attributes against the CodeBlock group of the
-  -- schema before anything below reads or rewrites them, in either branch.
-  local resolved, auto_label = resolve_and_take(block)
-
-  -- The output of an executed cell keeps the shape Quarto gave it, annotations
-  -- included, unless the engine gave it a filename of its own.
-  if is_unnamed_cell_output(block) then
-    return { block }, false, nil
-  end
-
-  local filename, is_auto, block_style, lines_label =
-    resolve_window_params(block, resolved, auto_label)
-  local has_window = filename and filename ~= ''
-  local effective_style = block_style or CONFIG.style
-
-  -- Resolve annotations if enabled and the code-annotations hot-fix is active.
-  local annotations = nil
-  local should_handle_annotations = CONFIG.code_annotations and CONFIG.hotfix_code_annotations
-
-  if should_handle_annotations then
-    local cleaned_text
-    cleaned_text, annotations = code_annotations.resolve_annotations(block)
-    if annotations then
-      block.text = cleaned_text
-    end
-  end
-
-  -- Strip filename attribute so the CodeBlock renders as plain code inside the
-  -- code-window wrapper (the DecoratedCodeBlock Div is already unwrapped above).
-  if has_window and block.attributes['filename'] then
-    block.attributes['filename'] = nil
-  end
-
-  local has_annotations = annotations and next(annotations)
-  local consumed_next = false
-  local result = {}
-  local block_id = has_annotations and next_block_id() or 0
-
-  if has_window and has_annotations then
-    table.insert(result, typst_code_window_open(
-      filename, is_auto, effective_style, annotations, block_id, lines_label))
-    table.insert(result, block)
-    table.insert(result, pandoc.RawBlock('typst', ']'))
-  elseif has_window then
-    table.insert(result, typst_code_window_open(
-      filename, is_auto, effective_style, nil, 0, lines_label))
-    table.insert(result, block)
-    table.insert(result, pandoc.RawBlock('typst', ']'))
-  elseif has_annotations then
-    local open, close = typst_annotation_wrapper(annotations, block_id)
-    table.insert(result, open)
-    table.insert(result, block)
-    table.insert(result, close)
-  else
-    table.insert(result, block)
-  end
-
-  -- Consume the following OrderedList if it is an annotation list.
-  if has_annotations
-      and next_block
-      and code_annotations.is_annotation_ordered_list(next_block) then
-    local wrapper_prefix = CONFIG.typst_wrapper
-    local annot_blocks = code_annotations.ordered_list_to_typst_blocks(
-      next_block, wrapper_prefix, block_id)
-    for _, ab in ipairs(annot_blocks) do
-      table.insert(result, ab)
-    end
-    consumed_next = true
-  end
-
-  local returned_block_id = has_annotations and (not consumed_next) and block_id or nil
-  return result, consumed_next, returned_block_id
-end
-
 --- Check if a Div is Quarto's DecoratedCodeBlock wrapper.
 --- @param div pandoc.Div
 --- @return boolean
@@ -1185,125 +930,73 @@ local function get_decorated_codeblock_filename(div)
   return nil
 end
 
---- Process a flat list of blocks for Typst, handling CodeBlocks and their
---- following OrderedLists. Called recursively on Div contents.
---- @param blocks pandoc.Blocks|pandoc.List
---- @return pandoc.Blocks processed_blocks
---- @return integer|nil pending_annotation_block_id Block ID if the last block had annotations (for parent consumption)
-local function process_typst_blocks(blocks, wrap_codeblocks)
-  local new_blocks = {}
-  local pending_annot_block_id = nil
-  local i = 1
-  while i <= #blocks do
-    local blk = blocks[i]
+--- Build the window state for a block that Quarto already wrapped in its
+--- filename node, from the attributes of the code block inside it.
+--- @param div pandoc.Div A DecoratedCodeBlock Div
+--- @return pandoc.RawBlock|nil State block, or nil when the node holds no code block for the filter
+local function decorated_window_state(div)
+  local block = extract_codeblock(div)
+  if not block or is_quarto_block(block) then
+    return nil
+  end
+  local resolved = resolve_and_take(block)
+  local overrides = read_window_overrides(block, resolved)
+  return typst_window_state({
+    enabled = overrides.enabled,
+    is_auto = false,
+    style = overrides.style or CONFIG.style,
+    lines_label = overrides.lines_label,
+  })
+end
 
-    if blk.t == 'CodeBlock' then
-      local next_blk = blocks[i + 1]
-      local replacement, consumed_next, annot_id = process_typst_block(blk, next_blk)
-      local to_insert = (wrap_codeblocks and #replacement > 1)
-        and { pandoc.Div(replacement) } or replacement
-      for _, rb in ipairs(to_insert) do
-        table.insert(new_blocks, rb)
-      end
-      if consumed_next then
-        pending_annot_block_id = nil
-        i = i + 2
+--- Walk a list of blocks for Typst and set the window state before each block
+--- that Quarto draws through its filename helper. The state block goes before
+--- Quarto's node, at the same level, and nothing goes between a block and the
+--- block after it, so Quarto still pairs a code block with its annotation list.
+--- Inside a layout, the state and the node share one Div, so the layout keeps
+--- one cell for them.
+--- @param blocks pandoc.Blocks|pandoc.List
+--- @param in_layout boolean|nil Whether the blocks are the cells of a layout
+--- @return pandoc.Blocks
+local function frame_typst_blocks(blocks, in_layout)
+  local result = pandoc.Blocks({})
+  for _, blk in ipairs(blocks) do
+    if blk.t == 'Div' and is_decorated_codeblock(blk) then
+      local state = decorated_window_state(blk)
+      if state and in_layout then
+        result:insert(pandoc.Div({ state, blk }))
       else
-        pending_annot_block_id = annot_id
-        i = i + 1
-      end
-    elseif blk.t == 'Div' and is_decorated_codeblock(blk) then
-      -- Unwrap Quarto's DecoratedCodeBlock to prevent double filename wrapping.
-      -- Process the inner CodeBlock directly, replacing the entire Div.
-      local inner_block = extract_codeblock(blk)
-      if inner_block then
-        -- Quarto stores the #| filename: value in its custom node registry, not as
-        -- a plain Pandoc attribute on the inner CodeBlock. Transfer it here so
-        -- resolve_window_params sees the explicit filename instead of falling back
-        -- to auto-filename.
-        if str.is_empty(inner_block.attributes['filename']) then
-          local fn = get_decorated_codeblock_filename(blk)
-          if fn then
-            inner_block.attributes['filename'] = fn
-          end
+        if state then
+          result:insert(state)
         end
-        local next_blk = blocks[i + 1]
-        local replacement, consumed_next, annot_id = process_typst_block(inner_block, next_blk)
-        local to_insert = (wrap_codeblocks and #replacement > 1)
-          and { pandoc.Div(replacement) } or replacement
-        for _, rb in ipairs(to_insert) do
-          table.insert(new_blocks, rb)
-        end
-        if consumed_next then
-          pending_annot_block_id = nil
-          i = i + 2
-        else
-          pending_annot_block_id = annot_id
-          i = i + 1
-        end
-      else
-        -- Fallback: keep the Div as-is if no CodeBlock found.
-        local processed, inner_pending = process_typst_blocks(blk.content)
-        blk.content = processed
-        table.insert(new_blocks, blk)
-        pending_annot_block_id = inner_pending
-        i = i + 1
+        result:insert(blk)
       end
     elseif blk.t == 'Div' then
       local is_layout = blk.attributes['layout-ncol']
         or blk.attributes['layout-nrow']
         or blk.attributes['layout']
-      local processed, inner_pending = process_typst_blocks(blk.content, is_layout)
-      blk.content = processed
-      table.insert(new_blocks, blk)
-      -- If the Div's last processed block had pending annotations,
-      -- check if the next sibling is an OrderedList to consume.
-      if inner_pending then
-        local next_blk = blocks[i + 1]
-        if next_blk and code_annotations.is_annotation_ordered_list(next_blk) then
-          local annot_blocks = code_annotations.ordered_list_to_typst_blocks(
-            next_blk, CONFIG.typst_wrapper, inner_pending)
-          for _, ab in ipairs(annot_blocks) do
-            table.insert(new_blocks, ab)
-          end
-          pending_annot_block_id = nil
-          i = i + 2
-        else
-          pending_annot_block_id = inner_pending
-          i = i + 1
-        end
-      else
-        pending_annot_block_id = nil
-        i = i + 1
-      end
+      blk.content = frame_typst_blocks(blk.content, is_layout)
+      result:insert(blk)
+    elseif blk.t == 'BlockQuote' then
+      blk.content = frame_typst_blocks(blk.content)
+      result:insert(blk)
     elseif blk.t == 'BulletList' or blk.t == 'OrderedList' then
       for j, item in ipairs(blk.content) do
-        blk.content[j] = process_typst_blocks(pandoc.Blocks(item))
+        blk.content[j] = frame_typst_blocks(item)
       end
-      table.insert(new_blocks, blk)
-      pending_annot_block_id = nil
-      i = i + 1
-    elseif blk.t == 'BlockQuote' then
-      blk.content = process_typst_blocks(blk.content)
-      table.insert(new_blocks, blk)
-      pending_annot_block_id = nil
-      i = i + 1
+      result:insert(blk)
     elseif blk.t == 'DefinitionList' then
-      for j, def_item in ipairs(blk.content) do
+      for _, def_item in ipairs(blk.content) do
         for k, body in ipairs(def_item[2]) do
-          def_item[2][k] = process_typst_blocks(pandoc.Blocks(body))
+          def_item[2][k] = frame_typst_blocks(body)
         end
       end
-      table.insert(new_blocks, blk)
-      pending_annot_block_id = nil
-      i = i + 1
+      result:insert(blk)
     else
-      pending_annot_block_id = nil
-      table.insert(new_blocks, blk)
-      i = i + 1
+      result:insert(blk)
     end
   end
-  return pandoc.Blocks(new_blocks), pending_annot_block_id
+  return result
 end
 
 --- Walk HTML document blocks and transfer the filename from any DecoratedCodeBlock
@@ -1347,8 +1040,8 @@ function Pandoc(doc)
     return doc
   end
 
-  -- Process code blocks and annotations throughout the document tree.
-  doc.blocks = process_typst_blocks(doc.blocks)
+  -- Set the window state before every block Quarto draws with a filename.
+  doc.blocks = frame_typst_blocks(doc.blocks)
 
   -- Guard: check if the function definition is already present.
   local fn_pattern = '#let ' .. CONFIG.typst_wrapper
@@ -1359,14 +1052,9 @@ function Pandoc(doc)
     end
   end
 
-  local has_hotfixes = CONFIG.hotfix_code_annotations or CONFIG.hotfix_skylighting
-  local fn_def = build_typst_function_def(has_hotfixes)
+  local fn_def = build_typst_function_def()
   if CONFIG.typst_wrapper ~= 'code-window' then
-    fn_def = fn_def:gsub('code%-window%-annote%-colour', CONFIG.typst_wrapper .. '-annote-colour')
-    fn_def = fn_def:gsub('code%-window%-circled%-number', CONFIG.typst_wrapper .. '-circled-number')
-    fn_def = fn_def:gsub('code%-window%-annotation%-item', CONFIG.typst_wrapper .. '-annotation-item')
-    fn_def = fn_def:gsub('code%-window%-annotated%-content', CONFIG.typst_wrapper .. '-annotated-content')
-    fn_def = fn_def:gsub('#let code%-window%(', '#let ' .. CONFIG.typst_wrapper .. '(')
+    fn_def = fn_def:gsub('code%-window%(', CONFIG.typst_wrapper .. '(')
   end
   table.insert(doc.blocks, 1, pandoc.RawBlock('typst', fn_def))
 
@@ -1377,13 +1065,6 @@ end
 -- MODULE EXPORTS
 -- ============================================================================
 
---- Inject the code-annotations module dependency.
---- Called by main.lua before any filter handlers run.
---- @param mod table The code-annotations module
-local function set_code_annotations(mod)
-  code_annotations = mod
-end
-
 --- Inject the schema checker.
 --- Called by main.lua before any filter handlers run.
 --- @param mod table The checker built from the vendored validator
@@ -1392,7 +1073,6 @@ local function set_checker(mod)
 end
 
 return {
-  set_code_annotations = set_code_annotations,
   set_checker = set_checker,
   Meta = Meta,
   Pandoc = Pandoc,

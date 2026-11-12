@@ -53,12 +53,22 @@ render() {
 	fi
 }
 
-# Count the code-window calls in a rendered Typst file. The wrapper's own
-# definition reads "#let code-window(", so a call is matched at the start of a
-# line and with its first argument.
+# Count the framed blocks in a rendered Typst file. The filter sets the window
+# state on the line before each block it frames, and a framed block is the one
+# whose state says the window is on.
 # $1 rendered file
 count_typst_windows() {
-	grep -c '^#code-window(filename' "$1" || true
+	grep -c '^#_cw-window.update((enabled: true' "$1" || true
+}
+
+# Succeed when the first line that matches one pattern comes before the first
+# line that matches another.
+# $1 rendered file. $2 earlier pattern. $3 later pattern.
+comes_before() {
+	local first second
+	first="$(grep -n -m 1 -e "$2" "$1" | cut -d: -f1)"
+	second="$(grep -n -m 1 -e "$3" "$1" | cut -d: -f1)"
+	[ -n "${first}" ] && [ -n "${second}" ] && [ "${first}" -lt "${second}" ]
 }
 
 # Succeed when one page of page-break-title.txt holds both strings. pdftotext
@@ -124,7 +134,7 @@ else
 		"a box(fill: rgb( call in inline-code-only.typ"
 fi
 
-# A code block goes through the Skylighting override, and the inline code
+# A code block goes through Quarto's Skylighting function, and the inline code
 # keeps its own box in the same document.
 render inline-code-with-block typst
 if grep -q '^#Skylighting(' "${work_dir}/inline-code-with-block.typ" &&
@@ -298,11 +308,11 @@ done
 # disagree with nothing to say so. The wrapper name is the option under test
 # because it reaches the Typst output word for word.
 render wrapper-default typst
-if grep -q '^#code-window(' "${work_dir}/wrapper-default.typ"; then
+if grep -q '^#let code-window(' "${work_dir}/wrapper-default.typ"; then
 	report pass "wrapper-default: the schema default names the wrapper"
 else
 	report fail "wrapper-default: the schema default names the wrapper" \
-		"a #code-window( call in wrapper-default.typ"
+		"a #let code-window( definition in wrapper-default.typ"
 fi
 
 sed -i.aside 's/default: "code-window"/default: "my-window"/' \
@@ -313,12 +323,12 @@ mv "${work_dir}/_extensions/code-window/_schema.yml.aside" \
 
 # The old name has to be gone as well as the new one present, because a rename
 # that missed a call site would leave both in the document.
-if grep -q '^#my-window(' "${work_dir}/wrapper-default.typ" &&
-	! grep -q '^#code-window(' "${work_dir}/wrapper-default.typ"; then
+if grep -q '^#let my-window(' "${work_dir}/wrapper-default.typ" &&
+	! grep -q 'code-window(' "${work_dir}/wrapper-default.typ"; then
 	report pass "wrapper-default: a default changed in the schema alone is followed"
 else
 	report fail "wrapper-default: a default changed in the schema alone is followed" \
-		"a #my-window( call and no #code-window( call in wrapper-default.typ"
+		"a #let my-window( definition and no code-window( in wrapper-default.typ"
 fi
 
 # With no schema to read, the fallback in the Lua answers instead, and the
@@ -327,11 +337,11 @@ mv "${work_dir}/_extensions/code-window/_schema.yml" "${work_dir}/schema.yml.asi
 render wrapper-default typst
 mv "${work_dir}/schema.yml.aside" "${work_dir}/_extensions/code-window/_schema.yml"
 
-if grep -q '^#code-window(' "${work_dir}/wrapper-default.typ"; then
+if grep -q '^#let code-window(' "${work_dir}/wrapper-default.typ"; then
 	report pass "wrapper-default: the fallback answers when the schema cannot be read"
 else
 	report fail "wrapper-default: the fallback answers when the schema cannot be read" \
-		"a #code-window( call in wrapper-default.typ"
+		"a #let code-window( definition in wrapper-default.typ"
 fi
 
 # ============================================================================
@@ -559,6 +569,45 @@ if [ "$(count_typst_windows "${book_typ}")" -eq 1 ] &&
 else
 	report fail "book: the chapter title block gets no window" \
 		"one window, for the r block, and no quarto-title-block in index.typ"
+fi
+
+# ============================================================================
+# Quarto draws the annotations inside the window
+# ============================================================================
+
+# Quarto takes the annotation comments off the block and draws the circles
+# itself. The filter replaces Quarto's filename helper with the window, and
+# sets the window state on the line before the block, outside Quarto's node.
+render annotations-explicit typst
+explicit_typ="${work_dir}/annotations-explicit.typ"
+if grep -q '^#let quarto-code-filename(' "${explicit_typ}" &&
+	grep -q '^#quarto-code-filename("a.py")\[' "${explicit_typ}" &&
+	comes_before "${explicit_typ}" \
+		'^#_cw-window.update((enabled: true, is-auto: false, style: "macos"' \
+		'^#quarto-code-filename("a.py")\['; then
+	report pass "annotations-explicit: the window replaces Quarto's filename helper"
+else
+	report fail "annotations-explicit: the window replaces Quarto's filename helper" \
+		"a #let quarto-code-filename( definition, and the window state before #quarto-code-filename(\"a.py\")["
+fi
+
+if grep -q '#Skylighting(cell-id:' "${explicit_typ}" &&
+	! grep -q 'code-window-circled-number' "${explicit_typ}" &&
+	! grep -q 'skylighting-typst-fix override' "${explicit_typ}"; then
+	report pass "annotations-explicit: Quarto draws the circles"
+else
+	report fail "annotations-explicit: Quarto draws the circles" \
+		"a #Skylighting(cell-id: call and no circled-number helper of the filter"
+fi
+
+# With idiomatic highlighting, Quarto writes a native block and wraps it in
+# its own annotation helper, inside the window.
+render annotations-idiomatic typst
+if grep -q '#quarto-code-annotation(' "${work_dir}/annotations-idiomatic.typ"; then
+	report pass "annotations-idiomatic: Quarto draws the circles on a native block"
+else
+	report fail "annotations-idiomatic: Quarto draws the circles on a native block" \
+		"a #quarto-code-annotation( call in annotations-idiomatic.typ"
 fi
 
 # ============================================================================

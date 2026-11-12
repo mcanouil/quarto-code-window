@@ -31,35 +31,6 @@ options:
     type: boolean
     default: true
     description: "Render a small chip next to the filename showing the highlighted-line spec for blocks that set 'code-line-numbers' or 'code-window-lines'."
-  hotfix:
-    type: object
-    description: "Temporary hot-fixes for Typst output. These will be removed when Quarto natively supports the corresponding features (see quarto-dev/quarto-cli#14170)."
-    additionalProperties: false
-    properties:
-      code-annotations:
-        type: [boolean, object]
-        default: true
-        description: "Enable the code-annotations hot-fix for Typst output. Use a boolean or a map with 'enabled' and 'quarto-version' keys."
-        additionalProperties: false
-        properties:
-          enabled:
-            type: boolean
-            description: "Explicitly enable or disable this hot-fix."
-          quarto-version:
-            type: string
-            description: "Quarto version at or above which this hot-fix is automatically disabled."
-      skylighting:
-        type: [boolean, object]
-        default: true
-        description: "Enable the Skylighting hot-fix for Typst output (overrides block styling and adds inline code background). Use a boolean or a map with 'enabled' and 'quarto-version' keys."
-        additionalProperties: false
-        properties:
-          enabled:
-            type: boolean
-            description: "Explicitly enable or disable this hot-fix."
-          quarto-version:
-            type: string
-            description: "Quarto version at or above which this hot-fix is automatically disabled."
 
 attributes:
   CodeBlock:
