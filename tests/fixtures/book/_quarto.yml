@@ -1,0 +1,16 @@
+project:
+  type: book
+
+book:
+  title: "Book title block"
+  author: "Code Window"
+  chapters:
+    - index.qmd
+    - chapter.qmd
+
+filters:
+  - code-window
+
+format:
+  typst:
+    keep-typ: true

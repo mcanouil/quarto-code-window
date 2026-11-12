@@ -38,10 +38,15 @@ report() {
 	fi
 }
 
-# Render a fixture, and stop the run when the render itself fails.
+# Render a fixture, and stop the run when the render itself fails. A fixture
+# is a file, or a directory that holds a project.
 # $1 fixture base name. $2 target format.
 render() {
-	if ! quarto render "${work_dir}/$1.qmd" --to "$2" --quiet >"${work_dir}/$1.log" 2>&1; then
+	local target="${work_dir}/$1.qmd"
+	if [ -d "${work_dir}/$1" ]; then
+		target="${work_dir}/$1"
+	fi
+	if ! quarto render "${target}" --to "$2" --quiet >"${work_dir}/$1.log" 2>&1; then
 		printf 'FAIL  %s: the render failed\n' "$1"
 		tail -n 20 "${work_dir}/$1.log"
 		exit 1
@@ -536,6 +541,24 @@ if [ "$(count_typst_windows "${not_first_typ}")" -eq 4 ] &&
 else
 	report fail "language-not-first: the Typst windows are named after the language" \
 		"four windows, two of them named bash, in language-not-first.typ"
+fi
+
+# ============================================================================
+# Quarto's own code blocks are left alone
+# ============================================================================
+
+# The front matter of a chapter becomes a quarto-title-block code block.
+book_dir="${work_dir}/book"
+cp -R "${tests_dir}/fixtures/book" "${book_dir}"
+cp -R "${work_dir}/_extensions" "${book_dir}/_extensions"
+render book typst
+book_typ="${book_dir}/index.typ"
+if [ "$(count_typst_windows "${book_typ}")" -eq 1 ] &&
+	! grep -q 'quarto-title-block' "${book_typ}"; then
+	report pass "book: the chapter title block gets no window"
+else
+	report fail "book: the chapter title block gets no window" \
+		"one window, for the r block, and no quarto-title-block in index.typ"
 fi
 
 # ============================================================================
