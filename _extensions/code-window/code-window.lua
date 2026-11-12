@@ -785,7 +785,7 @@ end
 --- This handler runs on every CodeBlock structurally, for every format,
 --- because a plain `CodeBlock` filter entry is not format-scoped the way
 --- CONFIG.enabled or CURRENT_FORMAT are. For a Typst render, the same block
---- is already checked once by process_typst_block through the Pandoc filter
+--- is already checked once by frame_typst_codeblock through the Pandoc filter
 --- above it in main.lua's filter list, so checker:attributes is called here
 --- only in the two branches that do not overlap with that pass: the
 --- disabled/unconfigured branch (where the Typst pass never runs at all,
@@ -795,7 +795,7 @@ end
 --- CodeBlock-group attribute the Typst path leaves unstripped, such as
 --- code-window-collapse, which is HTML-only and never read on that path.
 --- Within the html branch, the check runs before the is_plain_output return,
---- not after: process_typst_block (below) checks every attribute
+--- not after: frame_typst_codeblock (below) checks every attribute
 --- unconditionally, before its own is_unnamed_cell_output test, so an
 --- output-of-an-executed-cell block is validated on the Typst path even
 --- though nothing about it is otherwise touched. The html branch matches
@@ -991,6 +991,23 @@ local function frame_typst_code(blk)
   return nil, nil
 end
 
+--- Whether a code block carries an annotation marker: a line that ends with
+--- "<n>", which Quarto reads as a code annotation whatever the comment syntax.
+--- @param block pandoc.Block|nil A code block, or Quarto's filename node
+--- @return boolean
+local function has_annotation_marker(block)
+  local code = block and (block.t == 'CodeBlock' and block or extract_codeblock(block))
+  if not code then
+    return false
+  end
+  for line in (code.text .. '\n'):gmatch('([^\n]*)\n') do
+    if line:match('<%d+>%s*$') then
+      return true
+    end
+  end
+  return false
+end
+
 --- Walk a list of blocks for Typst and set the window state before each block
 --- that Quarto draws through its filename helper. The state block goes before
 --- Quarto's node, at the same level, and nothing goes between a block and the
@@ -1009,10 +1026,11 @@ local function frame_typst_blocks(blocks, in_layout)
     if node and state and in_layout then
       -- In a layout, the state, the node and the annotation list after them
       -- share one Div, so the layout keeps one cell for them and Quarto still
-      -- pairs the block with its list.
+      -- pairs the block with its list. A list after a block with no
+      -- annotations keeps its own cell.
       local cell = { state, node }
       local next_blk = blocks[i + 1]
-      if next_blk and next_blk.t == 'OrderedList' then
+      if next_blk and next_blk.t == 'OrderedList' and has_annotation_marker(blk) then
         table.insert(cell, next_blk)
         i = i + 1
       end

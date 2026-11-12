@@ -574,6 +574,7 @@ cp -R "${work_dir}/_extensions" "${book_dir}/_extensions"
 render book typst
 book_typ="${book_dir}/index.typ"
 if [ "$(count_typst_windows "${book_typ}")" -eq 1 ] &&
+	[ "$(grep -c '^#quarto-code-filename(' "${book_typ}" || true)" -eq 1 ] &&
 	! grep -q 'quarto-title-block' "${book_typ}"; then
 	report pass "book: the chapter title block gets no window"
 else
@@ -741,11 +742,12 @@ cp -R "${tests_dir}/fixtures/ext-definitions" "${ext_dir}"
 cp -R "${work_dir}/_extensions/code-window" "${ext_dir}/_extensions/code-window"
 render ext-definitions fake-typst
 if grep -q '#Skylighting(cell-id:' "${ext_dir}/index.typ" &&
-	[ "$(count_typst_windows "${ext_dir}/index.typ")" -eq 1 ]; then
+	[ "$(count_typst_windows "${ext_dir}/index.typ")" -eq 1 ] &&
+	[ "$(grep -c '^#quarto-code-filename(' "${ext_dir}/index.typ" || true)" -eq 2 ]; then
 	report pass "ext-definitions: the document compiles with the window and the circles"
 else
 	report fail "ext-definitions: the document compiles with the window and the circles" \
-		"one framed block and a #Skylighting(cell-id: call in index.typ"
+		"one framed block, two #quarto-code-filename( calls and a #Skylighting(cell-id: call in index.typ"
 fi
 
 # ============================================================================
@@ -766,14 +768,26 @@ fi
 
 # In a layout of executed cells, each cell keeps one column of the layout, so
 # the two windows share a line of the page.
+render layout-cells typst
 if command -v pdftotext >/dev/null 2>&1; then
-	render layout-cells typst
 	pdftotext -layout "${work_dir}/layout-cells.pdf" "${work_dir}/layout-cells.txt"
 	if grep -Eq 'PYTHON.*BASH' "${work_dir}/layout-cells.txt"; then
 		report pass "layout-cells: each executed cell takes one column"
 	else
 		report fail "layout-cells: each executed cell takes one column" \
 			"the PYTHON and BASH title bars on the same line of the page"
+	fi
+fi
+
+# In a layout, a list after a block with no annotations keeps its own column.
+render layout-list typst
+if command -v pdftotext >/dev/null 2>&1; then
+	pdftotext -layout "${work_dir}/layout-list.pdf" "${work_dir}/layout-list.txt"
+	if grep -Eq '^ {20,}1\. A list item' "${work_dir}/layout-list.txt"; then
+		report pass "layout-list: a list with no annotations keeps its own column"
+	else
+		report fail "layout-list: a list with no annotations keeps its own column" \
+			"the list item in the second column of the page"
 	fi
 fi
 
@@ -788,8 +802,8 @@ fi
 
 # The filter does not visit notes, so a block in a note must not take the
 # window state of the block before it, here its line chip.
+render state-reset typst
 if command -v pdftotext >/dev/null 2>&1; then
-	render state-reset typst
 	pdftotext -layout "${work_dir}/state-reset.pdf" "${work_dir}/state-reset.txt"
 	if grep -Eq 'first\.py +2' "${work_dir}/state-reset.txt" &&
 		grep -q 'note\.py' "${work_dir}/state-reset.txt" &&

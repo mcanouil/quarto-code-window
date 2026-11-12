@@ -1,0 +1,21 @@
+---
+title: "A layout with a block and a list"
+filters:
+  - code-window
+format:
+  typst:
+    keep-typ: true
+---
+
+The layout below holds a block with no annotations and a list of its own.
+The list takes the second column.
+
+::: {layout-ncol="2"}
+
+```{.python}
+a = 1
+```
+
+1. A list item.
+
+:::
