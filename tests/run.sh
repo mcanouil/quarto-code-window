@@ -38,10 +38,15 @@ report() {
 	fi
 }
 
-# Render a fixture, and stop the run when the render itself fails.
+# Render a fixture, and stop the run when the render itself fails. A fixture
+# is a file, or a directory that holds a project.
 # $1 fixture base name. $2 target format.
 render() {
-	if ! quarto render "${work_dir}/$1.qmd" --to "$2" --quiet >"${work_dir}/$1.log" 2>&1; then
+	local target="${work_dir}/$1.qmd"
+	if [ -d "${work_dir}/$1" ]; then
+		target="${work_dir}/$1"
+	fi
+	if ! quarto render "${target}" --to "$2" --quiet >"${work_dir}/$1.log" 2>&1; then
 		printf 'FAIL  %s: the render failed\n' "$1"
 		tail -n 20 "${work_dir}/$1.log"
 		exit 1
@@ -542,17 +547,11 @@ fi
 # Quarto's own code blocks are left alone
 # ============================================================================
 
-# A book rendered to one file puts the front matter of each chapter into a
-# code block with the class quarto-title-block. Quarto replaces that block with
-# the chapter's title block later, so it gets no window.
+# The front matter of a chapter becomes a quarto-title-block code block.
 book_dir="${work_dir}/book"
 cp -R "${tests_dir}/fixtures/book" "${book_dir}"
-cp -R "${repo_dir}/_extensions" "${book_dir}/_extensions"
-if ! quarto render "${book_dir}" --to typst --quiet >"${work_dir}/book.log" 2>&1; then
-	printf 'FAIL  book: the render failed\n'
-	tail -n 20 "${work_dir}/book.log"
-	exit 1
-fi
+cp -R "${work_dir}/_extensions" "${book_dir}/_extensions"
+render book typst
 book_typ="${book_dir}/index.typ"
 if [ "$(count_typst_windows "${book_typ}")" -eq 1 ] &&
 	! grep -q 'quarto-title-block' "${book_typ}"; then

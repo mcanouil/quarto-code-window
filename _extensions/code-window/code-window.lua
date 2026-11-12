@@ -113,11 +113,8 @@ local function is_unnamed_cell_output(block)
   return cell_output.is_marked(block) and str.is_empty(block.attributes['filename'])
 end
 
---- Check whether a block is one that Quarto writes for itself and replaces
---- later. A book rendered to one file puts the front matter of each chapter
---- into a code block with the class "quarto-title-block". A filter of Quarto
---- finds that block by its class and puts the chapter's title block in its
---- place, so every pass of this extension leaves it alone.
+--- Check whether a block holds a chapter's front matter, which Quarto writes
+--- in a book rendered to one file and later replaces with the title block.
 --- @param block pandoc.CodeBlock Code block element
 --- @return boolean
 local function is_quarto_block(block)
