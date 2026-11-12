@@ -387,6 +387,7 @@ local function build_typst_function_def()
   let surface-fill = color.mix((fg, 5%%), (page-bg, 95%%))
   let muted-colour = color.mix((fg, 50%%), (page-bg, 50%%))
   let label-colour = color.mix((fg, 65%%), (page-bg, 35%%))
+  let outer-code-style = quarto-code-block-style.get()
 
   let filename-label = if filename != none {
     text(
@@ -484,22 +485,17 @@ local function build_typst_function_def()
         sticky: true,
         title-bar,
       )
-      // Strip code block chrome so content fills flush against the window body.
-      // Quarto's Skylighting block sets its own width, inset, radius and stroke,
-      // so set block() only removes the spacing around it. A wider rule would
-      // also reach the blocks inside Quarto's annotation circles.
-      // show raw overrides the document-level raw block styling (fill, radius).
-      // It sets no width, which would also reach the blocks in the circles.
+      // The window draws the border, so Quarto's code blocks inside it lose
+      // their own radius and outline, and get them back after the window.
+      // set block() only removes the spacing around the code block: a wider
+      // rule would also reach the blocks inside Quarto's annotation circles.
+      // show raw removes the fill of native code blocks.
       {
         set block(above: 0pt, below: 0pt)
-        show raw.where(block: true): set block(
-          fill: none,
-          radius: 0pt,
-          stroke: none,
-          above: 0pt,
-          below: 0pt,
-        )
+        show raw.where(block: true): set block(fill: none)
+        quarto-code-block-style.update((..outer-code-style, radius: 0pt, stroke: none))
         content
+        quarto-code-block-style.update(outer-code-style)
       }
     },
   )

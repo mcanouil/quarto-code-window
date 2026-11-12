@@ -614,6 +614,16 @@ if command -v pdftotext >/dev/null 2>&1; then
 	fi
 fi
 
+# The window draws the border, so it takes Quarto's outline off the code blocks
+# inside it, and puts it back after them.
+if grep -q 'quarto-code-block-style.update((..outer-code-style, radius: 0pt, stroke: none))' "${explicit_typ}" &&
+	grep -q 'quarto-code-block-style.update(outer-code-style)' "${explicit_typ}"; then
+	report pass "annotations-explicit: the window removes Quarto's outline inside it"
+else
+	report fail "annotations-explicit: the window removes Quarto's outline inside it" \
+		"an update that removes the outline and one that restores it, in the window function"
+fi
+
 # With idiomatic highlighting, Quarto writes a native block and wraps it in
 # its own annotation helper, inside the window.
 render annotations-idiomatic typst
