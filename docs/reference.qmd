@@ -103,6 +103,9 @@ In HTML the extension marks blocks and injects a stylesheet and a script.
 The script runs at page load and builds the title bar, the fold, and the line chip from those marks, so all three need JavaScript.
 
 In Typst the chrome is a call to the `wrapper` function, emitted into the document, and needs nothing at read time.
+If the document defines a function with the `wrapper` name in a raw Typst block, the extension uses that function and does not write its own.
+The extension still writes the colour and annotation helpers, because the hot-fixes call them.
+The function receives the code as its first argument, and these named arguments: `filename`, `is-auto`, `style`, `annotations`, `bg-colour`, `block-id`, and `lines-label`.
 
 ### Theming variables
 

@@ -390,6 +390,19 @@ elif grep -q 'unknown key "boarder"' "${work_dir}/typst-theme-unknown-key.log"; 
 else
 	report fail "typst-theme: an unknown key stops the compile" \
 		"the key boarder named in typst-theme-unknown-key.log"
+# A wrapper that the document defines replaces the stock one
+# ============================================================================
+
+# The extension skips its own wrapper but still writes the helpers, which the
+# Skylighting hot-fix calls. Without them the render fails to compile, so the
+# render itself is the first check.
+render wrapper-own typst
+if [ "$(grep -c '^#let my-window(' "${work_dir}/wrapper-own.typ")" -eq 1 ] &&
+	grep -q '^#let _cw-page-bg(' "${work_dir}/wrapper-own.typ"; then
+	report pass "wrapper-own: the document keeps its wrapper and gets the helpers"
+else
+	report fail "wrapper-own: the document keeps its wrapper and gets the helpers" \
+		"one #let my-window( and one #let _cw-page-bg( in wrapper-own.typ"
 fi
 
 # ============================================================================
