@@ -106,6 +106,20 @@ In Typst the chrome is a call to the `wrapper` function, emitted into the docume
 If the document defines a function with the `wrapper` name in a raw Typst block, the extension uses that function and does not write its own.
 The extension still writes the colour and annotation helpers, because the hot-fixes call them.
 The function receives the code as its first argument, and these named arguments: `filename`, `is-auto`, `style`, `annotations`, `bg-colour`, `block-id`, and `lines-label`.
+To show code annotations, the function must give the code to the `<wrapper>-annotated-content` helper.
+If it does not, the code has no annotation markers, and the annotation list has no links to the code.
+
+```typst
+#let my-window(content, annotations: (:), bg-colour: none, block-id: 0, ..args) = block(
+  stroke: 1pt,
+  my-window-annotated-content(
+    content,
+    annotations: annotations,
+    bg-colour: bg-colour,
+    block-id: block-id,
+  ),
+)
+```
 
 ### Theming variables
 

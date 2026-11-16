@@ -1391,12 +1391,14 @@ function Pandoc(doc)
   doc.blocks = process_typst_blocks(doc.blocks)
 
   -- A document that defines the wrapper itself keeps its definition, and
-  -- still gets the helpers that the hot-fixes call.
-  local fn_pattern = '#let ' .. CONFIG.typst_wrapper .. '('
+  -- still gets the helpers that the hot-fixes call. The wrapper is either a
+  -- function, "#let name(", or a closure, "#let name =". A longer name such as
+  -- "#let name-circled-number(" is a helper, not the wrapper.
+  local fn_pattern = '#let ' .. CONFIG.typst_wrapper:gsub('%p', '%%%0') .. '%s*[(=]'
   local has_own_wrapper = false
   for _, blk in ipairs(doc.blocks) do
     if blk.t == 'RawBlock' and blk.format == 'typst'
-        and blk.text:find(fn_pattern, 1, true) then
+        and blk.text:find(fn_pattern) then
       has_own_wrapper = true
       break
     end

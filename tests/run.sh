@@ -405,6 +405,17 @@ else
 		"one #let my-window( and one #let _cw-page-bg( in wrapper-own.typ"
 fi
 
+# The wrapper can also be bound as a closure, which the guard has to see too.
+sed 's/^#let my-window(content, ..args) = /#let my-window = (content, ..args) => /' \
+	"${work_dir}/wrapper-own.qmd" >"${work_dir}/wrapper-own-closure.qmd"
+render wrapper-own-closure typst
+if [ "$(grep -cE '^#let my-window( |\()' "${work_dir}/wrapper-own-closure.typ")" -eq 1 ]; then
+	report pass "wrapper-own-closure: a closure wrapper replaces the stock one"
+else
+	report fail "wrapper-own-closure: a closure wrapper replaces the stock one" \
+		"one #let my-window in wrapper-own-closure.typ"
+fi
+
 # ============================================================================
 # A block opts out of the document's collapse setting
 # ============================================================================
