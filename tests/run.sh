@@ -9,7 +9,8 @@ set -euo pipefail
 # fixtures rather than linked. docs/_scripts/sync-extension.sh solves the same
 # problem for the documentation site.
 #
-# Requires: quarto, and pdftotext from poppler for the page-break test.
+# Requires: quarto, and pdftotext from poppler for the page-break and theme
+# inset tests.
 #
 # Usage: tests/run.sh
 
@@ -360,14 +361,19 @@ fi
 # The code in the window starts further right than the code of the block with
 # no window, by most of the theme's 40pt inset. The block with no window comes
 # after the window, so this also shows that the inset is reset there.
-pdftotext -bbox "${work_dir}/typst-theme.pdf" "${work_dir}/typst-theme.html"
-x_in="$(grep -o 'xMin="[0-9.]*"[^>]*>x<' "${work_dir}/typst-theme.html" | grep -o '[0-9.]*' | head -n 1)"
-x_out="$(grep -o 'xMin="[0-9.]*"[^>]*>y<' "${work_dir}/typst-theme.html" | grep -o '[0-9.]*' | head -n 1)"
-if awk -v a="${x_in:-0}" -v b="${x_out:-0}" 'BEGIN { exit !(b > 0 && a - b > 25) }'; then
-	report pass "typst-theme: the code in the window takes the theme's inset"
+if command -v pdftotext >/dev/null 2>&1; then
+	pdftotext -bbox "${work_dir}/typst-theme.pdf" "${work_dir}/typst-theme.html"
+	x_in="$(grep -o 'xMin="[0-9.]*"[^>]*>x<' "${work_dir}/typst-theme.html" | grep -o '[0-9.]*' | head -n 1)"
+	x_out="$(grep -o 'xMin="[0-9.]*"[^>]*>y<' "${work_dir}/typst-theme.html" | grep -o '[0-9.]*' | head -n 1)"
+	if awk -v a="${x_in:-0}" -v b="${x_out:-0}" 'BEGIN { exit !(b > 0 && a - b > 25) }'; then
+		report pass "typst-theme: the code in the window takes the theme's inset"
+	else
+		report fail "typst-theme: the code in the window takes the theme's inset" \
+			"the code in the window more than 25pt right of the code outside, got ${x_in:-none} and ${x_out:-none}"
+	fi
 else
 	report fail "typst-theme: the code in the window takes the theme's inset" \
-		"the code in the window more than 25pt right of the code outside, got ${x_in:-none} and ${x_out:-none}"
+		"pdftotext on PATH (brew install poppler)"
 fi
 
 # A misspelt key would otherwise be ignored without a word, so the compile
