@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- feat: Add the `code-window-theme` Typst state, so a template can set the colours, the border, the insets, and the traffic lights of the window.
+
 ## 1.8.3 (2026-11-12)
 
 - fix: The HTML dependency folder now uses the extension version, so browsers load the new files after an upgrade. (#88)

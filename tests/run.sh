@@ -335,6 +335,39 @@ else
 fi
 
 # ============================================================================
+# A Typst template styles the window through the theme state
+# ============================================================================
+
+# The theme changes how the window is drawn, not the Typst source, so the
+# source is compiled to SVG and the drawing is read there. The stock window
+# draws a solid border mixed from the page colour, so a red dashed border can
+# only come from the theme.
+render typst-theme typst
+quarto typst compile "${work_dir}/typst-theme.typ" "${work_dir}/typst-theme.svg" \
+	>"${work_dir}/typst-theme-svg.log" 2>&1
+if grep -q 'stroke="#ff0000"' "${work_dir}/typst-theme.svg" &&
+	grep -q 'stroke-dasharray' "${work_dir}/typst-theme.svg"; then
+	report pass "typst-theme: the window draws the border the theme sets"
+else
+	report fail "typst-theme: the window draws the border the theme sets" \
+		'a stroke="#ff0000" with a stroke-dasharray in typst-theme.svg'
+fi
+
+# A misspelt key would otherwise be ignored without a word, so the render
+# stops and names the key. The render runs without --quiet, which would keep
+# the Typst error out of the log.
+if quarto render "${work_dir}/typst-theme-unknown-key.qmd" --to typst \
+	>"${work_dir}/typst-theme-unknown-key.log" 2>&1; then
+	report fail "typst-theme-unknown-key: an unknown key stops the render" \
+		"a failed render of typst-theme-unknown-key.qmd"
+elif grep -q 'boarder' "${work_dir}/typst-theme-unknown-key.log"; then
+	report pass "typst-theme-unknown-key: an unknown key stops the render"
+else
+	report fail "typst-theme-unknown-key: an unknown key stops the render" \
+		"the key boarder named in the render log"
+fi
+
+# ============================================================================
 # A block opts out of the document's collapse setting
 # ============================================================================
 

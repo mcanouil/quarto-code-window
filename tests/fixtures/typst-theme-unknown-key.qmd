@@ -1,0 +1,18 @@
+---
+title: "A Typst theme with a key the window does not know"
+filters:
+  - code-window
+format:
+  typst:
+    keep-typ: true
+---
+
+```{=typst}
+#state("code-window-theme").update((boarder: rgb("#ff0000")))
+```
+
+The key above is misspelt, so the render stops and names it.
+
+```{.python filename="a.py"}
+x = 1
+```

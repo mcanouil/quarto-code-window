@@ -332,10 +332,23 @@ end
 -- TYPST FUNCTION DEFINITION
 -- ============================================================================
 
---- Typst colour helpers for adaptive theme support.
+--- Typst colour helpers for adaptive theme support, and the theme state.
 --- Always injected so the code-window function can derive border, surface,
 --- muted, and label colours from the page background at render time.
+--- A template sets state("code-window-theme") to replace any derived value;
+--- the state is keyed by name, so the template needs none of these helpers.
 local TYPST_COLOUR_HELPERS = [==[
+// code-window: theme tokens that a template sets before the body
+#let _cw-theme = state("code-window-theme", (:))
+#let _cw-theme-keys = (
+  "border", "surface", "label", "muted",
+  "radius", "stroke-thickness", "stroke-dash",
+  "title-inset", "body-inset",
+  "traffic-light-size", "traffic-light-gap", "traffic-light-colours",
+)
+// true inside a window body, so a code block there takes the theme's body-inset
+#let _cw-in-window = state("cw-in-window", false)
+
 // code-window: adaptive colour helpers (derive UI tones from page background)
 #let _cw-page-bg() = {
   let f = page.fill
@@ -447,12 +460,30 @@ local function build_typst_function_def(has_hotfixes)
   lines-label: none,
 ) = {
   context {
+  let theme = _cw-theme.get()
+  for key in theme.keys() {
+    assert(
+      key in _cw-theme-keys,
+      message: "code-window: unknown key \"" + key + "\" in state(\"code-window-theme\"). "
+        + "Known keys: " + _cw-theme-keys.join(", ") + ".",
+    )
+  }
   let page-bg = _cw-page-bg()
   let fg = _cw-fg(page-bg)
-  let border-colour = color.mix((fg, 15%%), (page-bg, 85%%))
-  let surface-fill = color.mix((fg, 5%%), (page-bg, 95%%))
-  let muted-colour = color.mix((fg, 50%%), (page-bg, 50%%))
-  let label-colour = color.mix((fg, 65%%), (page-bg, 35%%))
+  let border-colour = theme.at("border", default: color.mix((fg, 15%%), (page-bg, 85%%)))
+  let surface-fill = theme.at("surface", default: color.mix((fg, 5%%), (page-bg, 95%%)))
+  let muted-colour = theme.at("muted", default: color.mix((fg, 50%%), (page-bg, 50%%)))
+  let label-colour = theme.at("label", default: color.mix((fg, 65%%), (page-bg, 35%%)))
+  let window-stroke = (
+    paint: border-colour,
+    thickness: theme.at("stroke-thickness", default: 1pt),
+    dash: theme.at("stroke-dash", default: none),
+  )
+  let light-size = theme.at("traffic-light-size", default: 0.85em)
+  let light-colours = theme.at(
+    "traffic-light-colours",
+    default: (rgb("#ff5f56"), rgb("#ffbd2e"), rgb("#27c93f")),
+  )
 
   let filename-label = if filename != none {
     text(
@@ -478,10 +509,8 @@ local function build_typst_function_def(has_hotfixes)
     inset: (right: 0.5em),
     stack(
       dir: ltr,
-      spacing: 0.425em,
-      circle(radius: 0.425em, fill: rgb("#ff5f56"), stroke: none),
-      circle(radius: 0.425em, fill: rgb("#ffbd2e"), stroke: none),
-      circle(radius: 0.425em, fill: rgb("#27c93f"), stroke: none),
+      spacing: theme.at("traffic-light-gap", default: 0.425em),
+      ..light-colours.map(c => circle(radius: light-size / 2, fill: c, stroke: none)),
     ),
   )
 
@@ -536,17 +565,17 @@ local function build_typst_function_def(has_hotfixes)
 
   block(
     width: 100%%,
-    stroke: 1pt + border-colour,
-    radius: 8pt,
+    stroke: window-stroke,
+    radius: theme.at("radius", default: 8pt),
     clip: true,
     {
       block(
         width: 100%%,
         fill: surface-fill,
-        inset: (x: 1em, y: 0.6em),
+        inset: theme.at("title-inset", default: (x: 1em, y: 0.6em)),
         below: 0pt,
         radius: 0pt,
-        stroke: (bottom: 1pt + border-colour),
+        stroke: (bottom: window-stroke),
         sticky: true,
         title-bar,
       )
@@ -556,7 +585,7 @@ local function build_typst_function_def(has_hotfixes)
       {
         set block(
           width: 100%%,
-          inset: 8pt,
+          inset: theme.at("body-inset", default: 8pt),
           radius: 0pt,
           stroke: none,
           above: 0pt,
@@ -570,7 +599,9 @@ local function build_typst_function_def(has_hotfixes)
           above: 0pt,
           below: 0pt,
         )
-%s      }
+        _cw-in-window.update(true)
+%s        _cw-in-window.update(false)
+      }
     },
   )
   }
