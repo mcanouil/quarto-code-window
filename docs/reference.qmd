@@ -127,6 +127,44 @@ To change the title bar colour, set the variable in the theme:
 }
 ```
 
+### Typst theme
+
+The Typst function reads its theme from the state `code-window-theme`.
+Each key replaces one value of the window.
+A key that you do not set keeps its default.
+The default colours come from the page fill, so the window matches light and dark pages.
+
+| Key | Default | Sets |
+|---|---|---|
+| `border` | 15% of the text colour mixed into the page fill | The colour of the window border and of the line below the title bar. |
+| `surface` | 5% of the text colour mixed into the page fill | The title bar background. |
+| `label` | 65% of the text colour mixed into the page fill | The colour of the filename. |
+| `muted` | 50% of the text colour mixed into the page fill | The colour of the `windows` style buttons. |
+| `radius` | `8pt` | The radius of the window corners. |
+| `stroke-thickness` | `1pt` | The thickness of the border. |
+| `stroke-dash` | `none` | The dash pattern of the border, for example `"dashed"`. |
+| `title-inset` | `(x: 1em, y: 0.6em)` | The inset of the title bar. |
+| `body-inset` | `8pt` | The inset of the code in the window. |
+| `traffic-light-size` | `0.85em` | The diameter of each `macos` button. |
+| `traffic-light-gap` | `0.425em` | The space between the `macos` buttons. |
+| `traffic-light-colours` | Red, yellow, and green | An array of the three `macos` button colours. |
+
+: The keys of the Typst theme. {.striped .hover tbl-colwidths="[22,38,40]"}
+
+A Typst template sets the state before the body.
+The state has a fixed name, so the template does not need the functions of the extension.
+The state name stays the same when you change `wrapper`.
+
+```typst
+#state("code-window-theme").update((
+  border: rgb("#2a6f97"),
+  surface: rgb("#e0eef6"),
+  radius: 4pt,
+))
+```
+
+An unknown key stops the render, and the error message gives the list of known keys.
+
 ## Hot-fixes
 
 Typst output needs a few corrections that Quarto does not yet make itself.

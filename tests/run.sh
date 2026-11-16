@@ -9,7 +9,8 @@ set -euo pipefail
 # fixtures rather than linked. docs/_scripts/sync-extension.sh solves the same
 # problem for the documentation site.
 #
-# Requires: quarto, and pdftotext from poppler for the page-break test.
+# Requires: quarto, and pdftotext from poppler for the page-break and theme
+# inset tests.
 #
 # Usage: tests/run.sh
 
@@ -332,6 +333,63 @@ if grep -q '^#code-window(' "${work_dir}/wrapper-default.typ"; then
 else
 	report fail "wrapper-default: the fallback answers when the schema cannot be read" \
 		"a #code-window( call in wrapper-default.typ"
+fi
+
+# ============================================================================
+# A Typst template styles the window through the theme state
+# ============================================================================
+
+# The theme changes how the window is drawn, not the Typst source, so the
+# source is compiled to SVG and the drawing is read there. The stock window
+# draws a solid border mixed from the page colour, so a red dashed border can
+# only come from the theme.
+render typst-theme typst
+if ! quarto typst compile "${work_dir}/typst-theme.typ" "${work_dir}/typst-theme.svg" \
+	>"${work_dir}/typst-theme-svg.log" 2>&1; then
+	printf 'FAIL  typst-theme: the SVG compile failed\n'
+	tail -n 20 "${work_dir}/typst-theme-svg.log"
+	exit 1
+fi
+if grep -q 'stroke="#ff0000"' "${work_dir}/typst-theme.svg" &&
+	grep -q 'stroke-dasharray' "${work_dir}/typst-theme.svg"; then
+	report pass "typst-theme: the window draws the border the theme sets"
+else
+	report fail "typst-theme: the window draws the border the theme sets" \
+		'a stroke="#ff0000" with a stroke-dasharray in typst-theme.svg'
+fi
+
+# The code in the window starts further right than the code of the block with
+# no window, by most of the theme's 40pt inset. The block with no window comes
+# after the window, so this also shows that the inset is reset there.
+if command -v pdftotext >/dev/null 2>&1; then
+	pdftotext -bbox "${work_dir}/typst-theme.pdf" "${work_dir}/typst-theme.html"
+	x_in="$(grep -o 'xMin="[0-9.]*"[^>]*>x<' "${work_dir}/typst-theme.html" | grep -o '[0-9.]*' | head -n 1)"
+	x_out="$(grep -o 'xMin="[0-9.]*"[^>]*>y<' "${work_dir}/typst-theme.html" | grep -o '[0-9.]*' | head -n 1)"
+	if awk -v a="${x_in:-0}" -v b="${x_out:-0}" 'BEGIN { exit !(b > 0 && a - b > 25) }'; then
+		report pass "typst-theme: the code in the window takes the theme's inset"
+	else
+		report fail "typst-theme: the code in the window takes the theme's inset" \
+			"the code in the window more than 25pt right of the code outside, got ${x_in:-none} and ${x_out:-none}"
+	fi
+else
+	report fail "typst-theme: the code in the window takes the theme's inset" \
+		"pdftotext on PATH (brew install poppler)"
+fi
+
+# A misspelt key would otherwise be ignored without a word, so the compile
+# stops and names the key. The themed source above is reused with one key
+# misspelt, which tests the same check without a second render.
+sed 's/border: rgb/boarder: rgb/' "${work_dir}/typst-theme.typ" \
+	>"${work_dir}/typst-theme-unknown-key.typ"
+if quarto typst compile "${work_dir}/typst-theme-unknown-key.typ" \
+	>"${work_dir}/typst-theme-unknown-key.log" 2>&1; then
+	report fail "typst-theme: an unknown key stops the compile" \
+		"a failed compile of typst-theme-unknown-key.typ"
+elif grep -q 'unknown key "boarder"' "${work_dir}/typst-theme-unknown-key.log"; then
+	report pass "typst-theme: an unknown key stops the compile"
+else
+	report fail "typst-theme: an unknown key stops the compile" \
+		"the key boarder named in typst-theme-unknown-key.log"
 fi
 
 # ============================================================================

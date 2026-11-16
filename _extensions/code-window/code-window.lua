@@ -332,10 +332,28 @@ end
 -- TYPST FUNCTION DEFINITION
 -- ============================================================================
 
---- Typst colour helpers for adaptive theme support.
+--- Typst colour helpers for adaptive theme support, and the theme state.
 --- Always injected so the code-window function can derive border, surface,
 --- muted, and label colours from the page background at render time.
+--- A template sets state("code-window-theme") to replace any derived value;
+--- the state is keyed by name, so the template needs none of these helpers.
 local TYPST_COLOUR_HELPERS = [==[
+// code-window: theme tokens that a template sets before the body
+#let _cw-theme = state("code-window-theme", (:))
+// the colour keys (border, surface, label, muted) derive from the page fill
+#let _cw-theme-defaults = (
+  radius: 8pt,
+  stroke-thickness: 1pt,
+  stroke-dash: none,
+  title-inset: (x: 1em, y: 0.6em),
+  body-inset: 8pt,
+  traffic-light-size: 0.85em,
+  traffic-light-gap: 0.425em,
+  traffic-light-colours: (rgb("#ff5f56"), rgb("#ffbd2e"), rgb("#27c93f")),
+)
+// the inset of a code block: the theme's body-inset inside a window
+#let _cw-body-inset = state("cw-body-inset", _cw-theme-defaults.body-inset)
+
 // code-window: adaptive colour helpers (derive UI tones from page background)
 #let _cw-page-bg() = {
   let f = page.fill
@@ -449,10 +467,28 @@ local function build_typst_function_def(has_hotfixes)
   context {
   let page-bg = _cw-page-bg()
   let fg = _cw-fg(page-bg)
-  let border-colour = color.mix((fg, 15%%), (page-bg, 85%%))
-  let surface-fill = color.mix((fg, 5%%), (page-bg, 95%%))
-  let muted-colour = color.mix((fg, 50%%), (page-bg, 50%%))
-  let label-colour = color.mix((fg, 65%%), (page-bg, 35%%))
+  let defaults = _cw-theme-defaults + (
+    border: color.mix((fg, 15%%), (page-bg, 85%%)),
+    surface: color.mix((fg, 5%%), (page-bg, 95%%)),
+    label: color.mix((fg, 65%%), (page-bg, 35%%)),
+    muted: color.mix((fg, 50%%), (page-bg, 50%%)),
+  )
+  let theme = _cw-theme.get()
+  for key in theme.keys() {
+    if key not in defaults {
+      panic("code-window: unknown key \"" + key + "\" in state(\"code-window-theme\"). "
+        + "Known keys: " + defaults.keys().join(", ") + ".")
+    }
+  }
+  let theme = defaults + theme
+  let border-colour = theme.border
+  let muted-colour = theme.muted
+  let label-colour = theme.label
+  let window-stroke = (
+    paint: border-colour,
+    thickness: theme.stroke-thickness,
+    dash: theme.stroke-dash,
+  )
 
   let filename-label = if filename != none {
     text(
@@ -478,10 +514,8 @@ local function build_typst_function_def(has_hotfixes)
     inset: (right: 0.5em),
     stack(
       dir: ltr,
-      spacing: 0.425em,
-      circle(radius: 0.425em, fill: rgb("#ff5f56"), stroke: none),
-      circle(radius: 0.425em, fill: rgb("#ffbd2e"), stroke: none),
-      circle(radius: 0.425em, fill: rgb("#27c93f"), stroke: none),
+      spacing: theme.traffic-light-gap,
+      ..theme.traffic-light-colours.map(c => circle(radius: theme.traffic-light-size / 2, fill: c, stroke: none)),
     ),
   )
 
@@ -536,17 +570,17 @@ local function build_typst_function_def(has_hotfixes)
 
   block(
     width: 100%%,
-    stroke: 1pt + border-colour,
-    radius: 8pt,
+    stroke: window-stroke,
+    radius: theme.radius,
     clip: true,
     {
       block(
         width: 100%%,
-        fill: surface-fill,
-        inset: (x: 1em, y: 0.6em),
+        fill: theme.surface,
+        inset: theme.title-inset,
         below: 0pt,
         radius: 0pt,
-        stroke: (bottom: 1pt + border-colour),
+        stroke: (bottom: window-stroke),
         sticky: true,
         title-bar,
       )
@@ -556,7 +590,7 @@ local function build_typst_function_def(has_hotfixes)
       {
         set block(
           width: 100%%,
-          inset: 8pt,
+          inset: theme.body-inset,
           radius: 0pt,
           stroke: none,
           above: 0pt,
@@ -570,7 +604,9 @@ local function build_typst_function_def(has_hotfixes)
           above: 0pt,
           below: 0pt,
         )
-%s      }
+        _cw-body-inset.update(theme.body-inset)
+%s        _cw-body-inset.update(_cw-theme-defaults.body-inset)
+      }
     },
   )
   }
