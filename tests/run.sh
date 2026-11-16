@@ -412,11 +412,28 @@ fi
 sed 's/^#let my-window(content, ..args) = /#let my-window = (content, ..args) => /' \
 	"${work_dir}/wrapper-own.qmd" >"${work_dir}/wrapper-own-closure.qmd"
 render wrapper-own-closure typst
-if [ "$(grep -cE '^#let my-window( |\()' "${work_dir}/wrapper-own-closure.typ")" -eq 1 ]; then
+if grep -q '^#let my-window = ' "${work_dir}/wrapper-own-closure.typ" &&
+	[ "$(grep -cE '^#let my-window( |\()' "${work_dir}/wrapper-own-closure.typ")" -eq 1 ]; then
 	report pass "wrapper-own-closure: a closure wrapper replaces the stock one"
 else
 	report fail "wrapper-own-closure: a closure wrapper replaces the stock one" \
-		"one #let my-window in wrapper-own-closure.typ"
+		"one #let my-window, in the closure form, in wrapper-own-closure.typ"
+fi
+
+# A custom wrapper calls the annotation helper to show code annotations, so
+# the helper is written even with both hot-fixes off.
+sed 's/^    wrapper: my-window$/    wrapper: my-window\
+    hotfix:\
+      code-annotations: false\
+      skylighting: false/' \
+	"${work_dir}/wrapper-own.qmd" >"${work_dir}/wrapper-own-no-hotfix.qmd"
+render wrapper-own-no-hotfix typst
+if grep -q '^      skylighting: false' "${work_dir}/wrapper-own-no-hotfix.qmd" &&
+	grep -q '^#let my-window-annotated-content(' "${work_dir}/wrapper-own-no-hotfix.typ"; then
+	report pass "wrapper-own-no-hotfix: the annotation helper is written without the hot-fixes"
+else
+	report fail "wrapper-own-no-hotfix: the annotation helper is written without the hot-fixes" \
+		"hot-fixes off in wrapper-own-no-hotfix.qmd and a #let my-window-annotated-content( in its .typ"
 fi
 
 # ============================================================================

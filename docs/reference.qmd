@@ -104,8 +104,10 @@ The script runs at page load and builds the title bar, the fold, and the line ch
 
 In Typst the chrome is a call to the `wrapper` function, emitted into the document, and needs nothing at read time.
 If the document defines a function with the `wrapper` name in a raw Typst block, the extension uses that function and does not write its own.
+Put this raw block before the first framed code block, because a Typst `#let` applies only to the content after it.
 The extension still writes the colour and annotation helpers, because the hot-fixes call them.
 The function receives the code as its first argument, and these named arguments: `filename`, `is-auto`, `style`, `annotations`, `bg-colour`, `block-id`, and `lines-label`.
+A call gives only the arguments that apply to its block, so give each named argument a default, or collect them with `..args`.
 To show code annotations, the function must give the code to the `<wrapper>-annotated-content` helper.
 If it does not, the code has no annotation markers, and the annotation list has no links to the code.
 

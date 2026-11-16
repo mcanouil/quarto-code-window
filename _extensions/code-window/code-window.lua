@@ -615,7 +615,9 @@ local function build_typst_function_def(has_hotfixes, has_own_wrapper)
 ]==], content_block)
 
   local result = TYPST_COLOUR_HELPERS
-  if has_hotfixes then
+  -- A document's own wrapper calls the annotation helper to show annotations,
+  -- so the helper is written for it whatever the hot-fixes say.
+  if has_hotfixes or has_own_wrapper then
     result = result .. TYPST_ANNOTATION_DEF
   end
   if has_own_wrapper then
