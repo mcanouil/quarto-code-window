@@ -390,6 +390,9 @@ elif grep -q 'unknown key "boarder"' "${work_dir}/typst-theme-unknown-key.log"; 
 else
 	report fail "typst-theme: an unknown key stops the compile" \
 		"the key boarder named in typst-theme-unknown-key.log"
+fi
+
+# ============================================================================
 # A wrapper that the document defines replaces the stock one
 # ============================================================================
 
