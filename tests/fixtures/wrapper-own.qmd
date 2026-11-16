@@ -1,0 +1,22 @@
+---
+title: "A wrapper the document defines"
+filters:
+  - code-window
+format:
+  typst:
+    keep-typ: true
+extensions:
+  code-window:
+    wrapper: my-window
+---
+
+```{=typst}
+#let my-window(content, ..args) = block(stroke: 1pt, content)
+```
+
+The document defines the wrapper itself, so the extension keeps that
+definition and still writes the helpers that the hot-fixes call.
+
+```{.python filename="a.py"}
+x = 1
+```

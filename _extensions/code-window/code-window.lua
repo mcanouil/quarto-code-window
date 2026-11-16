@@ -447,8 +447,9 @@ local TYPST_CONTENT_PLAIN = [==[
 
 --- Build the complete Typst code-window function definition.
 --- @param has_hotfixes boolean Whether at least one hot-fix is active
+--- @param has_own_wrapper boolean Whether the document defines the wrapper itself
 --- @return string Typst function definition(s)
-local function build_typst_function_def(has_hotfixes)
+local function build_typst_function_def(has_hotfixes, has_own_wrapper)
   local content_block = has_hotfixes
       and TYPST_CONTENT_WITH_ANNOTATIONS
       or TYPST_CONTENT_PLAIN
@@ -614,8 +615,13 @@ local function build_typst_function_def(has_hotfixes)
 ]==], content_block)
 
   local result = TYPST_COLOUR_HELPERS
-  if has_hotfixes then
+  -- A document's own wrapper calls the annotation helper to show annotations,
+  -- so the helper is written for it whatever the hot-fixes say.
+  if has_hotfixes or has_own_wrapper then
     result = result .. TYPST_ANNOTATION_DEF
+  end
+  if has_own_wrapper then
+    return result
   end
   return result .. fn_def
 end
@@ -1386,17 +1392,22 @@ function Pandoc(doc)
   -- Process code blocks and annotations throughout the document tree.
   doc.blocks = process_typst_blocks(doc.blocks)
 
-  -- Guard: check if the function definition is already present.
-  local fn_pattern = '#let ' .. CONFIG.typst_wrapper
+  -- A document that defines the wrapper itself keeps its definition, and
+  -- still gets the helpers that the hot-fixes call. The wrapper is either a
+  -- function, "#let name(", or a closure, "#let name =". A longer name such as
+  -- "#let name-circled-number(" is a helper, not the wrapper.
+  local fn_pattern = '#let ' .. CONFIG.typst_wrapper:gsub('%p', '%%%0') .. '%s*[(=]'
+  local has_own_wrapper = false
   for _, blk in ipairs(doc.blocks) do
     if blk.t == 'RawBlock' and blk.format == 'typst'
-        and blk.text:find(fn_pattern, 1, true) then
-      return doc
+        and blk.text:find(fn_pattern) then
+      has_own_wrapper = true
+      break
     end
   end
 
   local has_hotfixes = CONFIG.hotfix_code_annotations or CONFIG.hotfix_skylighting
-  local fn_def = build_typst_function_def(has_hotfixes)
+  local fn_def = build_typst_function_def(has_hotfixes, has_own_wrapper)
   if CONFIG.typst_wrapper ~= 'code-window' then
     fn_def = fn_def:gsub('code%-window%-annote%-colour', CONFIG.typst_wrapper .. '-annote-colour')
     fn_def = fn_def:gsub('code%-window%-circled%-number', CONFIG.typst_wrapper .. '-circled-number')

@@ -393,6 +393,63 @@ else
 fi
 
 # ============================================================================
+# A wrapper that the document defines replaces the stock one
+# ============================================================================
+
+# The extension skips its own wrapper but still writes the helpers, which the
+# Skylighting hot-fix calls. Without them the render fails to compile, so the
+# render itself is the first check.
+render wrapper-own typst
+if [ "$(grep -c '^#let my-window(' "${work_dir}/wrapper-own.typ")" -eq 1 ] &&
+	grep -q '^#let _cw-page-bg(' "${work_dir}/wrapper-own.typ"; then
+	report pass "wrapper-own: the document keeps its wrapper and gets the helpers"
+else
+	report fail "wrapper-own: the document keeps its wrapper and gets the helpers" \
+		"one #let my-window( and one #let _cw-page-bg( in wrapper-own.typ"
+fi
+
+# The wrapper can also be bound as a closure, which the guard has to see too.
+sed 's/^#let my-window(content, ..args) = /#let my-window = (content, ..args) => /' \
+	"${work_dir}/wrapper-own.qmd" >"${work_dir}/wrapper-own-closure.qmd"
+render wrapper-own-closure typst
+if grep -q '^#let my-window = ' "${work_dir}/wrapper-own-closure.typ" &&
+	[ "$(grep -cE '^#let my-window( |\()' "${work_dir}/wrapper-own-closure.typ")" -eq 1 ]; then
+	report pass "wrapper-own-closure: a closure wrapper replaces the stock one"
+else
+	report fail "wrapper-own-closure: a closure wrapper replaces the stock one" \
+		"one #let my-window, in the closure form, in wrapper-own-closure.typ"
+fi
+
+# A document that defines only a helper, whose name starts with the wrapper
+# name, still gets the stock wrapper.
+sed 's/^#let my-window(content, ..args) = block(stroke: 1pt, content)$/#let my-window-circled-number(n, bg-colour: none) = []/' \
+	"${work_dir}/wrapper-own.qmd" >"${work_dir}/wrapper-own-helper.qmd"
+render wrapper-own-helper typst
+if grep -q '^#let my-window-circled-number(n, bg-colour: none) = \[\]' "${work_dir}/wrapper-own-helper.typ" &&
+	[ "$(grep -c '^#let my-window(' "${work_dir}/wrapper-own-helper.typ")" -eq 1 ]; then
+	report pass "wrapper-own-helper: a helper definition is not taken for the wrapper"
+else
+	report fail "wrapper-own-helper: a helper definition is not taken for the wrapper" \
+		"the document's helper and one stock #let my-window( in wrapper-own-helper.typ"
+fi
+
+# A custom wrapper calls the annotation helper to show code annotations, so
+# the helper is written even with both hot-fixes off.
+sed 's/^    wrapper: my-window$/    wrapper: my-window\
+    hotfix:\
+      code-annotations: false\
+      skylighting: false/' \
+	"${work_dir}/wrapper-own.qmd" >"${work_dir}/wrapper-own-no-hotfix.qmd"
+render wrapper-own-no-hotfix typst
+if grep -q '^      skylighting: false' "${work_dir}/wrapper-own-no-hotfix.qmd" &&
+	grep -q '^#let my-window-annotated-content(' "${work_dir}/wrapper-own-no-hotfix.typ"; then
+	report pass "wrapper-own-no-hotfix: the annotation helper is written without the hot-fixes"
+else
+	report fail "wrapper-own-no-hotfix: the annotation helper is written without the hot-fixes" \
+		"hot-fixes off in wrapper-own-no-hotfix.qmd and a #let my-window-annotated-content( in its .typ"
+fi
+
+# ============================================================================
 # A block opts out of the document's collapse setting
 # ============================================================================
 
