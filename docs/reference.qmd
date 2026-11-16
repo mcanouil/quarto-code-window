@@ -108,6 +108,8 @@ Put this raw block before the first framed code block, because a Typst `#let` ap
 The extension still writes the colour and annotation helpers, because the hot-fixes call them.
 The function receives the code as its first argument, and these named arguments: `filename`, `is-auto`, `style`, `annotations`, `bg-colour`, `block-id`, and `lines-label`.
 A call gives only the arguments that apply to its block, so give each named argument a default, or collect them with `..args`.
+With the Skylighting hot-fix, the code block in the window takes its inset from `state("cw-body-inset")`, which is 8pt by default.
+If the function adds its own padding, it can set this state before the code and reset it to 8pt after the code.
 To show code annotations, the function must give the code to the `<wrapper>-annotated-content` helper.
 If it does not, the code has no annotation markers, and the annotation list has no links to the code.
 

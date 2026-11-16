@@ -420,6 +420,19 @@ else
 		"one #let my-window, in the closure form, in wrapper-own-closure.typ"
 fi
 
+# A document that defines only a helper, whose name starts with the wrapper
+# name, still gets the stock wrapper.
+sed 's/^#let my-window(content, ..args) = block(stroke: 1pt, content)$/#let my-window-circled-number(n, bg-colour: none) = []/' \
+	"${work_dir}/wrapper-own.qmd" >"${work_dir}/wrapper-own-helper.qmd"
+render wrapper-own-helper typst
+if grep -q '^#let my-window-circled-number(n, bg-colour: none) = \[\]' "${work_dir}/wrapper-own-helper.typ" &&
+	[ "$(grep -c '^#let my-window(' "${work_dir}/wrapper-own-helper.typ")" -eq 1 ]; then
+	report pass "wrapper-own-helper: a helper definition is not taken for the wrapper"
+else
+	report fail "wrapper-own-helper: a helper definition is not taken for the wrapper" \
+		"the document's helper and one stock #let my-window( in wrapper-own-helper.typ"
+fi
+
 # A custom wrapper calls the annotation helper to show code annotations, so
 # the helper is written even with both hot-fixes off.
 sed 's/^    wrapper: my-window$/    wrapper: my-window\
