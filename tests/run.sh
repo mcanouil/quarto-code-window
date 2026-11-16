@@ -353,18 +353,20 @@ else
 		'a stroke="#ff0000" with a stroke-dasharray in typst-theme.svg'
 fi
 
-# A misspelt key would otherwise be ignored without a word, so the render
-# stops and names the key. The render runs without --quiet, which would keep
-# the Typst error out of the log.
-if quarto render "${work_dir}/typst-theme-unknown-key.qmd" --to typst \
+# A misspelt key would otherwise be ignored without a word, so the compile
+# stops and names the key. The themed source above is reused with one key
+# misspelt, which tests the same check without a second render.
+sed 's/border: rgb/boarder: rgb/' "${work_dir}/typst-theme.typ" \
+	>"${work_dir}/typst-theme-unknown-key.typ"
+if quarto typst compile "${work_dir}/typst-theme-unknown-key.typ" \
 	>"${work_dir}/typst-theme-unknown-key.log" 2>&1; then
-	report fail "typst-theme-unknown-key: an unknown key stops the render" \
-		"a failed render of typst-theme-unknown-key.qmd"
-elif grep -q 'boarder' "${work_dir}/typst-theme-unknown-key.log"; then
-	report pass "typst-theme-unknown-key: an unknown key stops the render"
+	report fail "typst-theme: an unknown key stops the compile" \
+		"a failed compile of typst-theme-unknown-key.typ"
+elif grep -q 'unknown key "boarder"' "${work_dir}/typst-theme-unknown-key.log"; then
+	report pass "typst-theme: an unknown key stops the compile"
 else
-	report fail "typst-theme-unknown-key: an unknown key stops the render" \
-		"the key boarder named in the render log"
+	report fail "typst-theme: an unknown key stops the compile" \
+		"the key boarder named in typst-theme-unknown-key.log"
 fi
 
 # ============================================================================

@@ -340,14 +340,19 @@ end
 local TYPST_COLOUR_HELPERS = [==[
 // code-window: theme tokens that a template sets before the body
 #let _cw-theme = state("code-window-theme", (:))
-#let _cw-theme-keys = (
-  "border", "surface", "label", "muted",
-  "radius", "stroke-thickness", "stroke-dash",
-  "title-inset", "body-inset",
-  "traffic-light-size", "traffic-light-gap", "traffic-light-colours",
+// the colour keys (border, surface, label, muted) derive from the page fill
+#let _cw-theme-defaults = (
+  radius: 8pt,
+  stroke-thickness: 1pt,
+  stroke-dash: none,
+  title-inset: (x: 1em, y: 0.6em),
+  body-inset: 8pt,
+  traffic-light-size: 0.85em,
+  traffic-light-gap: 0.425em,
+  traffic-light-colours: (rgb("#ff5f56"), rgb("#ffbd2e"), rgb("#27c93f")),
 )
-// true inside a window body, so a code block there takes the theme's body-inset
-#let _cw-in-window = state("cw-in-window", false)
+// the inset of a code block: the theme's body-inset inside a window
+#let _cw-body-inset = state("cw-body-inset", _cw-theme-defaults.body-inset)
 
 // code-window: adaptive colour helpers (derive UI tones from page background)
 #let _cw-page-bg() = {
@@ -460,29 +465,29 @@ local function build_typst_function_def(has_hotfixes)
   lines-label: none,
 ) = {
   context {
-  let theme = _cw-theme.get()
-  for key in theme.keys() {
-    assert(
-      key in _cw-theme-keys,
-      message: "code-window: unknown key \"" + key + "\" in state(\"code-window-theme\"). "
-        + "Known keys: " + _cw-theme-keys.join(", ") + ".",
-    )
-  }
   let page-bg = _cw-page-bg()
   let fg = _cw-fg(page-bg)
-  let border-colour = theme.at("border", default: color.mix((fg, 15%%), (page-bg, 85%%)))
-  let surface-fill = theme.at("surface", default: color.mix((fg, 5%%), (page-bg, 95%%)))
-  let muted-colour = theme.at("muted", default: color.mix((fg, 50%%), (page-bg, 50%%)))
-  let label-colour = theme.at("label", default: color.mix((fg, 65%%), (page-bg, 35%%)))
+  let defaults = _cw-theme-defaults + (
+    border: color.mix((fg, 15%%), (page-bg, 85%%)),
+    surface: color.mix((fg, 5%%), (page-bg, 95%%)),
+    label: color.mix((fg, 65%%), (page-bg, 35%%)),
+    muted: color.mix((fg, 50%%), (page-bg, 50%%)),
+  )
+  let theme = _cw-theme.get()
+  for key in theme.keys() {
+    if key not in defaults {
+      panic("code-window: unknown key \"" + key + "\" in state(\"code-window-theme\"). "
+        + "Known keys: " + defaults.keys().join(", ") + ".")
+    }
+  }
+  let theme = defaults + theme
+  let border-colour = theme.border
+  let muted-colour = theme.muted
+  let label-colour = theme.label
   let window-stroke = (
     paint: border-colour,
-    thickness: theme.at("stroke-thickness", default: 1pt),
-    dash: theme.at("stroke-dash", default: none),
-  )
-  let light-size = theme.at("traffic-light-size", default: 0.85em)
-  let light-colours = theme.at(
-    "traffic-light-colours",
-    default: (rgb("#ff5f56"), rgb("#ffbd2e"), rgb("#27c93f")),
+    thickness: theme.stroke-thickness,
+    dash: theme.stroke-dash,
   )
 
   let filename-label = if filename != none {
@@ -509,8 +514,8 @@ local function build_typst_function_def(has_hotfixes)
     inset: (right: 0.5em),
     stack(
       dir: ltr,
-      spacing: theme.at("traffic-light-gap", default: 0.425em),
-      ..light-colours.map(c => circle(radius: light-size / 2, fill: c, stroke: none)),
+      spacing: theme.traffic-light-gap,
+      ..theme.traffic-light-colours.map(c => circle(radius: theme.traffic-light-size / 2, fill: c, stroke: none)),
     ),
   )
 
@@ -566,13 +571,13 @@ local function build_typst_function_def(has_hotfixes)
   block(
     width: 100%%,
     stroke: window-stroke,
-    radius: theme.at("radius", default: 8pt),
+    radius: theme.radius,
     clip: true,
     {
       block(
         width: 100%%,
-        fill: surface-fill,
-        inset: theme.at("title-inset", default: (x: 1em, y: 0.6em)),
+        fill: theme.surface,
+        inset: theme.title-inset,
         below: 0pt,
         radius: 0pt,
         stroke: (bottom: window-stroke),
@@ -585,7 +590,7 @@ local function build_typst_function_def(has_hotfixes)
       {
         set block(
           width: 100%%,
-          inset: theme.at("body-inset", default: 8pt),
+          inset: theme.body-inset,
           radius: 0pt,
           stroke: none,
           above: 0pt,
@@ -599,8 +604,8 @@ local function build_typst_function_def(has_hotfixes)
           above: 0pt,
           below: 0pt,
         )
-        _cw-in-window.update(true)
-%s        _cw-in-window.update(false)
+        _cw-body-inset.update(theme.body-inset)
+%s        _cw-body-inset.update(_cw-theme-defaults.body-inset)
       }
     },
   )
