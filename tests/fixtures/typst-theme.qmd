@@ -11,12 +11,19 @@ format:
 #state("code-window-theme").update((
   border: rgb("#ff0000"),
   stroke-dash: "dashed",
+  body-inset: 40pt,
 ))
 ```
 
 The theme above stands in for a template, which sets the same state before
-the body. The window below takes its border from the theme.
+the body. The window below takes its border and its inset from the theme.
 
 ```{.python filename="a.py"}
 x = 1
+```
+
+The block below has no window, so it keeps the usual inset.
+
+```{.python code-window-enabled="false"}
+y = 2
 ```
