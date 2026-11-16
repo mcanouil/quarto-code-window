@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- feat: Add the `code-window-theme` Typst state, so a template can set the colours, the border, the insets, and the traffic lights of the window.
+- feat: Add the `code-window-theme` Typst state, so a template can set the colours, the border, the insets, and the traffic lights of the window. (#92)
 
 ## 1.8.3 (2026-11-12)
 
