@@ -3,7 +3,7 @@
 ## Unreleased
 
 - feat: Add the `code-window-theme` Typst state, so a template can set the colours, the border, the insets, and the traffic lights of the window. (#92)
-- fix: Keep writing the Typst helpers when the document defines its own `wrapper` function, so the render no longer stops with `unknown variable: _cw-page-bg`.
+- fix: Keep writing the Typst helpers when the document defines its own `wrapper` function, so the render no longer stops with `unknown variable: _cw-page-bg`. (#93)
 
 ## 1.8.3 (2026-11-12)
 
