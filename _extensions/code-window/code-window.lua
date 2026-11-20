@@ -716,7 +716,7 @@ end
 --- @param block pandoc.CodeBlock Code block element
 --- @param resolved table<string, any> This block's attributes, resolved against the schema
 --- @param auto_label string|nil Label written by the language module, if any
---- @return pandoc.Block|pandoc.CodeBlock DecoratedCodeBlock or original block
+--- @return pandoc.Block DecoratedCodeBlock or original block
 local function process_html(block, resolved, auto_label)
   local overrides = read_window_overrides(block, resolved)
 

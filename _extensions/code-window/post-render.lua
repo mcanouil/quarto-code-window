@@ -38,6 +38,10 @@ local function mark_auto_window(div)
   return div
 end
 
+if not quarto.doc.is_format('html') then
+  return {}
+end
+
 return {
   { Div = mark_auto_window },
 }

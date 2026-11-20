@@ -222,5 +222,4 @@ Two extensions in this family are affected: [`typst-render`](https://m.canouil.d
 
 - HTML formats and Typst. Elsewhere the code block is left as it is.
 - Folding is HTML only; Typst has no equivalent.
-- The HTML chrome is built by script at page load, so a reader with JavaScript off sees plain code blocks.
-- A block with a derived filename is framed by the script rather than by the wrapper Quarto builds, so it needs JavaScript in HTML like the rest of the chrome.
+- In HTML, the style decorations, the fold, and the line chip are added by script at page load, so a reader with JavaScript off sees the window and its title bar without them.

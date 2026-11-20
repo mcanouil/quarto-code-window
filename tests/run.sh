@@ -88,6 +88,12 @@ block_wrappers() {
 	grep -o '<div class="sourceCode"[^>]*>' "$1" || true
 }
 
+# Count the windows in a rendered HTML file that hold a derived filename.
+# $1 rendered file
+count_auto_windows() {
+	grep -c '<div class="code-with-filename code-window-auto">' "$1" || true
+}
+
 # ============================================================================
 # The output of an executed cell keeps the shape Quarto gave it
 # ============================================================================
@@ -244,7 +250,7 @@ fi
 # if the gate ever closed on a render it should let through.
 render language-relabelled html
 if block_classes "${work_dir}/language-relabelled.html" | grep -q 'default foo' &&
-	grep -q '<div class="code-with-filename code-window-auto">' "${work_dir}/language-relabelled.html" &&
+	[ "$(count_auto_windows "${work_dir}/language-relabelled.html")" -eq 1 ] &&
 	block_wrappers "${work_dir}/language-relabelled.html" | grep -q 'data-filename="foo"'; then
 	report pass "language-relabelled: the block is relabelled and framed"
 else
@@ -585,7 +591,7 @@ fi
 render auto-label-forced html
 forced_html="${work_dir}/auto-label-forced.html"
 forced_labels="$(block_wrappers "${forced_html}" | grep -c 'data-filename="Terminal"' || true)"
-forced_auto="$(grep -c '<div class="code-with-filename code-window-auto">' "${forced_html}" || true)"
+forced_auto="$(count_auto_windows "${forced_html}")"
 if [ "${forced_labels}" -eq 1 ] && [ "${forced_auto}" -eq 2 ] &&
 	grep -q 'data-filename="run.sh"' "${forced_html}"; then
 	report pass "auto-label-forced: only the labelled block takes the label in HTML"
@@ -687,7 +693,7 @@ fi
 # $1 rendered file. $2 format name for the report.
 check_auto_bar() {
 	local auto named
-	auto="$(grep -c '<div class="code-with-filename code-window-auto">' "$1" || true)"
+	auto="$(count_auto_windows "$1")"
 	named="$(grep -c '<div class="code-with-filename">' "$1" || true)"
 	if [ "${auto}" -eq 4 ] && [ "${named}" -eq 1 ]; then
 		report pass "auto-bar-render-time ($2): the derived windows are in the page"
