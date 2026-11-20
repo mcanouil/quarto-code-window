@@ -6,3 +6,5 @@ contributes:
   filters:
     - at: pre-quarto
       path: main.lua
+    - at: post-render
+      path: post-render.lua
