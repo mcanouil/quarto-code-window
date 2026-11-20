@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.9.1 (2026-11-20)
+
 - fix: A code block without a filename now gets its title bar when the page renders, so the content below it no longer moves down as the page loads. (#95)
 - fix: A code block with an empty `filename` now keeps the single window Quarto builds for it, rather than gaining a second one. (#95)
 
