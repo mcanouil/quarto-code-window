@@ -1,0 +1,19 @@
+---
+title: "An empty filename"
+filters:
+  - code-window
+---
+
+Quarto builds a window for a block whose filename is empty, so the filter must
+not build a second one around it, and the annotation pass must still find the
+code block of every window.
+
+```{.python filename=""}
+a = 1
+```
+
+```python
+b = 2 # <1>
+```
+
+1. An annotation.

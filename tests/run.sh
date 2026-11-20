@@ -709,6 +709,18 @@ check_auto_bar() {
 	fi
 }
 
+# Quarto already gives a block with an empty filename a window of its own. The
+# filter leaves it alone, so the page holds one window per block and the
+# annotation pass, which expects a code block inside each window, renders.
+render empty-filename html
+empty_windows="$(grep -o '<div class="code-with-filename[" ]' "${work_dir}/empty-filename.html" | wc -l | tr -d ' ')"
+if [ "${empty_windows}" -eq 2 ]; then
+	report pass "empty-filename: each block gets one window"
+else
+	report fail "empty-filename: each block gets one window" \
+		"two code-with-filename wrappers, got ${empty_windows}"
+fi
+
 render auto-bar-render-time html
 check_auto_bar "${work_dir}/auto-bar-render-time.html" html
 render auto-bar-render-time revealjs

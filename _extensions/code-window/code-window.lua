@@ -751,7 +751,9 @@ local function process_html(block, resolved, auto_label)
     end
   end
 
-  if explicit_filename and explicit_filename ~= '' then
+  -- Quarto builds a window for any filename attribute, an empty one included,
+  -- so a block that carries one is already inside a window.
+  if explicit_filename ~= nil then
     -- Let Quarto create the .code-with-filename wrapper, and mark the block so
     -- the injected script can promote a block-level override onto that wrapper.
     mark()
