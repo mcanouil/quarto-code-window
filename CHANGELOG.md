@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- fix: A code block without a filename now gets its title bar when the page renders, so the content below it no longer moves down as the page loads. (#95)
+- fix: A code block with an empty `filename` now keeps the single window Quarto builds for it, rather than gaining a second one. (#95)
+
 ## 1.9.0 (2026-11-16)
 
 - feat: Add the `code-window-theme` Typst state, so a template can set the colours, the border, the insets, and the traffic lights of the window. (#92)

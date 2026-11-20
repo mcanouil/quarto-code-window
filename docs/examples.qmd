@@ -100,7 +100,8 @@ print("expanded by default")
 ```
 
 `closed` and `open` differ only in the initial state.
-The `<details>` element is built at page load by the script the extension injects, so the fold needs JavaScript; without it the block renders open and unframed.
+The script that the extension injects builds the `<details>` element at page load, so the fold needs JavaScript.
+Without it, the block renders open, inside its window.
 
 Set `collapse` under `extensions.code-window` to fold every block, and `code-window-collapse="false"` to opt one out.
 

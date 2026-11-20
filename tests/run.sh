@@ -88,6 +88,12 @@ block_wrappers() {
 	grep -o '<div class="sourceCode"[^>]*>' "$1" || true
 }
 
+# Count the windows in a rendered HTML file that hold a derived filename.
+# $1 rendered file
+count_auto_windows() {
+	grep -c '<div class="code-with-filename code-window-auto">' "$1" || true
+}
+
 # ============================================================================
 # The output of an executed cell keeps the shape Quarto gave it
 # ============================================================================
@@ -244,12 +250,12 @@ fi
 # if the gate ever closed on a render it should let through.
 render language-relabelled html
 if block_classes "${work_dir}/language-relabelled.html" | grep -q 'default foo' &&
-	block_classes "${work_dir}/language-relabelled.html" | grep -q 'cw-auto' &&
+	[ "$(count_auto_windows "${work_dir}/language-relabelled.html")" -eq 1 ] &&
 	block_wrappers "${work_dir}/language-relabelled.html" | grep -q 'data-filename="foo"'; then
 	report pass "language-relabelled: the block is relabelled and framed"
 else
 	report fail "language-relabelled: the block is relabelled and framed" \
-		"a default class before the foo class, a cw-auto class, and data-filename=\"foo\" on the block"
+		"a default class before the foo class, a code-window-auto wrapper, and data-filename=\"foo\" on the block"
 fi
 
 # ============================================================================
@@ -585,13 +591,13 @@ fi
 render auto-label-forced html
 forced_html="${work_dir}/auto-label-forced.html"
 forced_labels="$(block_wrappers "${forced_html}" | grep -c 'data-filename="Terminal"' || true)"
-forced_auto="$(block_classes "${forced_html}" | grep -c 'cw-auto' || true)"
+forced_auto="$(count_auto_windows "${forced_html}")"
 if [ "${forced_labels}" -eq 1 ] && [ "${forced_auto}" -eq 2 ] &&
 	grep -q 'data-filename="run.sh"' "${forced_html}"; then
 	report pass "auto-label-forced: only the labelled block takes the label in HTML"
 else
 	report fail "auto-label-forced: only the labelled block takes the label in HTML" \
-		"one data-filename=\"Terminal\", two cw-auto blocks, and data-filename=\"run.sh\", got ${forced_labels} and ${forced_auto}"
+		"one data-filename=\"Terminal\", two code-window-auto wrappers, and data-filename=\"run.sh\", got ${forced_labels} and ${forced_auto}"
 fi
 
 render auto-label-forced typst
@@ -675,6 +681,56 @@ else
 	report fail "book: the chapter title block gets no window" \
 		"one window, for the r block, and no quarto-title-block in index.typ"
 fi
+
+# ============================================================================
+# The derived title bar is in the rendered page
+# ============================================================================
+
+# Quarto builds the window of a named block while it reads the document, and
+# the filter builds the same window for a derived name. The page then holds the
+# title bar before any script runs, so nothing below the block moves on load.
+# The block that opts out gets no window, and the marker class is gone.
+# $1 rendered file. $2 format name for the report.
+check_auto_bar() {
+	local auto named
+	auto="$(count_auto_windows "$1")"
+	named="$(grep -c '<div class="code-with-filename">' "$1" || true)"
+	if [ "${auto}" -eq 4 ] && [ "${named}" -eq 1 ]; then
+		report pass "auto-bar-render-time ($2): the derived windows are in the page"
+	else
+		report fail "auto-bar-render-time ($2): the derived windows are in the page" \
+			"four code-window-auto wrappers and one plain wrapper, got ${auto} and ${named}"
+	fi
+	if ! grep -q 'cw-auto' "$1"; then
+		report pass "auto-bar-render-time ($2): no marker class is left"
+	else
+		report fail "auto-bar-render-time ($2): no marker class is left" \
+			"no cw-auto in the rendered file"
+	fi
+	if grep -q 'code-annotation-container-grid' "$1" && grep -q 'Auto listing' "$1"; then
+		report pass "auto-bar-render-time ($2): annotations and listing caption are kept"
+	else
+		report fail "auto-bar-render-time ($2): annotations and listing caption are kept" \
+			"a code-annotation-container-grid list and the Auto listing caption"
+	fi
+}
+
+# Quarto already gives a block with an empty filename a window of its own. The
+# filter leaves it alone, so the page holds one window per block and the
+# annotation pass, which expects a code block inside each window, renders.
+render empty-filename html
+empty_windows="$(grep -o '<div class="code-with-filename[" ]' "${work_dir}/empty-filename.html" | wc -l | tr -d ' ')"
+if [ "${empty_windows}" -eq 2 ]; then
+	report pass "empty-filename: each block gets one window"
+else
+	report fail "empty-filename: each block gets one window" \
+		"two code-with-filename wrappers, got ${empty_windows}"
+fi
+
+render auto-bar-render-time html
+check_auto_bar "${work_dir}/auto-bar-render-time.html" html
+render auto-bar-render-time revealjs
+check_auto_bar "${work_dir}/auto-bar-render-time.html" revealjs
 
 # ============================================================================
 
