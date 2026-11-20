@@ -57,9 +57,9 @@ extensions:
 Quarto's own `filename` attribute names the window.
 
 ::: {.callout-note}
-A derived filename is applied later than an author-set one.
-Quarto builds its own wrapper before this filter runs, so a block with no `filename` leaves the filter carrying a `data-filename` attribute and a marker class instead, and the injected script builds the wrapper at page load.
-The result is the same window; it needs JavaScript, as the rest of the HTML chrome does.
+Quarto builds the window for an author-set filename before this filter runs.
+For a derived filename, the filter builds the same window itself, with the `code-window-auto` class.
+Both windows are in the rendered page, so the content below a code block does not move when the page loads.
 Typst frames derived and author-set filenames alike, without a script.
 :::
 
@@ -99,8 +99,8 @@ Output named that way is always framed, whatever this option says.
 
 ## How the chrome is applied
 
-In HTML the extension marks blocks and injects a stylesheet and a script.
-The script runs at page load and builds the title bar, the fold, and the line chip from those marks, so all three need JavaScript.
+In HTML the extension writes the window and its title bar into the page, marks the blocks, and injects a stylesheet and a script.
+The script runs at page load and adds the style decorations, the fold, and the line chip from those marks, so these three need JavaScript.
 
 In Typst the chrome is a call to the `wrapper` function, emitted into the document, and needs nothing at read time.
 If the document defines a function with the `wrapper` name in a raw Typst block, the extension uses that function and does not write its own.

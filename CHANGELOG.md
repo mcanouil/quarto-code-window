@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- fix: A code block without a filename now gets its title bar when the page renders, so the content below it no longer moves down as the page loads.
+
 ## 1.9.0 (2026-11-16)
 
 - feat: Add the `code-window-theme` Typst state, so a template can set the colours, the border, the insets, and the traffic lights of the window. (#92)
