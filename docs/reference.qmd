@@ -159,9 +159,11 @@ The default colours come from the page fill, so the window matches light and dar
 |---|---|---|
 | `border` | 15% of the text colour mixed into the page fill | The colour of the window border and of the line below the title bar. |
 | `surface` | 5% of the text colour mixed into the page fill | The title bar background. |
+| `fill` | `none` | The background of each highlighted code block, in a window and out of it. With `none`, the block keeps the background of the highlight style. With Skylighting highlighting, this needs the `skylighting` hot-fix. With native Typst highlighting, it applies only in a window. |
 | `label` | 65% of the text colour mixed into the page fill | The colour of the filename. |
 | `muted` | 50% of the text colour mixed into the page fill | The colour of the `windows` style buttons. |
 | `radius` | `8pt` | The radius of the window corners. |
+| `stroke` | `auto` | The window border. With `auto`, the border is made from `border`, `stroke-thickness`, and `stroke-dash`. Any other value is a Typst stroke that replaces the border, for example `(top: 2pt + olive, rest: none)` for a top rule only. The line below the title bar does not change. |
 | `stroke-thickness` | `1pt` | The thickness of the border. |
 | `stroke-dash` | `none` | The dash pattern of the border, for example `"dashed"`. |
 | `title-inset` | `(x: 1em, y: 0.6em)` | The inset of the title bar. |

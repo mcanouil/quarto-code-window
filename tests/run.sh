@@ -62,6 +62,12 @@ count_typst_windows() {
 	grep -c '^#code-window(filename' "$1" || true
 }
 
+# Count the matches of a fixed string in a file, and answer 0 when none match.
+# $1 file. $2 fixed string.
+count_in() {
+	grep -o -F "$2" "$1" | wc -l | tr -d ' ' || true
+}
+
 # Succeed when one page of page-break-title.txt holds both strings. pdftotext
 # ends each page with a form feed, so awk reads one page per record.
 # $1 first string. $2 second string.
@@ -396,6 +402,40 @@ elif grep -q 'unknown key "boarder"' "${work_dir}/typst-theme-unknown-key.log"; 
 else
 	report fail "typst-theme: an unknown key stops the compile" \
 		"the key boarder named in typst-theme-unknown-key.log"
+fi
+
+# The theme's fill replaces the background of every highlighted block, in the
+# window and out of it, and its stroke replaces the frame of the window. The
+# stroke draws only a blue top rule, so the red border colour stays only on
+# the line below the title bar.
+render typst-theme-fill-stroke typst
+if ! quarto typst compile "${work_dir}/typst-theme-fill-stroke.typ" \
+	"${work_dir}/typst-theme-fill-stroke.svg" \
+	>"${work_dir}/typst-theme-fill-stroke-svg.log" 2>&1; then
+	printf 'FAIL  typst-theme-fill-stroke: the SVG compile failed\n'
+	tail -n 20 "${work_dir}/typst-theme-fill-stroke-svg.log"
+	exit 1
+fi
+fill_stroke_svg="${work_dir}/typst-theme-fill-stroke.svg"
+green_fills="$(count_in "${fill_stroke_svg}" 'fill="#00ff00"')"
+if [ "${green_fills}" -eq 2 ]; then
+	report pass "typst-theme-fill-stroke: both code blocks take the theme's fill"
+else
+	report fail "typst-theme-fill-stroke: both code blocks take the theme's fill" \
+		"two fill=\"#00ff00\" in typst-theme-fill-stroke.svg, got ${green_fills}"
+fi
+
+# Typst draws a stroke that covers only some sides as filled shapes, so the top
+# rule and the line below the title bar are fills. A full red frame would be a
+# red stroke.
+blue_sides="$(count_in "${fill_stroke_svg}" 'fill="#0000ff"')"
+red_sides="$(count_in "${fill_stroke_svg}" 'fill="#ff0000"')"
+red_frames="$(count_in "${fill_stroke_svg}" 'stroke="#ff0000"')"
+if [ "${blue_sides}" -eq 1 ] && [ "${red_sides}" -eq 1 ] && [ "${red_frames}" -eq 0 ]; then
+	report pass "typst-theme-fill-stroke: the window draws only the sides the theme sets"
+else
+	report fail "typst-theme-fill-stroke: the window draws only the sides the theme sets" \
+		"one blue side, one red side, and no red frame, got ${blue_sides}, ${red_sides}, and ${red_frames}"
 fi
 
 # ============================================================================

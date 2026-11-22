@@ -343,8 +343,10 @@ local TYPST_COLOUR_HELPERS = [==[
 // the colour keys (border, surface, label, muted) derive from the page fill
 #let _cw-theme-defaults = (
   radius: 8pt,
+  stroke: auto,
   stroke-thickness: 1pt,
   stroke-dash: none,
+  fill: none,
   title-inset: (x: 1em, y: 0.6em),
   body-inset: 8pt,
   traffic-light-size: 0.85em,
@@ -571,7 +573,7 @@ local function build_typst_function_def(has_hotfixes, has_own_wrapper)
 
   block(
     width: 100%%,
-    stroke: window-stroke,
+    stroke: if theme.stroke == auto { window-stroke } else { theme.stroke },
     radius: theme.radius,
     clip: true,
     {
@@ -598,7 +600,7 @@ local function build_typst_function_def(has_hotfixes, has_own_wrapper)
           below: 0pt,
         )
         show raw.where(block: true): set block(
-          fill: none,
+          fill: theme.fill,
           width: 100%%,
           radius: 0pt,
           stroke: none,

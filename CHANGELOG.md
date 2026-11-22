@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- feat: Add the `fill` and `stroke` keys to the Typst theme, so a template can set the code background and draw the window border on some sides only.
+
 ## 1.9.1 (2026-11-20)
 
 - fix: A code block without a filename now gets its title bar when the page renders, so the content below it no longer moves down as the page loads. (#95)
