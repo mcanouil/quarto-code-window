@@ -276,6 +276,20 @@ else
 		"a default class before the foo class, a code-window-auto wrapper, and data-filename=\"foo\" on the block"
 fi
 
+# A block that refuses a title inside a render that draws chrome has no reader
+# for the label either, so it keeps its class. The last two blocks still get a
+# title, from the language or from the filename, which shows the gate is per
+# block and not for the whole render.
+render language-refused html
+refused_classes="$(block_classes "${work_dir}/language-refused.html")"
+if [ "$(printf '%s\n' "${refused_classes}" | grep -c '^<pre class="foo"$')" -eq 2 ] &&
+	[ "$(printf '%s\n' "${refused_classes}" | grep -c 'default foo')" -eq 2 ]; then
+	report pass "language-refused: a block with no title keeps its class"
+else
+	report fail "language-refused: a block with no title keeps its class" \
+		"two <pre class=\"foo\"> and two default foo, got: ${refused_classes}"
+fi
+
 # ============================================================================
 # The Typst hot-fix stands down with the filter
 # ============================================================================
