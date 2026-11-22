@@ -1215,7 +1215,7 @@ local function get_decorated_codeblock_filename(div)
   if not custom_id then return nil end
   if not (_quarto and _quarto.ast and _quarto.ast.custom_node_data) then return nil end
   local entry = _quarto.ast.custom_node_data[custom_id]
-  if type(entry) == 'table' and entry.filename and entry.filename ~= '' then
+  if type(entry) == 'table' and type(entry.filename) == 'string' then
     return entry.filename
   end
   return nil
