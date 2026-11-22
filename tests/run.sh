@@ -802,6 +802,16 @@ else
 		"two code-with-filename wrappers, got ${empty_windows}"
 fi
 
+# Typst gives an empty filename the same meaning: the window draws its title
+# bar with no label, and takes no language label in its place.
+render empty-filename typst
+if grep -q '^#code-window(filename: "", is-auto: false' "${work_dir}/empty-filename.typ"; then
+	report pass "empty-filename: Typst draws a window with an empty title"
+else
+	report fail "empty-filename: Typst draws a window with an empty title" \
+		'a #code-window(filename: "", is-auto: false call in empty-filename.typ'
+fi
+
 render auto-bar-render-time html
 check_auto_bar "${work_dir}/auto-bar-render-time.html" html
 render auto-bar-render-time revealjs

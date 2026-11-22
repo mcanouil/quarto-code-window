@@ -1080,7 +1080,9 @@ local function resolve_window_params(block, resolved, auto_label)
   local filename = block.attributes['filename']
   local is_auto = false
 
-  if (not filename or filename == '') and not overrides.no_auto_filename then
+  -- An empty filename is a filename, as on the HTML path: the window keeps
+  -- an empty title rather than taking a derived label.
+  if filename == nil and not overrides.no_auto_filename then
     -- A label asks for a window whatever auto-filename says.
     if auto_label then
       filename = auto_label
@@ -1118,7 +1120,7 @@ local function process_typst_block(block, next_block)
 
   local filename, is_auto, block_style, lines_label =
     resolve_window_params(block, resolved, auto_label)
-  local has_window = filename and filename ~= ''
+  local has_window = filename ~= nil
   local effective_style = block_style or CONFIG.style
 
   -- Resolve annotations if enabled and the code-annotations hot-fix is active.
