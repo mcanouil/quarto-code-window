@@ -62,6 +62,18 @@ count_typst_windows() {
 	grep -c '^#code-window(filename' "$1" || true
 }
 
+# Compile a rendered Typst file to SVG, and stop the run when the compile
+# fails.
+# $1 base name of the .typ file in the work directory.
+compile_svg() {
+	if ! quarto typst compile "${work_dir}/$1.typ" "${work_dir}/$1.svg" \
+		>"${work_dir}/$1-svg.log" 2>&1; then
+		printf 'FAIL  %s: the SVG compile failed\n' "$1"
+		tail -n 20 "${work_dir}/$1-svg.log"
+		exit 1
+	fi
+}
+
 # Count the matches of a fixed string in a file, and answer 0 when none match.
 # $1 file. $2 fixed string.
 count_in() {
@@ -356,12 +368,7 @@ fi
 # draws a solid border mixed from the page colour, so a red dashed border can
 # only come from the theme.
 render typst-theme typst
-if ! quarto typst compile "${work_dir}/typst-theme.typ" "${work_dir}/typst-theme.svg" \
-	>"${work_dir}/typst-theme-svg.log" 2>&1; then
-	printf 'FAIL  typst-theme: the SVG compile failed\n'
-	tail -n 20 "${work_dir}/typst-theme-svg.log"
-	exit 1
-fi
+compile_svg typst-theme
 if grep -q 'stroke="#ff0000"' "${work_dir}/typst-theme.svg" &&
 	grep -q 'stroke-dasharray' "${work_dir}/typst-theme.svg"; then
 	report pass "typst-theme: the window draws the border the theme sets"
@@ -406,16 +413,12 @@ fi
 
 # The theme's fill replaces the background of every highlighted block, in the
 # window and out of it, and its stroke replaces the frame of the window. The
-# stroke draws only a blue top rule, so the red border colour stays only on
-# the line below the title bar.
-render typst-theme-fill-stroke typst
-if ! quarto typst compile "${work_dir}/typst-theme-fill-stroke.typ" \
-	"${work_dir}/typst-theme-fill-stroke.svg" \
-	>"${work_dir}/typst-theme-fill-stroke-svg.log" 2>&1; then
-	printf 'FAIL  typst-theme-fill-stroke: the SVG compile failed\n'
-	tail -n 20 "${work_dir}/typst-theme-fill-stroke-svg.log"
-	exit 1
-fi
+# themed source above is reused with the dashed border swapped for a fill and
+# a stroke that draws only a blue top rule, so the red border colour stays only
+# on the line below the title bar.
+sed 's/stroke-dash: "dashed",/fill: rgb("#00ff00"), stroke: (top: 3pt + rgb("#0000ff"), rest: none),/' \
+	"${work_dir}/typst-theme.typ" >"${work_dir}/typst-theme-fill-stroke.typ"
+compile_svg typst-theme-fill-stroke
 fill_stroke_svg="${work_dir}/typst-theme-fill-stroke.svg"
 green_fills="$(count_in "${fill_stroke_svg}" 'fill="#00ff00"')"
 if [ "${green_fills}" -eq 2 ]; then

@@ -492,6 +492,7 @@ local function build_typst_function_def(has_hotfixes, has_own_wrapper)
     thickness: theme.stroke-thickness,
     dash: theme.stroke-dash,
   )
+  let frame-stroke = if theme.stroke == auto { window-stroke } else { theme.stroke }
 
   let filename-label = if filename != none {
     text(
@@ -573,7 +574,7 @@ local function build_typst_function_def(has_hotfixes, has_own_wrapper)
 
   block(
     width: 100%%,
-    stroke: if theme.stroke == auto { window-stroke } else { theme.stroke },
+    stroke: frame-stroke,
     radius: theme.radius,
     clip: true,
     {
