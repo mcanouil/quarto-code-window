@@ -455,6 +455,21 @@ else
 		"two fill=\"#f1f3f5\" with auto and none with fill none, got ${style_fills_auto} and ${style_fills_none}"
 fi
 
+# With native Typst highlighting there is no Skylighting override, so the
+# theme's fill reaches only the code in the window, through its raw rule.
+sed -e 's/stroke-dash: "dashed",/fill: rgb("#00ff00"),/' \
+	-e 's/^    keep-typ: true$/    keep-typ: true\n    syntax-highlighting: idiomatic/' \
+	"${work_dir}/typst-theme.qmd" >"${work_dir}/typst-theme-fill-native.qmd"
+render typst-theme-fill-native typst
+compile_svg typst-theme-fill-native
+native_fills="$(count_in "${work_dir}/typst-theme-fill-native.svg" 'fill="#00ff00"')"
+if [ "${native_fills}" -eq 1 ]; then
+	report pass "typst-theme-fill-native: only the code in the window takes the theme's fill"
+else
+	report fail "typst-theme-fill-native: only the code in the window takes the theme's fill" \
+		"one fill=\"#00ff00\" in typst-theme-fill-native.svg, got ${native_fills}"
+fi
+
 # ============================================================================
 # A wrapper that the document defines replaces the stock one
 # ============================================================================
