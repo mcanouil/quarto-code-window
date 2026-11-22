@@ -820,11 +820,12 @@ if command -v Rscript >/dev/null 2>&1; then
 	cell_windows="$({ grep -o '<div class="code-with-filename[" ]' "${work_dir}/empty-filename-cell.html" || true; } | wc -l | tr -d ' ')"
 	render empty-filename-cell typst
 	if [ "${cell_windows}" -eq 1 ] &&
+		[ "$(count_typst_windows "${work_dir}/empty-filename-cell.typ")" -eq 1 ] &&
 		grep -q '^#code-window(filename: "", is-auto: false' "${work_dir}/empty-filename-cell.typ"; then
 		report pass "empty-filename-cell: a cell with an empty filename gets one window with an empty title"
 	else
 		report fail "empty-filename-cell: a cell with an empty filename gets one window with an empty title" \
-			"one code-with-filename wrapper in HTML, got ${cell_windows}, and a #code-window(filename: \"\", is-auto: false call in Typst"
+			"one code-with-filename wrapper in HTML, got ${cell_windows}, and one #code-window(filename: \"\", is-auto: false call in Typst"
 	fi
 else
 	report fail "empty-filename-cell: a cell with an empty filename gets one window with an empty title" \
