@@ -441,6 +441,20 @@ else
 		"one blue side, one red side, and no red frame, got ${blue_sides}, ${red_sides}, and ${red_frames}"
 fi
 
+# With fill left at auto, both code blocks keep the highlight style's
+# background. With fill set to none, neither block has one.
+sed 's/stroke-dash: "dashed",/fill: none,/' \
+	"${work_dir}/typst-theme.typ" >"${work_dir}/typst-theme-fill-none.typ"
+compile_svg typst-theme-fill-none
+style_fills_auto="$(count_in "${work_dir}/typst-theme.svg" 'fill="#f1f3f5"')"
+style_fills_none="$(count_in "${work_dir}/typst-theme-fill-none.svg" 'fill="#f1f3f5"')"
+if [ "${style_fills_auto}" -eq 2 ] && [ "${style_fills_none}" -eq 0 ]; then
+	report pass "typst-theme-fill-none: fill none removes the background that auto keeps"
+else
+	report fail "typst-theme-fill-none: fill none removes the background that auto keeps" \
+		"two fill=\"#f1f3f5\" with auto and none with fill none, got ${style_fills_auto} and ${style_fills_none}"
+fi
+
 # ============================================================================
 # A wrapper that the document defines replaces the stock one
 # ============================================================================

@@ -346,7 +346,7 @@ local TYPST_COLOUR_HELPERS = [==[
   stroke: auto,
   stroke-thickness: 1pt,
   stroke-dash: none,
-  fill: none,
+  fill: auto,
   title-inset: (x: 1em, y: 0.6em),
   body-inset: 8pt,
   traffic-light-size: 0.85em,
@@ -601,7 +601,7 @@ local function build_typst_function_def(has_hotfixes, has_own_wrapper)
           below: 0pt,
         )
         show raw.where(block: true): set block(
-          fill: theme.fill,
+          fill: if theme.fill == auto { none } else { theme.fill },
           width: 100%%,
           radius: 0pt,
           stroke: none,
