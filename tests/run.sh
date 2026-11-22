@@ -442,17 +442,19 @@ else
 fi
 
 # With fill left at auto, both code blocks keep the highlight style's
-# background. With fill set to none, neither block has one.
+# background. With fill set to none, neither block has one. The background is
+# read from the override's fallback, so the test follows the highlight style.
 sed 's/stroke-dash: "dashed",/fill: none,/' \
 	"${work_dir}/typst-theme.typ" >"${work_dir}/typst-theme-fill-none.typ"
 compile_svg typst-theme-fill-none
-style_fills_auto="$(count_in "${work_dir}/typst-theme.svg" 'fill="#f1f3f5"')"
-style_fills_none="$(count_in "${work_dir}/typst-theme-fill-none.svg" 'fill="#f1f3f5"')"
+style_bg="$(sed -n 's/.*else { rgb("\(#[0-9a-f]*\)") }.*/\1/p' "${work_dir}/typst-theme.typ")"
+style_fills_auto="$(count_in "${work_dir}/typst-theme.svg" "fill=\"${style_bg}\"")"
+style_fills_none="$(count_in "${work_dir}/typst-theme-fill-none.svg" "fill=\"${style_bg}\"")"
 if [ "${style_fills_auto}" -eq 2 ] && [ "${style_fills_none}" -eq 0 ]; then
 	report pass "typst-theme-fill-none: fill none removes the background that auto keeps"
 else
 	report fail "typst-theme-fill-none: fill none removes the background that auto keeps" \
-		"two fill=\"#f1f3f5\" with auto and none with fill none, got ${style_fills_auto} and ${style_fills_none}"
+		"two fill=\"${style_bg}\" with auto and none with fill none, got ${style_fills_auto} and ${style_fills_none}"
 fi
 
 # With native Typst highlighting there is no Skylighting override, so the
