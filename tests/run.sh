@@ -815,15 +815,20 @@ fi
 # An executed cell carries its filename in Quarto's registry. An empty one is
 # read as a filename there too, so HTML keeps the single window Quarto builds
 # and Typst draws a window with an empty title. Needs R and knitr.
-render empty-filename-cell html
-cell_windows="$(grep -o '<div class="code-with-filename[" ]' "${work_dir}/empty-filename-cell.html" | wc -l | tr -d ' ')"
-render empty-filename-cell typst
-if [ "${cell_windows}" -eq 1 ] &&
-	grep -q '^#code-window(filename: "", is-auto: false' "${work_dir}/empty-filename-cell.typ"; then
-	report pass "empty-filename-cell: a cell with an empty filename gets one window with an empty title"
+if command -v Rscript >/dev/null 2>&1; then
+	render empty-filename-cell html
+	cell_windows="$({ grep -o '<div class="code-with-filename[" ]' "${work_dir}/empty-filename-cell.html" || true; } | wc -l | tr -d ' ')"
+	render empty-filename-cell typst
+	if [ "${cell_windows}" -eq 1 ] &&
+		grep -q '^#code-window(filename: "", is-auto: false' "${work_dir}/empty-filename-cell.typ"; then
+		report pass "empty-filename-cell: a cell with an empty filename gets one window with an empty title"
+	else
+		report fail "empty-filename-cell: a cell with an empty filename gets one window with an empty title" \
+			"one code-with-filename wrapper in HTML, got ${cell_windows}, and a #code-window(filename: \"\", is-auto: false call in Typst"
+	fi
 else
 	report fail "empty-filename-cell: a cell with an empty filename gets one window with an empty title" \
-		"one code-with-filename wrapper in HTML, got ${cell_windows}, and a #code-window(filename: \"\", is-auto: false call in Typst"
+		"Rscript on PATH, with knitr installed"
 fi
 
 render auto-bar-render-time html
