@@ -458,7 +458,8 @@ fi
 # With native Typst highlighting there is no Skylighting override, so the
 # theme's fill reaches only the code in the window, through its raw rule.
 sed -e 's/stroke-dash: "dashed",/fill: rgb("#00ff00"),/' \
-	-e 's/^    keep-typ: true$/    keep-typ: true\n    syntax-highlighting: idiomatic/' \
+	-e 's/^    keep-typ: true$/    keep-typ: true\
+    syntax-highlighting: idiomatic/' \
 	"${work_dir}/typst-theme.qmd" >"${work_dir}/typst-theme-fill-native.qmd"
 render typst-theme-fill-native typst
 compile_svg typst-theme-fill-native
