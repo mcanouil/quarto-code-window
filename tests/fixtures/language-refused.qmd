@@ -1,0 +1,25 @@
+---
+title: "A language Pandoc cannot highlight, on blocks with no title"
+filters:
+  - code-window
+---
+
+The first two blocks refuse a title, so nothing reads a derived label and each
+keeps the class the author wrote. The last two get a title, from the language
+or from the filename, and are relabelled.
+
+```{.foo code-window-no-auto-filename="true"}
+x = 1
+```
+
+```{.foo code-window-enabled="false"}
+y = 2
+```
+
+```foo
+z = 3
+```
+
+```{.foo filename="w.foo" code-window-no-auto-filename="true"}
+w = 4
+```
