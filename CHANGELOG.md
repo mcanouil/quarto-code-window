@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.10.1 (2026-11-23)
+
 - fix: A highlighted code block in a Typst window no longer draws its own thin border and round corners, so the window's stroke and the title bar rule are the only edges. (#102)
 
 ## 1.10.0 (2026-11-23)
