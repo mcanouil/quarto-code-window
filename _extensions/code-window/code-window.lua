@@ -72,9 +72,9 @@ local VALID_COLLAPSE = {
   ['open'] = 'open',
 }
 
---- Fallback defaults for the hot-fixes, for the same two cases as
---- FALLBACK_DEFAULTS. Everywhere else the schema builds the "hotfix" object
---- from the defaults of its properties, and that decides.
+--- The hot-fixes the extension reads, with their fallback defaults for the
+--- same two cases as FALLBACK_DEFAULTS. Everywhere else the schema builds the
+--- "hotfix" object from the defaults of its properties, and its value decides.
 local HOTFIX_DEFAULTS = {
   ['code-annotations'] = true,
   ['skylighting'] = true,
@@ -137,6 +137,39 @@ local function stringify_bool(value)
     return value and 'true' or 'false'
   end
   return value
+end
+
+--- Read one hot-fix value: a boolean, or a map with "enabled" and
+--- "quarto-version" keys, where a version at or below the running Quarto
+--- turns the hot-fix off. The value is document metadata or a schema
+--- default, so it may be a Pandoc value or a plain Lua one.
+--- @param entry any The hot-fix value
+--- @return boolean enabled
+local function read_hotfix(entry)
+  local function as_string(value)
+    if type(value) == 'boolean' then
+      return value and 'true' or 'false'
+    end
+    return pandoc.utils.stringify(value)
+  end
+  if type(entry) ~= 'table' or pandoc.utils.type(entry) == 'Inlines' then
+    return as_string(entry) == 'true'
+  end
+  local enabled = true
+  if entry['enabled'] ~= nil then
+    enabled = as_string(entry['enabled']) == 'true'
+  end
+  local ver = entry['quarto-version']
+  if ver ~= nil then
+    ver = as_string(ver)
+    if ver ~= '' then
+      local ok, threshold = pcall(pandoc.types.Version, ver)
+      if ok and quarto.version >= threshold then
+        enabled = false
+      end
+    end
+  end
+  return enabled
 end
 
 --- Take the attributes an author can write off a block the filter processes,
@@ -921,43 +954,22 @@ function Meta(meta)
       '"skylighting-fix" is deprecated. Use "hotfix: { skylighting: true/false }" instead.')
   end
 
-  -- Parse hotfix options with per-hotfix version-based auto-disable.
-  -- Each hotfix value can be:
-  --   boolean/string: true/false to enable/disable
-  --   map: { enabled: true/false, quarto-version: "x.y.z" }
+  -- Each hot-fix is on or off, and the schema default comes in the same two
+  -- forms as a document value, so both go through read_hotfix.
   local schema_hotfix = schema_defaults['hotfix']
   if type(schema_hotfix) ~= 'table' then
     schema_hotfix = {}
   end
   local hotfix = {}
   for key, fallback in pairs(HOTFIX_DEFAULTS) do
-    local default = schema_hotfix[key]
-    if type(default) ~= 'boolean' then
-      default = fallback
-    end
     local entry = hotfix_meta and hotfix_meta[key]
-    if entry ~= nil and pandoc.utils.type(entry) == 'table' then
-      -- Map form: { enabled: bool, quarto-version: "x.y.z" }
-      local enabled = true
-      if entry['enabled'] ~= nil then
-        enabled = pandoc.utils.stringify(entry['enabled']) == 'true'
-      end
-      local ver = entry['quarto-version']
-      if ver then
-        ver = pandoc.utils.stringify(ver)
-        if ver ~= '' then
-          local ok, threshold = pcall(pandoc.types.Version, ver)
-          if ok and quarto.version >= threshold then
-            enabled = false
-          end
-        end
-      end
-      hotfix[key] = enabled
-    elseif entry ~= nil then
-      -- Simple boolean/string form
-      hotfix[key] = pandoc.utils.stringify(entry) == 'true'
+    if entry == nil then
+      entry = schema_hotfix[key]
+    end
+    if entry == nil then
+      hotfix[key] = fallback
     else
-      hotfix[key] = default
+      hotfix[key] = read_hotfix(entry)
     end
   end
 

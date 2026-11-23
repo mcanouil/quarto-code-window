@@ -402,6 +402,20 @@ else
 		"no Skylighting override in hotfix-schema-off/hotfix-default.typ"
 fi
 
+# The schema may also give a hot-fix default in the map form, which is read
+# like the same map written in the document.
+hotfix_project schema-map
+awk '/^      skylighting:$/ { found = 1 } found && /default: true/ { sub(/true/, "{enabled: false}"); found = 0 } { print }' \
+	"${repo_dir}/_extensions/code-window/_schema.yml" \
+	>"${work_dir}/hotfix-schema-map/_extensions/code-window/_schema.yml"
+render hotfix-schema-map typst
+if ! grep -q '// skylighting-typst-fix override' "${work_dir}/hotfix-schema-map/hotfix-default.typ"; then
+	report pass "hotfix-schema-map: a hot-fix default in the map form is followed"
+else
+	report fail "hotfix-schema-map: a hot-fix default in the map form is followed" \
+		"no Skylighting override in hotfix-schema-map/hotfix-default.typ"
+fi
+
 # Without a schema to read, the extension falls back to its own defaults, so
 # the hot-fix stays on.
 hotfix_project schema-missing
