@@ -416,6 +416,22 @@ else
 		"no Skylighting override in hotfix-schema-map/hotfix-default.typ"
 fi
 
+# A value that is neither a boolean nor a map, such as a list, is read as
+# text, so a list holding false turns the hot-fix off as before.
+sed 's/^    keep-typ: true$/    keep-typ: true\
+extensions:\
+  code-window:\
+    hotfix:\
+      skylighting: [false]/' \
+	"${work_dir}/hotfix-default.qmd" >"${work_dir}/hotfix-list.qmd"
+render hotfix-list typst
+if ! grep -q '// skylighting-typst-fix override' "${work_dir}/hotfix-list.typ"; then
+	report pass "hotfix-list: a list value is read as text, not as a map"
+else
+	report fail "hotfix-list: a list value is read as text, not as a map" \
+		"no Skylighting override in hotfix-list.typ"
+fi
+
 # Without a schema to read, the extension falls back to its own defaults, so
 # the hot-fix stays on.
 hotfix_project schema-missing

@@ -152,7 +152,7 @@ local function read_hotfix(entry)
     end
     return pandoc.utils.stringify(value)
   end
-  if type(entry) ~= 'table' or pandoc.utils.type(entry) == 'Inlines' then
+  if pandoc.utils.type(entry) ~= 'table' then
     return as_string(entry) == 'true'
   end
   local enabled = true
