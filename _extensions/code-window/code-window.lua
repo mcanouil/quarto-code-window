@@ -625,7 +625,8 @@ local function build_typst_function_def(has_hotfixes, has_own_wrapper)
         title-bar,
       )
       // Strip code block chrome so content fills flush against the window body.
-      // set block() provides defaults for Skylighting blocks (explicit fill preserved).
+      // set block() provides defaults for Skylighting blocks (explicit fill preserved);
+      // the Skylighting override reads cw-in-window to drop its own stroke and radius.
       // show raw overrides the document-level raw block styling (fill, radius).
       {
         set block(
