@@ -547,6 +547,17 @@ else
 		"one blue side, one red side, and no red frame, got ${blue_sides}, ${red_sides}, and ${red_frames}"
 fi
 
+# The highlighted block draws its own thin frame in the mixed border colour,
+# which Typst writes as an oklab stroke. In the window the theme's stroke is the
+# only edge, so only the block outside the window keeps that frame.
+block_frames="$(count_in "${fill_stroke_svg}" 'stroke="oklab(')"
+if [ "${block_frames}" -eq 1 ]; then
+	report pass "typst-theme-fill-stroke: the code in the window has no frame of its own"
+else
+	report fail "typst-theme-fill-stroke: the code in the window has no frame of its own" \
+		"one oklab stroke in typst-theme-fill-stroke.svg, got ${block_frames}"
+fi
+
 # With fill left at auto, both code blocks keep the highlight style's
 # background. With fill set to none, neither block has one. The background is
 # read from the override's fallback, so the test follows the highlight style.

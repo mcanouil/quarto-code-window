@@ -110,6 +110,9 @@ The function receives the code as its first argument, and these named arguments:
 A call gives only the arguments that apply to its block, so give each named argument a default, or collect them with `..args`.
 With the Skylighting hot-fix, the code block in the window takes its inset from `state("cw-body-inset")`, which is 8pt by default.
 If the function adds its own padding, it can set this state before the code and reset it to 8pt after the code.
+Outside a window, the code block has a thin border and round corners.
+If the function draws its own border, it can set `state("cw-in-window")` to `true` before the code and to `false` after the code.
+Then the code block has no border and square corners.
 To show code annotations, the function must give the code to the `<wrapper>-annotated-content` helper.
 If it does not, the code has no annotation markers, and the annotation list has no links to the code.
 

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- fix: A highlighted code block in a Typst window no longer draws its own thin border and round corners, so the window's stroke and the title bar rule are the only edges. (#102)
+
 ## 1.10.0 (2026-11-23)
 
 - feat: Add the `fill` and `stroke` keys to the Typst theme, so a template can set the code background and draw the window border on some sides only. (#97)
