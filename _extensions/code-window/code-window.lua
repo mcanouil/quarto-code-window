@@ -46,9 +46,7 @@ local ATTRIBUTE_PREFIX = 'code-window-'
 --- could not be read, which is a state this extension renders through rather
 --- than stopping for. Everywhere else _schema.yml decides these seven, so the
 --- values below are a fallback and not a second place to change one of them.
---- The hotfix defaults are a different story, and are still kept by hand in
---- HOTFIX_DEFAULTS: they are nested in the schema and read on their own path,
---- so changing one in _schema.yml alone still changes nothing.
+--- HOTFIX_DEFAULTS, below, is the same kind of fallback for the hot-fixes.
 --- All seven stay listed, because the second case has nothing else to read
 --- from, and an option added to the schema needs an entry here as well or it
 --- has no default at all on a format the extension does not act on.
@@ -74,6 +72,9 @@ local VALID_COLLAPSE = {
   ['open'] = 'open',
 }
 
+--- Fallback defaults for the hot-fixes, for the same two cases as
+--- FALLBACK_DEFAULTS. Everywhere else the schema builds the "hotfix" object
+--- from the defaults of its properties, and that decides.
 local HOTFIX_DEFAULTS = {
   ['code-annotations'] = true,
   ['skylighting'] = true,
@@ -924,8 +925,16 @@ function Meta(meta)
   -- Each hotfix value can be:
   --   boolean/string: true/false to enable/disable
   --   map: { enabled: true/false, quarto-version: "x.y.z" }
+  local schema_hotfix = schema_defaults['hotfix']
+  if type(schema_hotfix) ~= 'table' then
+    schema_hotfix = {}
+  end
   local hotfix = {}
-  for key, default in pairs(HOTFIX_DEFAULTS) do
+  for key, fallback in pairs(HOTFIX_DEFAULTS) do
+    local default = schema_hotfix[key]
+    if type(default) ~= 'boolean' then
+      default = fallback
+    end
     local entry = hotfix_meta and hotfix_meta[key]
     if entry ~= nil and pandoc.utils.type(entry) == 'table' then
       -- Map form: { enabled: bool, quarto-version: "x.y.z" }

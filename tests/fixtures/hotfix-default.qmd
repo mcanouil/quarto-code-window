@@ -1,0 +1,15 @@
+---
+title: "Hot-fix defaults read from the schema"
+filters:
+  - code-window
+format:
+  typst:
+    keep-typ: true
+---
+
+The document sets no hot-fix, so each one takes the default that the
+extension's schema declares.
+
+```python
+x = 1
+```

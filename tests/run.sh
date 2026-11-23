@@ -374,6 +374,47 @@ else
 fi
 
 # ============================================================================
+# The hot-fix defaults come from the schema
+# ============================================================================
+
+# Each case is a project of its own, with its own copy of the extension, so a
+# change to one schema reaches no other test. The document sets no hot-fix.
+# $1 case name.
+hotfix_project() {
+	local dir="${work_dir}/hotfix-$1"
+	mkdir -p "${dir}"
+	cp -R "${repo_dir}/_extensions" "${dir}/_extensions"
+	cp "${tests_dir}/fixtures/hotfix-default.qmd" "${dir}/"
+	printf 'project:\n  type: default\n' >"${dir}/_quarto.yml"
+}
+
+# With the skylighting default turned off in the schema alone, the render
+# follows the schema and writes no Skylighting override.
+hotfix_project schema-off
+awk '/^      skylighting:$/ { found = 1 } found && /default: true/ { sub(/true/, "false"); found = 0 } { print }' \
+	"${repo_dir}/_extensions/code-window/_schema.yml" \
+	>"${work_dir}/hotfix-schema-off/_extensions/code-window/_schema.yml"
+render hotfix-schema-off typst
+if ! grep -q '// skylighting-typst-fix override' "${work_dir}/hotfix-schema-off/hotfix-default.typ"; then
+	report pass "hotfix-schema-off: a hot-fix default changed in the schema alone is followed"
+else
+	report fail "hotfix-schema-off: a hot-fix default changed in the schema alone is followed" \
+		"no Skylighting override in hotfix-schema-off/hotfix-default.typ"
+fi
+
+# Without a schema to read, the extension falls back to its own defaults, so
+# the hot-fix stays on.
+hotfix_project schema-missing
+rm "${work_dir}/hotfix-schema-missing/_extensions/code-window/_schema.yml"
+render hotfix-schema-missing typst
+if grep -q '// skylighting-typst-fix override' "${work_dir}/hotfix-schema-missing/hotfix-default.typ"; then
+	report pass "hotfix-schema-missing: the hot-fix defaults fall back without a schema"
+else
+	report fail "hotfix-schema-missing: the hot-fix defaults fall back without a schema" \
+		"a Skylighting override in hotfix-schema-missing/hotfix-default.typ"
+fi
+
+# ============================================================================
 # A Typst template styles the window through the theme state
 # ============================================================================
 
