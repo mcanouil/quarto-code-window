@@ -3,6 +3,7 @@
 ## Unreleased
 
 - feat: Add the `fill` and `stroke` keys to the Typst theme, so a template can set the code background and draw the window border on some sides only. (#97)
+- fix: A code block or an executed cell with an empty `filename` now gets one window with an empty title in HTML and Typst, rather than the language label or a second window. (#98)
 
 ## 1.9.1 (2026-11-20)
 

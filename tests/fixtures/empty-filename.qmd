@@ -2,6 +2,10 @@
 title: "An empty filename"
 filters:
   - code-window
+format:
+  html: default
+  typst:
+    keep-typ: true
 ---
 
 Quarto builds a window for a block whose filename is empty, so the filter must

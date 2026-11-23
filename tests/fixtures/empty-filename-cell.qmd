@@ -1,0 +1,18 @@
+---
+title: "An empty filename on an executed cell"
+filters:
+  - code-window
+format:
+  html: default
+  typst:
+    keep-typ: true
+---
+
+Quarto keeps the filename of an executed cell in its own registry, not on the
+code block, so the filter reads it there. An empty filename read there is
+still a filename, and the window keeps an empty title.
+
+```{r}
+#| filename: ""
+a <- 1
+```
