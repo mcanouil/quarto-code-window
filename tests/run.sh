@@ -62,6 +62,24 @@ count_typst_windows() {
 	grep -c '^#code-window(filename' "$1" || true
 }
 
+# Compile a rendered Typst file to SVG, and stop the run when the compile
+# fails.
+# $1 base name of the .typ file in the work directory.
+compile_svg() {
+	if ! quarto typst compile "${work_dir}/$1.typ" "${work_dir}/$1.svg" \
+		>"${work_dir}/$1-svg.log" 2>&1; then
+		printf 'FAIL  %s: the SVG compile failed\n' "$1"
+		tail -n 20 "${work_dir}/$1-svg.log"
+		exit 1
+	fi
+}
+
+# Count the matches of a fixed string in a file, and answer 0 when none match.
+# $1 file. $2 fixed string.
+count_in() {
+	grep -o -F "$2" "$1" | wc -l | tr -d ' ' || true
+}
+
 # Succeed when one page of page-break-title.txt holds both strings. pdftotext
 # ends each page with a form feed, so awk reads one page per record.
 # $1 first string. $2 second string.
@@ -350,12 +368,7 @@ fi
 # draws a solid border mixed from the page colour, so a red dashed border can
 # only come from the theme.
 render typst-theme typst
-if ! quarto typst compile "${work_dir}/typst-theme.typ" "${work_dir}/typst-theme.svg" \
-	>"${work_dir}/typst-theme-svg.log" 2>&1; then
-	printf 'FAIL  typst-theme: the SVG compile failed\n'
-	tail -n 20 "${work_dir}/typst-theme-svg.log"
-	exit 1
-fi
+compile_svg typst-theme
 if grep -q 'stroke="#ff0000"' "${work_dir}/typst-theme.svg" &&
 	grep -q 'stroke-dasharray' "${work_dir}/typst-theme.svg"; then
 	report pass "typst-theme: the window draws the border the theme sets"
@@ -396,6 +409,68 @@ elif grep -q 'unknown key "boarder"' "${work_dir}/typst-theme-unknown-key.log"; 
 else
 	report fail "typst-theme: an unknown key stops the compile" \
 		"the key boarder named in typst-theme-unknown-key.log"
+fi
+
+# The theme's fill replaces the background of every highlighted block, in the
+# window and out of it, and its stroke replaces the frame of the window. The
+# themed source above is reused with the dashed border swapped for a fill and
+# a stroke that draws only a blue top rule, so the red border colour stays only
+# on the line below the title bar.
+sed 's/stroke-dash: "dashed",/fill: rgb("#00ff00"), stroke: (top: 3pt + rgb("#0000ff"), rest: none),/' \
+	"${work_dir}/typst-theme.typ" >"${work_dir}/typst-theme-fill-stroke.typ"
+compile_svg typst-theme-fill-stroke
+fill_stroke_svg="${work_dir}/typst-theme-fill-stroke.svg"
+green_fills="$(count_in "${fill_stroke_svg}" 'fill="#00ff00"')"
+if [ "${green_fills}" -eq 2 ]; then
+	report pass "typst-theme-fill-stroke: both code blocks take the theme's fill"
+else
+	report fail "typst-theme-fill-stroke: both code blocks take the theme's fill" \
+		"two fill=\"#00ff00\" in typst-theme-fill-stroke.svg, got ${green_fills}"
+fi
+
+# Typst draws a stroke that covers only some sides as filled shapes, so the top
+# rule and the line below the title bar are fills. A full red frame would be a
+# red stroke.
+blue_sides="$(count_in "${fill_stroke_svg}" 'fill="#0000ff"')"
+red_sides="$(count_in "${fill_stroke_svg}" 'fill="#ff0000"')"
+red_frames="$(count_in "${fill_stroke_svg}" 'stroke="#ff0000"')"
+if [ "${blue_sides}" -eq 1 ] && [ "${red_sides}" -eq 1 ] && [ "${red_frames}" -eq 0 ]; then
+	report pass "typst-theme-fill-stroke: the window draws only the sides the theme sets"
+else
+	report fail "typst-theme-fill-stroke: the window draws only the sides the theme sets" \
+		"one blue side, one red side, and no red frame, got ${blue_sides}, ${red_sides}, and ${red_frames}"
+fi
+
+# With fill left at auto, both code blocks keep the highlight style's
+# background. With fill set to none, neither block has one. The background is
+# read from the override's fallback, so the test follows the highlight style.
+sed 's/stroke-dash: "dashed",/fill: none,/' \
+	"${work_dir}/typst-theme.typ" >"${work_dir}/typst-theme-fill-none.typ"
+compile_svg typst-theme-fill-none
+style_bg="$(sed -n 's/.*else { rgb("\(#[0-9a-f]*\)") }.*/\1/p' "${work_dir}/typst-theme.typ")"
+style_fills_auto="$(count_in "${work_dir}/typst-theme.svg" "fill=\"${style_bg}\"")"
+style_fills_none="$(count_in "${work_dir}/typst-theme-fill-none.svg" "fill=\"${style_bg}\"")"
+if [ "${style_fills_auto}" -eq 2 ] && [ "${style_fills_none}" -eq 0 ]; then
+	report pass "typst-theme-fill-none: fill none removes the background that auto keeps"
+else
+	report fail "typst-theme-fill-none: fill none removes the background that auto keeps" \
+		"two fill=\"${style_bg}\" with auto and none with fill none, got ${style_fills_auto} and ${style_fills_none}"
+fi
+
+# With native Typst highlighting there is no Skylighting override, so the
+# theme's fill reaches only the code in the window, through its raw rule.
+sed -e 's/stroke-dash: "dashed",/fill: rgb("#00ff00"),/' \
+	-e 's/^    keep-typ: true$/    keep-typ: true\
+    syntax-highlighting: idiomatic/' \
+	"${work_dir}/typst-theme.qmd" >"${work_dir}/typst-theme-fill-native.qmd"
+render typst-theme-fill-native typst
+compile_svg typst-theme-fill-native
+native_fills="$(count_in "${work_dir}/typst-theme-fill-native.svg" 'fill="#00ff00"')"
+if [ "${native_fills}" -eq 1 ]; then
+	report pass "typst-theme-fill-native: only the code in the window takes the theme's fill"
+else
+	report fail "typst-theme-fill-native: only the code in the window takes the theme's fill" \
+		"one fill=\"#00ff00\" in typst-theme-fill-native.svg, got ${native_fills}"
 fi
 
 # ============================================================================
