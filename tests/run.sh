@@ -432,6 +432,27 @@ else
 		"no Skylighting override in hotfix-list.typ"
 fi
 
+# A map with a quarto-version turns the hot-fix off from that version on. The
+# first case names a version every Quarto has reached, the second one that no
+# Quarto has, so the hot-fix is off and on in turn.
+for threshold in 0.0.1 9999.0.0; do
+	sed 's/^    keep-typ: true$/    keep-typ: true\
+extensions:\
+  code-window:\
+    hotfix:\
+      skylighting:\
+        quarto-version: "'"${threshold}"'"/' \
+		"${work_dir}/hotfix-default.qmd" >"${work_dir}/hotfix-version-${threshold}.qmd"
+	render "hotfix-version-${threshold}" typst
+done
+if ! grep -q '// skylighting-typst-fix override' "${work_dir}/hotfix-version-0.0.1.typ" &&
+	grep -q '// skylighting-typst-fix override' "${work_dir}/hotfix-version-9999.0.0.typ"; then
+	report pass "hotfix-version: the hot-fix is off from its quarto-version on"
+else
+	report fail "hotfix-version: the hot-fix is off from its quarto-version on" \
+		"no Skylighting override with 0.0.1, and one with 9999.0.0"
+fi
+
 # Without a schema to read, the extension falls back to its own defaults, so
 # the hot-fix stays on.
 hotfix_project schema-missing
