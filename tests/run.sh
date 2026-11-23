@@ -374,6 +374,98 @@ else
 fi
 
 # ============================================================================
+# The hot-fix defaults come from the schema
+# ============================================================================
+
+# Each case is a project of its own, with its own copy of the extension, so a
+# change to one schema reaches no other test. The document sets no hot-fix.
+# $1 case name.
+hotfix_project() {
+	local dir="${work_dir}/hotfix-$1"
+	mkdir -p "${dir}"
+	cp -R "${repo_dir}/_extensions" "${dir}/_extensions"
+	cp "${tests_dir}/fixtures/hotfix-default.qmd" "${dir}/"
+	printf 'project:\n  type: default\n' >"${dir}/_quarto.yml"
+}
+
+# With the skylighting default turned off in the schema alone, the render
+# follows the schema and writes no Skylighting override.
+hotfix_project schema-off
+awk '/^      skylighting:$/ { found = 1 } found && /default: true/ { sub(/true/, "false"); found = 0 } { print }' \
+	"${repo_dir}/_extensions/code-window/_schema.yml" \
+	>"${work_dir}/hotfix-schema-off/_extensions/code-window/_schema.yml"
+render hotfix-schema-off typst
+if ! grep -q '// skylighting-typst-fix override' "${work_dir}/hotfix-schema-off/hotfix-default.typ"; then
+	report pass "hotfix-schema-off: a hot-fix default changed in the schema alone is followed"
+else
+	report fail "hotfix-schema-off: a hot-fix default changed in the schema alone is followed" \
+		"no Skylighting override in hotfix-schema-off/hotfix-default.typ"
+fi
+
+# The schema may also give a hot-fix default in the map form, which is read
+# like the same map written in the document.
+hotfix_project schema-map
+awk '/^      skylighting:$/ { found = 1 } found && /default: true/ { sub(/true/, "{enabled: false}"); found = 0 } { print }' \
+	"${repo_dir}/_extensions/code-window/_schema.yml" \
+	>"${work_dir}/hotfix-schema-map/_extensions/code-window/_schema.yml"
+render hotfix-schema-map typst
+if ! grep -q '// skylighting-typst-fix override' "${work_dir}/hotfix-schema-map/hotfix-default.typ"; then
+	report pass "hotfix-schema-map: a hot-fix default in the map form is followed"
+else
+	report fail "hotfix-schema-map: a hot-fix default in the map form is followed" \
+		"no Skylighting override in hotfix-schema-map/hotfix-default.typ"
+fi
+
+# A value that is neither a boolean nor a map, such as a list, is read as
+# text, so a list holding false turns the hot-fix off as before.
+sed 's/^    keep-typ: true$/    keep-typ: true\
+extensions:\
+  code-window:\
+    hotfix:\
+      skylighting: [false]/' \
+	"${work_dir}/hotfix-default.qmd" >"${work_dir}/hotfix-list.qmd"
+render hotfix-list typst
+if ! grep -q '// skylighting-typst-fix override' "${work_dir}/hotfix-list.typ"; then
+	report pass "hotfix-list: a list value is read as text, not as a map"
+else
+	report fail "hotfix-list: a list value is read as text, not as a map" \
+		"no Skylighting override in hotfix-list.typ"
+fi
+
+# A map with a quarto-version turns the hot-fix off from that version on. The
+# first case names a version every Quarto has reached, the second one that no
+# Quarto has, so the hot-fix is off and on in turn.
+for threshold in 0.0.1 9999.0.0; do
+	sed 's/^    keep-typ: true$/    keep-typ: true\
+extensions:\
+  code-window:\
+    hotfix:\
+      skylighting:\
+        quarto-version: "'"${threshold}"'"/' \
+		"${work_dir}/hotfix-default.qmd" >"${work_dir}/hotfix-version-${threshold}.qmd"
+	render "hotfix-version-${threshold}" typst
+done
+if ! grep -q '// skylighting-typst-fix override' "${work_dir}/hotfix-version-0.0.1.typ" &&
+	grep -q '// skylighting-typst-fix override' "${work_dir}/hotfix-version-9999.0.0.typ"; then
+	report pass "hotfix-version: the hot-fix is off from its quarto-version on"
+else
+	report fail "hotfix-version: the hot-fix is off from its quarto-version on" \
+		"no Skylighting override with 0.0.1, and one with 9999.0.0"
+fi
+
+# Without a schema to read, the extension falls back to its own defaults, so
+# the hot-fix stays on.
+hotfix_project schema-missing
+rm "${work_dir}/hotfix-schema-missing/_extensions/code-window/_schema.yml"
+render hotfix-schema-missing typst
+if grep -q '// skylighting-typst-fix override' "${work_dir}/hotfix-schema-missing/hotfix-default.typ"; then
+	report pass "hotfix-schema-missing: the hot-fix defaults fall back without a schema"
+else
+	report fail "hotfix-schema-missing: the hot-fix defaults fall back without a schema" \
+		"a Skylighting override in hotfix-schema-missing/hotfix-default.typ"
+fi
+
+# ============================================================================
 # A Typst template styles the window through the theme state
 # ============================================================================
 
