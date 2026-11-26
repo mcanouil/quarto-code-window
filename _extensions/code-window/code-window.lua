@@ -820,6 +820,11 @@ local function process_html(block, resolved, auto_label)
   table.insert(block.classes, 'cw-auto')
   mark()
 
+  -- Quarto 2 has no `quarto.DecoratedCodeBlock`, so the block keeps its
+  -- filename attribute and no window node is built.
+  if quarto.DecoratedCodeBlock == nil then
+    return block
+  end
   return quarto.DecoratedCodeBlock({ filename = label, code_block = block })
 end
 
