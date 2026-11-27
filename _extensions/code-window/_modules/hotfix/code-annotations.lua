@@ -144,10 +144,7 @@ local function resolve_annotations(block)
   local comment = LANG_COMMENT_CHARS[lang] or DEFAULT_COMMENT_CHARS
 
   local pattern = '^(.-)%s*' .. escape_pattern(comment[1]) .. '%s*<%s*(%d+)%s*>%s*'
-  if comment[2] then
-    pattern = pattern .. escape_pattern(comment[2]) .. '%s*'
-  end
-  pattern = pattern .. '$'
+    .. escape_pattern(comment[2] or '') .. '%s*$'
 
   local annotations = {}
   local lines = {}
@@ -232,7 +229,6 @@ end
 -- ============================================================================
 
 return {
-  LANG_COMMENT_CHARS = LANG_COMMENT_CHARS,
   resolve_annotations = resolve_annotations,
   annotations_to_typst_dict = annotations_to_typst_dict,
   is_annotation_ordered_list = is_annotation_ordered_list,
