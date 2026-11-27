@@ -949,6 +949,24 @@ else
 		"Rscript on PATH, with knitr installed"
 fi
 
+# ============================================================================
+# Annotation markers follow the comment syntax of the block's language
+# ============================================================================
+
+# A Markdown block that shows an annotated block as text holds "# <1>", which
+# is not a Markdown comment. Quarto leaves it as text, so the Typst output has
+# one annotated block, and it compiles with no link to a missing label.
+render literal-annotation-markers typst
+annotated_blocks="$(count_in "${work_dir}/literal-annotation-markers.typ" 'annotations: ("')"
+literal_markers="$(count_in "${work_dir}/literal-annotation-markers.typ" 'CommentTok("# <1>")')"
+compile_svg literal-annotation-markers
+if [ "${annotated_blocks}" -eq 1 ] && [ "${literal_markers}" -eq 1 ]; then
+	report pass "literal-annotation-markers: markers in a Markdown block stay as text"
+else
+	report fail "literal-annotation-markers: markers in a Markdown block stay as text" \
+		"one annotated block, got ${annotated_blocks}, and the literal marker kept, got ${literal_markers}"
+fi
+
 render auto-bar-render-time html
 check_auto_bar "${work_dir}/auto-bar-render-time.html" html
 render auto-bar-render-time revealjs

@@ -1,0 +1,27 @@
+---
+title: "Annotation markers in a literal block"
+filters:
+  - code-window
+format:
+  typst:
+    keep-typ: true
+---
+
+A Markdown block shows an annotated R block as text.
+Markdown comments are `<!--` and `-->`, so `# <1>` is not a marker here.
+
+````markdown
+```r
+x <- 1 # <1>
+```
+
+1. Assign one.
+````
+
+An annotated R block still gets its annotation.
+
+```r
+y <- 2 # <1>
+```
+
+1. Assign two.
