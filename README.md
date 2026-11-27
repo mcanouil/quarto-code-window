@@ -5,7 +5,7 @@
 ## Installation
 
 ```bash
-quarto add mcanouil/quarto-code-window@1.10.1
+quarto add mcanouil/quarto-code-window@1.10.2
 ```
 
 This will install the extension under the `_extensions` subdirectory.

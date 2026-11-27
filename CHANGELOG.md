@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.10.2 (2026-11-27)
+
 - fix: Typst code annotations now use Quarto's comment syntax for each language, so `# <1>` in a Markdown block that shows another block no longer breaks the compile. C, Elm, MATLAB and Stata markers now match the HTML output too. (#105)
 
 ## 1.10.1 (2026-11-23)
