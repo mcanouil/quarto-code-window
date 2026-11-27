@@ -10,72 +10,112 @@
 -- LANGUAGE COMMENT CHARACTERS
 -- ============================================================================
 
---- Map of language identifiers to their single-line comment prefix.
---- @type table<string, string>
+--- Comment syntax of each language: the start of a comment and, for a block
+--- comment, its end. The first group copies Quarto's `kLangCommentChars`
+--- (`src/resources/filters/modules/constants.lua`), so these languages read the
+--- same markers in Typst as in HTML. A language that is in neither group uses
+--- `#`, as in Quarto.
+--- @type table<string, string[]>
 local LANG_COMMENT_CHARS = {
-  r = '#',
-  python = '#',
-  lua = '--',
-  javascript = '//',
-  typescript = '//',
-  go = '//',
-  rust = '//',
-  bash = '#',
-  sh = '#',
-  zsh = '#',
-  fish = '#',
-  c = '//',
-  cpp = '//',
-  cxx = '//',
-  cc = '//',
-  cs = '//',
-  java = '//',
-  scala = '//',
-  kotlin = '//',
-  swift = '//',
-  objc = '//',
-  php = '//',
-  ruby = '#',
-  perl = '#',
-  julia = '#',
-  haskell = '--',
-  elm = '--',
-  clojure = ';',
-  scheme = ';',
-  lisp = ';',
-  racket = ';',
-  erlang = '%%',
-  elixir = '#',
-  fortran = '!',
-  matlab = '%%',
-  ada = '--',
-  sql = '--',
-  plsql = '--',
-  tsql = '--',
-  mysql = '--',
-  sqlite = '--',
-  postgresql = '--',
-  vb = "'",
-  vbnet = "'",
-  fsharp = '//',
-  stata = '//',
-  yaml = '#',
-  toml = '#',
-  make = '#',
-  cmake = '#',
-  dockerfile = '#',
-  powershell = '#',
-  nix = '#',
-  zig = '//',
-  dart = '//',
-  groovy = '//',
-  d = '//',
-  nim = '#',
-  crystal = '#',
-  v = '//',
-  odin = '//',
-  mojo = '#',
+  apl = { '⍝' },
+  asy = { '//' },
+  awk = { '#' },
+  bash = { '#' },
+  c = { '/*', '*/' },
+  cc = { '//' },
+  coffee = { '#' },
+  cpp = { '//' },
+  csharp = { '//' },
+  css = { '/*', '*/' },
+  d3 = { '//' },
+  dockerfile = { '#' },
+  dot = { '//' },
+  elm = { '#' },
+  fortran = { '!' },
+  fortran95 = { '!' },
+  fsharp = { '//' },
+  gap = { '#' },
+  gawk = { '#' },
+  go = { '//' },
+  groovy = { '//' },
+  haskell = { '--' },
+  html = { '<!--', '-->' },
+  java = { '//' },
+  javascript = { '//' },
+  js = { '//' },
+  json = { '//' },
+  julia = { '#' },
+  kotlin = { '//' },
+  latex = { '%' },
+  lua = { '--' },
+  markdown = { '<!--', '-->' },
+  matlab = { '%' },
+  mermaid = { '%%' },
+  mysql = { '--' },
+  node = { '//' },
+  ocaml = { '(*', '*)' },
+  octave = { '#' },
+  ojs = { '//' },
+  perl = { '#' },
+  powershell = { '#' },
+  psql = { '--' },
+  python = { '#' },
+  q = { '/' },
+  r = { '#' },
+  ruby = { '#' },
+  rust = { '//' },
+  sas = { '*', ';' },
+  sass = { '//' },
+  scala = { '//' },
+  scss = { '//' },
+  sed = { '#' },
+  sql = { '--' },
+  stan = { '#' },
+  stata = { '*' },
+  swift = { '//' },
+  tikz = { '%' },
+  typescript = { '//' },
+  typst = { '//' },
+  vhdl = { '--' },
+  yaml = { '#' },
+  -- Languages that Quarto does not list.
+  ada = { '--' },
+  clojure = { ';' },
+  cmake = { '#' },
+  crystal = { '#' },
+  cs = { '//' },
+  cxx = { '//' },
+  d = { '//' },
+  dart = { '//' },
+  elixir = { '#' },
+  erlang = { '%%' },
+  fish = { '#' },
+  lisp = { ';' },
+  make = { '#' },
+  mojo = { '#' },
+  nim = { '#' },
+  nix = { '#' },
+  objc = { '//' },
+  odin = { '//' },
+  php = { '//' },
+  plsql = { '--' },
+  postgresql = { '--' },
+  racket = { ';' },
+  scheme = { ';' },
+  sh = { '#' },
+  sqlite = { '--' },
+  toml = { '#' },
+  tsql = { '--' },
+  v = { '//' },
+  vb = { "'" },
+  vbnet = { "'" },
+  zig = { '//' },
+  zsh = { '#' },
 }
+
+--- Comment syntax of a language that neither group lists.
+--- @type string[]
+local DEFAULT_COMMENT_CHARS = { '#' }
 
 -- ============================================================================
 -- ANNOTATION RESOLUTION
@@ -101,10 +141,10 @@ local function resolve_annotations(block)
   end
 
   local lang = block.classes[1]:lower()
-  local comment = LANG_COMMENT_CHARS[lang] or '#'
+  local comment = LANG_COMMENT_CHARS[lang] or DEFAULT_COMMENT_CHARS
 
-  local escaped_comment = escape_pattern(comment)
-  local pattern = '^(.-)%s*' .. escaped_comment .. '%s*<%s*(%d+)%s*>%s*$'
+  local pattern = '^(.-)%s*' .. escape_pattern(comment[1]) .. '%s*<%s*(%d+)%s*>%s*'
+    .. escape_pattern(comment[2] or '') .. '%s*$'
 
   local annotations = {}
   local lines = {}
@@ -189,7 +229,6 @@ end
 -- ============================================================================
 
 return {
-  LANG_COMMENT_CHARS = LANG_COMMENT_CHARS,
   resolve_annotations = resolve_annotations,
   annotations_to_typst_dict = annotations_to_typst_dict,
   is_annotation_ordered_list = is_annotation_ordered_list,
